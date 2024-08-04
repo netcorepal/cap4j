@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ddd.example.adapter.infra.mybatis.mapper.OrderMapper">
+    <select id="selectOrderById" resultType="org.ddd.example.application.samples.queries.JdbcTemplateQry$JdbcTemplateQryDto">
+        select 2 as type, o.id, name as order_name, o.amount, finished, closed, update_at from `order` o where id= #{id} and id != #{type}
+    </select>
+</mapper>
