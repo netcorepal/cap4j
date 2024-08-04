@@ -2,13 +2,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.ddd</groupId>
-        <artifactId>ddd</artifactId>
+        <groupId>io.github.netcorepal</groupId>
+        <artifactId>cap4j</artifactId>
         <version>1.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>ddd-domain-starter-jpa-rocketmq</artifactId>
+    <artifactId>ddd-starter-jpa-rocketmq</artifactId>
     <packaging>jar</packaging>
 
     <name>ddd-domain-starter-jpa-rocketmq</name>
@@ -19,22 +19,22 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.ddd</groupId>
+            <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-distributed-locker-jdbc</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.ddd</groupId>
+            <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-domain-repo-jpa</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.ddd</groupId>
+            <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-domain-event-rocketmq</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.ddd</groupId>
+            <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-domain-event-jpa</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
@@ -59,7 +59,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.ddd</groupId>
+            <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-distributed-locker-jdbc</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>

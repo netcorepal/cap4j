@@ -1,4 +1,4 @@
-target/
+starter/ddd-starter-jpa-rocketmq/target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

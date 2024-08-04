@@ -2,12 +2,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.ddd</groupId>
-    <artifactId>ddd</artifactId>
+    <groupId>io.github.netcorepal</groupId>
+    <artifactId>cap4j</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>ddd</name>
+    <name>cap4j</name>
 
     <modules>
         <module>ddd-core</module>
@@ -15,8 +15,7 @@
         <module>ddd-domain-event-jpa</module>
         <module>ddd-domain-repo-jpa</module>
         <module>ddd-distributed-locker-jdbc</module>
-        <module>starter/ddd-domain-starter-jpa-rocketmq</module>
-        <module>example/ddd-mvc-example</module>
+        <module>starter/ddd-starter-jpa-rocketmq</module>
     </modules>
 
     <properties>
@@ -110,7 +109,13 @@
             <version>3.8.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.5.0</version>
+        </dependency>
     </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -127,6 +132,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-archetype-plugin</artifactId>
                 <version>3.2.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.5.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>io.github.netcorepal</publishingServerId>
+                </configuration>
             </plugin>
         </plugins>
     </build>
