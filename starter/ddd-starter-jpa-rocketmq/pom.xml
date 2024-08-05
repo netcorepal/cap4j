@@ -41,6 +41,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -50,19 +51,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>3.8.1</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.github.netcorepal</groupId>
-            <artifactId>ddd-distributed-locker-jdbc</artifactId>
-            <version>1.0.0-alpha</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>
