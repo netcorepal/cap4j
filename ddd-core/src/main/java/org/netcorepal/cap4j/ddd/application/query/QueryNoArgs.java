@@ -1,7 +1,9 @@
 package org.netcorepal.cap4j.ddd.application.query;
 
 /**
- * @author <template/>
+ * 无参查询
+ *
+ * @author binking338
  * @date
  */
 public abstract class QueryNoArgs<RESULT> implements Query<Void, RESULT> {

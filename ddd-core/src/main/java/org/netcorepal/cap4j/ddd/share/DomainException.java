@@ -1,6 +1,8 @@
 package org.netcorepal.cap4j.ddd.share;
 
 /**
+ * 领域异常
+ *
  * @author binking338
  * @date 2023/8/15
  */

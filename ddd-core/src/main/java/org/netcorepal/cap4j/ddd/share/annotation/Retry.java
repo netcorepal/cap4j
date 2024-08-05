@@ -6,6 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 重试注解
+ *
  * @author binking338
  * @date 2023/8/28
  */

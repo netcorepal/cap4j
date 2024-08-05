@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 基于RocketMq的领域事件订阅管理器
  * @author binking338
  * @date 2023/8/13
  */

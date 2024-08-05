@@ -15,7 +15,9 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
- * @author <template/>
+ * 归档事件
+ *
+ * @author binking338
  * @date
  */
 @Entity

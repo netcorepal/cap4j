@@ -1,7 +1,9 @@
 package org.netcorepal.cap4j.ddd.application.command;
 
 /**
- * @author <template/>
+ * 命令接口
+ *
+ * @author binking338
  * @date
  */
 public interface Command<PARAM, RESULT> {

@@ -7,7 +7,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
- * @author <template/>
+ * 事件记录实现
+ *
+ * @author binking338
  * @date
  */
 @Slf4j

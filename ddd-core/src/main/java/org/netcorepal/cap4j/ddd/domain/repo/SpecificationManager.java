@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 
 /**
  * 实体规格约束管理器
+ *
  * @author binking338
  * @date 2023/8/5
  */

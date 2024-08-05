@@ -1,6 +1,8 @@
 package org.netcorepal.cap4j.ddd.share;
 
 /**
+ * 常量
+ *
  * @author binking338
  * @date 2023/11/2
  */

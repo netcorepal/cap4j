@@ -22,7 +22,9 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * @author <template/>
+ * 事件
+ *
+ * @author binking338
  * @date
  */
 @Entity

@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
 
 /**
+ * 基于RocketMq的领域事件发布器
+ *
  * @author binking338
  * @date 2023/8/13
  */
@@ -55,6 +57,10 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
         this.eventRecordRepository = eventRecordRepository;
     }
 
+    /**
+     * 发布事件
+     * @param eventPayload
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void publish(Object eventPayload) {
         EventRecord event = null;

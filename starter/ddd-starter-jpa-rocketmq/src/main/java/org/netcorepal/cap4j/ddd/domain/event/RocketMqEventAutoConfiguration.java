@@ -23,6 +23,7 @@ import java.util.List;
 import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
 /**
+ * 基于RocketMq的领域事件（集成事件）实现自动配置类
  * @author binking338
  * @date 2023/9/10
  */

@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
+ * 基于Jpa的事件记录仓储实现
+ *
  * @author binking338
  * @date 2023/9/9
  */

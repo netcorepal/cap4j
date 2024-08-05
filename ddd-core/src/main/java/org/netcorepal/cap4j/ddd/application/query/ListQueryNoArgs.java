@@ -3,7 +3,9 @@ package org.netcorepal.cap4j.ddd.application.query;
 import java.util.List;
 
 /**
- * @author <template/>
+ * 无参列表查询
+ *
+ * @author binking338
  * @date
  */
 public abstract class ListQueryNoArgs<RESUTL> implements ListQuery<Void,RESUTL> {

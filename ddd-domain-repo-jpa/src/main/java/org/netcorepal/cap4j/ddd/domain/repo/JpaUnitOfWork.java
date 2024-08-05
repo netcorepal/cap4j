@@ -29,6 +29,8 @@ import java.util.stream.Stream;
 import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
 
 /**
+ * 基于Jpa的UnitOfWork实现
+ *
  * @author binking338
  * @date 2023/8/13
  */

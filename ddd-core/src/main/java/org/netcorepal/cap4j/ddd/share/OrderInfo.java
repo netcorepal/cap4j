@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
+ * 排序定义
+ *
  * @author binking338
  * @date 2023/8/13
  */

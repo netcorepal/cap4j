@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 基于Jpa的实体规约管理器
+ *
  * @author binking338
  * @date 2023/8/13
  */

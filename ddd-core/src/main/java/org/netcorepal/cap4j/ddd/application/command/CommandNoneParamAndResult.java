@@ -2,7 +2,8 @@ package org.netcorepal.cap4j.ddd.application.command;
 
 /**
  * 无参无返回命令
- * @author <template/>
+ *
+ * @author binking338
  * @date
  */
 public abstract class CommandNoneParamAndResult implements Command<Void, Void>{

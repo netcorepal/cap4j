@@ -29,7 +29,7 @@ import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
 /**
  * 自动监听集成事件对应的RocketMQ
  *
- * @author <template/>
+ * @author binking338
  * @date 2023-02-28
  */
 @Slf4j

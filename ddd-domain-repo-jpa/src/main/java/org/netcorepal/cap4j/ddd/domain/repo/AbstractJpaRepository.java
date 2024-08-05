@@ -17,6 +17,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
+ * 基于Jpa的仓储抽象类
+ *
  * @author binking338
  * @date 2023/8/13
  */

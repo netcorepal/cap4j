@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 基于Jpa的实体持久化监听管理器
+ *
  * @author binking338
  * @date 2024/3/9
  */

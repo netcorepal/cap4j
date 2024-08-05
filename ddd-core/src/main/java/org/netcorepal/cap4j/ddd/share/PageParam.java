@@ -8,7 +8,9 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * @author <template/>
+ * 分页参数
+ *
+ * @author binking338
  * @date
  */
 @Schema(description = "分页参数")

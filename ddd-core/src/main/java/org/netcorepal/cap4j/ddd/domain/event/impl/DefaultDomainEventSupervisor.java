@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * 默认领域事件管理器
+ *
  * @author binking338
  * @date 2023/8/13
  */

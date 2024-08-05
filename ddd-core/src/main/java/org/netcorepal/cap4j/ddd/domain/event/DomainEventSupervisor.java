@@ -3,6 +3,8 @@ package org.netcorepal.cap4j.ddd.domain.event;
 import java.util.List;
 
 /**
+ * 领域事件管理器
+ *
  * @author binking338
  * @date 2023/8/12
  */

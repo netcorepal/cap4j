@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * 领域事件
  *
- * @author <template/>
+ * @author binking338
  * @date
  */
 @Target({ElementType.TYPE})

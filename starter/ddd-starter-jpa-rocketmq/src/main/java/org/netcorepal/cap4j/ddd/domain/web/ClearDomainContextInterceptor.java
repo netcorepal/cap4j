@@ -11,7 +11,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * @author <template/>
+ * 领域事件上下文清理拦截器
+ *
+ * @author binking338
  * @date 2023-03-10
  */
 @Configuration

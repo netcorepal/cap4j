@@ -4,8 +4,25 @@
 
     <groupId>io.github.netcorepal</groupId>
     <artifactId>cap4j</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0-alpha</version>
     <packaging>pom</packaging>
+    <url>https://github.com/netcorepal/cap4j</url>
+    <description>cap4j，更方便地实现领域驱动设计</description>
+    <scm>
+        <url>https://github.com/netcorepal/cap4j</url>
+    </scm>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>binking338</name>
+            <email>binking338@163.com</email>
+        </developer>
+    </developers>
 
     <name>cap4j</name>
 
@@ -109,11 +126,6 @@
             <version>3.8.1</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.sonatype.central</groupId>
-            <artifactId>central-publishing-maven-plugin</artifactId>
-            <version>0.5.0</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -140,6 +152,49 @@
                 <extensions>true</extensions>
                 <configuration>
                     <publishingServerId>io.github.netcorepal</publishingServerId>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.1.0</version>
+                <inherited>true</inherited>
+                <executions>
+                    <execution>
+                        <id>bundle-sources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <maxmemory>1024</maxmemory>
+                    <encoding>UTF-8</encoding>
+                    <show>protected</show>
+                    <notree>true</notree>
+
+                    <!-- Avoid running into Java 8's very restrictive doclint issues -->
+                    <failOnError>false</failOnError>
+                    <doclint>none</doclint>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.1.0</version>
+                <inherited>true</inherited>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludeResources>true</excludeResources>
+                    <useDefaultExcludes>true</useDefaultExcludes>
                 </configuration>
             </plugin>
         </plugins>

@@ -3,6 +3,8 @@ package org.netcorepal.cap4j.ddd.application.distributed;
 import java.time.Duration;
 
 /**
+ * 锁接口
+ *
  * @author binking338
  * @date 2023/8/17
  */

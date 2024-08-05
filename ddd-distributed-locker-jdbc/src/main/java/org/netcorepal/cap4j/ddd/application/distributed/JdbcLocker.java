@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
 /**
+ * 基于Jdbc实现的锁
+ *
  * @author binking338
  * @date 2023/8/17
  */

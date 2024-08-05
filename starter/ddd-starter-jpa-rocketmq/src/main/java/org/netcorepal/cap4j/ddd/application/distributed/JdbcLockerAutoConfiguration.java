@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
+ * Jdbc锁自动配置类
  * @author binking338
  * @date 2023/9/10
  */

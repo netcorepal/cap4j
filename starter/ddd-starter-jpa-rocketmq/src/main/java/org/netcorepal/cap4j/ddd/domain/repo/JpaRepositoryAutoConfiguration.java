@@ -15,6 +15,8 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
+ * 基于Jpa的仓储实现自动配置类
+ *
  * @author binking338
  * @date 2023/9/10
  */
