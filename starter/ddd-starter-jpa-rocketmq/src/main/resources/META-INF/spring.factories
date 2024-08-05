@@ -1,5 +1,5 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  org.ddd.application.distributed.JdbcLockerAutoConfiguration,\
-  org.ddd.domain.repo.JpaRepositoryAutoConfiguration,\
-  org.ddd.domain.event.RocketMqEventAutoConfiguration,\
-  org.ddd.domain.web.ClearDomainContextInterceptor
+  org.netcorepal.cap4j.ddd.application.distributed.JdbcLockerAutoConfiguration,\
+  org.netcorepal.cap4j.ddd.domain.repo.JpaRepositoryAutoConfiguration,\
+  org.netcorepal.cap4j.ddd.domain.event.RocketMqEventAutoConfiguration,\
+  org.netcorepal.cap4j.ddd.domain.web.ClearDomainContextInterceptor
