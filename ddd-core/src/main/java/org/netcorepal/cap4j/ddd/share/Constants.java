@@ -8,7 +8,6 @@ package org.netcorepal.cap4j.ddd.share;
  */
 public class Constants {
     public static final String CONFIG_KEY_4_SVC_NAME = "${spring.application.name:default}";
-    public static final String CONFIG_KEY_4_DOMAIN_EVENT_SUB_PACKAGE = "${ddd.domain.event.subscriber.scanPackage:}";
 
     public static final String CONFIG_KEY_4_DISTRIBUTED_LOCKER_JDBC_TABLE = "${ddd.distributed.locker.jdbc.table:__locker}";
     public static final String CONFIG_KEY_4_DISTRIBUTED_LOCKER_JDBC_FIELD_NAME = "${ddd.distributed.locker.jdbc.fieldName:name}";
@@ -16,9 +15,10 @@ public class Constants {
     public static final String CONFIG_KEY_4_DISTRIBUTED_LOCKER_JDBC_FIELD_LOCKAT = "${ddd.distributed.locker.jdbc.fieldLockAt:lock_at}";
     public static final String CONFIG_KEY_4_DISTRIBUTED_LOCKER_JDBC_FIELD_UNLOCKAT = "${ddd.distributed.locker.jdbc.fieldUnlockAt:unlock_at}";
 
+    public static final String CONFIG_KEY_4_DOMAIN_EVENT_SUB_PACKAGE = "${ddd.domain.event.subscriber.scanPackage:}";
     public static final String CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_THREADPOOLSIIZE = "${ddd.domain.event.schedule.threadPoolSize:4}";
     public static final String CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_BATCHSIZE = "${ddd.domain.event.schedule.batchSize:10}";
-    public static final String CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_MAXCONCURRENT = "${ddd.domain.eventschedule.maxConcurrency:10}";
+    public static final String CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_MAXCONCURRENT = "${ddd.domain.event.schedule.maxConcurrency:10}";
     public static final String CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_INTERVALSECONDS = "${ddd.domain.event.schedule.intervalSeconds:60}";
     public static final String CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_MAXLOCKSECONDS = "${ddd.domain.event.schedule.maxLockSeconds:30}";
     public static final String CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_CRON = "${ddd.domain.event.schedule.cron:0 */1 * * * ?}";
