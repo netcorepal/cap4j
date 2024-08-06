@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.netcorepal</groupId>
         <artifactId>cap4j</artifactId>
-        <version>1.0.0-alpha</version>
+        <version>1.0.0-alpha1</version>
     </parent>
 
     <artifactId>ddd-domain-event-rocketmq</artifactId>
@@ -17,6 +17,11 @@
             <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-core</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <scope>provided</scope>
         </dependency>
         <!-- Rocket MQ -->
         <dependency>

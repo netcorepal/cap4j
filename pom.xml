@@ -4,7 +4,7 @@
 
     <groupId>io.github.netcorepal</groupId>
     <artifactId>cap4j</artifactId>
-    <version>1.0.0-alpha</version>
+    <version>1.0.0-alpha1</version>
     <packaging>pom</packaging>
     <url>https://github.com/netcorepal/cap4j</url>
     <description>cap4j，更方便地实现领域驱动设计</description>
