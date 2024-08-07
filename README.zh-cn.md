@@ -4,3 +4,7 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/netcorepal/cap4j/blob/main/LICENSE)
 
 这个项目是 [CAP](https://github.com/dotnetcore/CAP) 项目的 Java 实现，用于解决微服务架构中的分布式事务问题，同时也是基于 Outbox 模式的事件总线。
+
+## cap4j-ddd-codegen-maven-plugin
+
+项目 [cap4j-ddd-codegen-maven-plugin](https://github.com/netcorepal/cap4j-ddd-codegen-maven-plugin) 是cap4j的代码生成器。它可以根据数据库模式生成CAP项目所需的必要代码。
