@@ -21,6 +21,12 @@ public interface EventRecord {
     void init(Object payload, String svcName, LocalDateTime now, Duration expireAfter, int retryTimes);
 
     /**
+     * 获取事件ID
+     * @return
+     */
+    String getId();
+
+    /**
      * 获取事件主题
      * @return
      */

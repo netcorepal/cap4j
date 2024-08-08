@@ -9,11 +9,14 @@ import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
 
@@ -28,6 +31,7 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
     private final RocketMqDomainEventSubscriberManager rocketMqDomainEventSubscriberManager;
     private final RocketMQTemplate rocketMQTemplate;
     private final EventRecordRepository eventRecordRepository;
+
     @Value(CONFIG_KEY_4_SVC_NAME)
     private String svcName;
     private Duration defaultExpireAfter = Duration.ofDays(1);
@@ -35,6 +39,9 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
 
     @Autowired
     Environment environment;
+
+    @Autowired(required = false)
+    private DomainEventMessageInterceptor domainEventMessageInterceptor;
 
     /**
      * 如下配置需配置好，保障RocketMqTemplate被初始化
@@ -59,6 +66,7 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
 
     /**
      * 发布事件
+     *
      * @param eventPayload
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -77,7 +85,13 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
             destination = environment.resolvePlaceholders(destination);
             if (destination != null && !destination.isEmpty()) {
                 // MQ消息
-                rocketMQTemplate.asyncSend(destination, event.getPayload(), new DomainEventSendCallback(event, eventRecordRepository));
+                Message message = null;
+                message = new GenericMessage(event.getPayload(), new DomainEventMessageInterceptor.ModifiableMessageHeaders(null, UUID.fromString(event.getId()), null));
+
+                if (domainEventMessageInterceptor != null) {
+                    message = domainEventMessageInterceptor.beforePublish(message);
+                }
+                rocketMQTemplate.asyncSend(destination, message, new DomainEventSendCallback(event, eventRecordRepository));
             } else {
                 // 进程内消息
                 rocketMqDomainEventSubscriberManager.trigger(event.getPayload());
@@ -88,6 +102,7 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
             log.error(String.format("集成事件发布失败: %s", event.toString()), ex);
         }
     }
+
     @Slf4j
     public static class DomainEventSendCallback implements SendCallback {
         private EventRecord event;

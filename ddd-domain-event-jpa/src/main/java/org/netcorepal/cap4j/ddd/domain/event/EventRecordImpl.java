@@ -40,6 +40,11 @@ public class EventRecordImpl implements EventRecord {
     }
 
     @Override
+    public String getId(){
+        return event.getEventUuid();
+    }
+
+    @Override
     public String getEventTopic() {
         return event.getEventType();
     }

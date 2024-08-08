@@ -27,8 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_THREADPOOLSIIZE;
-import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
+import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
 /**
  * 事件调度服务
@@ -62,6 +61,7 @@ public class JpaEventScheduleService {
     @PostConstruct
     public void init() {
         executor = new ThreadPoolExecutor(threadPoolsize, threadPoolsize, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+        addPartition();
     }
 
     @Value(KEY_COMPENSATION_LOCKER)
@@ -209,7 +209,13 @@ public class JpaEventScheduleService {
         eventRepository.deleteInBatch(events);
     }
 
+    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ADDPARTITION_ENABLE)
+    private boolean enableAddPartition = true;
+
     public void addPartition() {
+        if(!enableAddPartition){
+            return;
+        }
         Date now = new Date();
         addPartition("__event", DateUtils.addMonths(now, 1));
         addPartition("__archived_event", DateUtils.addMonths(now, 1));

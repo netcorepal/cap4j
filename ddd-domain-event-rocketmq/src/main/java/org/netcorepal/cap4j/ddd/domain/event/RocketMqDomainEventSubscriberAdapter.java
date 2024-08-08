@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.event;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.parser.Feature;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -16,12 +17,11 @@ import org.netcorepal.cap4j.ddd.share.ScanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.GenericMessage;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_DOMAIN_EVENT_SUB_PACKAGE;
 import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
@@ -36,6 +36,7 @@ import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
 @RequiredArgsConstructor
 public class RocketMqDomainEventSubscriberAdapter {
     private static final String CONFIG_KEY_4_ROCKETMQ_NAMESVC = "${rocketmq.name-server:}";
+    private static final String CONFIG_KEY_4_ROCKETMQ_MSGCHARTSET = "${rocketmq.msg-charset:UTF-8}";
     private final RocketMqDomainEventSubscriberManager rocketMqDomainEventSubscriberManager;
 
     List<MQPushConsumer> mqPushConsumers = new ArrayList<>();
@@ -43,6 +44,8 @@ public class RocketMqDomainEventSubscriberAdapter {
     String applicationName = null;
     @Value(CONFIG_KEY_4_ROCKETMQ_NAMESVC)
     String defaultNameSrv = null;
+    @Value(CONFIG_KEY_4_ROCKETMQ_MSGCHARTSET)
+    String msgCharset = null;
     @Value(CONFIG_KEY_4_DOMAIN_EVENT_SUB_PACKAGE)
     String scanPath = null;
     @Autowired
@@ -50,6 +53,9 @@ public class RocketMqDomainEventSubscriberAdapter {
 
     @Autowired(required = false)
     MQConsumerConfigure mqConsumerConfigure;
+
+    @Autowired(required = false)
+    private DomainEventMessageInterceptor domainEventMessageInterceptor;
 
     @PostConstruct
     public void init() {
@@ -117,8 +123,15 @@ public class RocketMqDomainEventSubscriberAdapter {
             try {
                 for (MessageExt msg :
                         msgs) {
-                    String strMsg = new String(msg.getBody(), "UTF-8");
-                    Object event = JSON.parseObject(strMsg, domainEventClass);
+                    String strMsg = new String(msg.getBody(), msgCharset);
+                    Object event = JSON.parseObject(strMsg, domainEventClass, Feature.SupportNonPublicField);
+                    if (domainEventMessageInterceptor != null) {
+                        Map<String, Object> headers = new HashMap<>();
+                        msg.getProperties().forEach((k,v) -> headers.put(k, v));
+                        Message message = new GenericMessage(event, new DomainEventMessageInterceptor.ModifiableMessageHeaders(headers));
+                        message = domainEventMessageInterceptor.beforeSubscribe(message);
+                        event = message.getPayload();
+                    }
                     rocketMqDomainEventSubscriberManager.trigger(event);
                 }
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;

@@ -76,7 +76,6 @@ public class RocketMqEventAutoConfiguration {
     @Bean
     public JpaEventScheduleService eventScheduleService(DomainEventPublisher domainEventPublisher) {
         scheduleService = new JpaEventScheduleService(locker, domainEventPublisher, eventRepository, archivedEventJpaRepository, jdbcTemplate);
-        scheduleService.addPartition();
         return scheduleService;
     }
 

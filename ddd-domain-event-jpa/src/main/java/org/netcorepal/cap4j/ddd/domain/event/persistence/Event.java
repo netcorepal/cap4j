@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.domain.event.persistence;
 
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.parser.Feature;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -78,7 +79,7 @@ public class Event {
             } catch (ClassNotFoundException e) {
                 log.error("事件类型解析错误", e);
             }
-            this.payload = JSON.parseObject(data, dataClass);
+            this.payload = JSON.parseObject(data, dataClass, Feature.SupportNonPublicField);
         }
         return this.payload;
     }
