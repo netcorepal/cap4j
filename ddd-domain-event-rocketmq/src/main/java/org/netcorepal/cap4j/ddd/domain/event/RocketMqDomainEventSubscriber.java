@@ -15,8 +15,8 @@ public abstract class RocketMqDomainEventSubscriber<Event> implements DomainEven
 
     /**
      * 领域事件消费逻辑
-     * @param o
+     * @param event
      */
     @Override
-    public abstract void onEvent(Event o);
+    public abstract void onEvent(Event event);
 }

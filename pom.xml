@@ -167,6 +167,7 @@
                         </goals>
                         <configuration>
                             <keyname>netcorepal</keyname>
+                            <passphraseServerId>gpg.netcorepal</passphraseServerId>
                         </configuration>
                     </execution>
                 </executions>

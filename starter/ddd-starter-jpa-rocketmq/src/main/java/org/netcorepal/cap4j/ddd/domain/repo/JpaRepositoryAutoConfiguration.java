@@ -2,10 +2,7 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventPublisher;
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventSubscriberManager;
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisor;
-import org.netcorepal.cap4j.ddd.domain.event.EventRecordRepository;
+import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,26 +28,26 @@ public class JpaRepositoryAutoConfiguration {
     private final EventRecordRepository eventRecordRepository;
 
     @Bean
-    public JpaPersistListenerManager jpaPersistListenerManager(List<AbstractJpaPersistListener> persistListeners){
+    public JpaPersistListenerManager jpaPersistListenerManager(List<AbstractJpaPersistListener> persistListeners) {
         JpaPersistListenerManager persistListenerManager = new JpaPersistListenerManager(persistListeners);
         return persistListenerManager;
     }
 
     @Bean
-    public JpaSpecificationManager jpaSpecificationManager(List<AbstractJpaSpecification> specifications){
+    public JpaSpecificationManager jpaSpecificationManager(List<AbstractJpaSpecification> specifications) {
         JpaSpecificationManager specificationManager = new JpaSpecificationManager(specifications);
         return specificationManager;
     }
 
     @Bean
-    public JpaUnitOfWork jpaUnitOfWork(JpaSpecificationManager jpaSpecificationManager, JpaPersistListenerManager jpaPersistListenerManager){
-        JpaUnitOfWork unitOfWork = new JpaUnitOfWork(applicationEventPublisher, domainEventSupervisor, domainEventPublisher, domainEventSubscriberManager, eventRecordRepository, jpaSpecificationManager, jpaPersistListenerManager);
+    public JpaUnitOfWork jpaUnitOfWork(JpaSpecificationManager jpaSpecificationManager, JpaPersistListenerManager jpaPersistListenerManager, @Autowired(required = false) DomainEventMessageInterceptor domainEventMessageInterceptor) {
+        JpaUnitOfWork unitOfWork = new JpaUnitOfWork(applicationEventPublisher, domainEventSupervisor, domainEventPublisher, domainEventSubscriberManager, eventRecordRepository, jpaSpecificationManager, jpaPersistListenerManager, domainEventMessageInterceptor);
         return unitOfWork;
     }
 
     @Configuration
     private static class JpaLoader {
-        public JpaLoader(@Autowired(required = false) JpaUnitOfWork jpaUnitOfWork){
+        public JpaLoader(@Autowired(required = false) JpaUnitOfWork jpaUnitOfWork) {
             JpaUnitOfWork.instance = jpaUnitOfWork;
         }
     }

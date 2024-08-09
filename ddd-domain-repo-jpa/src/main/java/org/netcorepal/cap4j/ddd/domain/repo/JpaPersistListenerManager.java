@@ -2,7 +2,8 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.annotation.Order;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.OrderUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +28,7 @@ public class JpaPersistListenerManager implements PersistListenerManager {
                 if (persistListenersMap == null) {
                     persistListenersMap = new HashMap<>();
                     persistListeners.sort((a, b) ->
-                            a.getClass().getAnnotation(Order.class).value() - b.getClass().getAnnotation(Order.class).value()
+                            OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE) - OrderUtils.getOrder(b.getClass(), Ordered.LOWEST_PRECEDENCE)
                     );
                     for (AbstractJpaPersistListener persistListener : persistListeners) {
                         if (!persistListenersMap.containsKey(persistListener.forEntityClass())) {

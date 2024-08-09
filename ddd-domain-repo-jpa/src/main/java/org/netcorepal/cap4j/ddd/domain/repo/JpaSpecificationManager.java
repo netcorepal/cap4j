@@ -2,7 +2,8 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.annotation.Order;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.OrderUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,7 @@ public class JpaSpecificationManager implements SpecificationManager {
                 if(specificationMap == null){
                     specificationMap = new java.util.HashMap<Class, List<AbstractJpaSpecification>>();
                     specifications.sort((a,b)->
-                            a.getClass().getAnnotation(Order.class).value() - b.getClass().getAnnotation(Order.class).value()
+                            OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE) - OrderUtils.getOrder(b.getClass(), Ordered.LOWEST_PRECEDENCE)
                     );
                     for (AbstractJpaSpecification specification : specifications) {
                         if(!specificationMap.containsKey(specification.forEntityClass())){

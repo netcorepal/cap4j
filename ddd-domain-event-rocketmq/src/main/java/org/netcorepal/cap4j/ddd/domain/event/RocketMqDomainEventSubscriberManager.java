@@ -5,7 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.annotation.Order;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.OrderUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class RocketMqDomainEventSubscriberManager implements DomainEventSubscrib
                 if (subscriberMap == null) {
                     subscriberMap = new java.util.HashMap<Class, List<RocketMqDomainEventSubscriber>>();
                     subscribers.sort((a, b) ->
-                            a.getClass().getAnnotation(Order.class).value() - b.getClass().getAnnotation(Order.class).value()
+                            OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE) - OrderUtils.getOrder(b.getClass(), Ordered.LOWEST_PRECEDENCE)
                     );
                     for (RocketMqDomainEventSubscriber subscriber : subscribers) {
                         if (subscriberMap.get(subscriber.forDomainEventClass()) == null) {

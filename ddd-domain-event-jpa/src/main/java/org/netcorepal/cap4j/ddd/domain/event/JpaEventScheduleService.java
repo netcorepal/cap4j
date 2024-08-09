@@ -15,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
@@ -22,6 +24,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +49,7 @@ public class JpaEventScheduleService {
     private final DomainEventPublisher domainEventPublisher;
     private final EventRepository eventRepository;
     private final ArchivedEventJpaRepository archivedEventJpaRepository;
+    private final DomainEventMessageInterceptor domainEventMessageInterceptor;
 
     @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_THREADPOOLSIIZE)
     private int threadPoolsize;
@@ -114,10 +118,20 @@ public class JpaEventScheduleService {
                         log.info("事件发送补偿: {}", event.toString());
                         event.holdState4Delivery(now);
                         event = eventRepository.saveAndFlush(event);
-                        if(event.isDelivering(now)) {
+                        if (event.isDelivering(now)) {
                             EventRecordImpl eventRecordImpl = new EventRecordImpl();
                             eventRecordImpl.resume(event);
-                            executor.submit(() -> domainEventPublisher.publish(eventRecordImpl));
+                            Message message = new GenericMessage(
+                                    event.getPayload(),
+                                    new DomainEventMessageInterceptor.ModifiableMessageHeaders(null, UUID.fromString(eventRecordImpl.getId()), null)
+                            );
+                            if (domainEventMessageInterceptor != null) {
+                                message = domainEventMessageInterceptor.beforePublish(message);
+                            }
+                            final Message finalMessage = message;
+                            executor.submit(() ->{
+                                domainEventPublisher.publish(finalMessage, eventRecordImpl);
+                            });
                         }
                     }
                 } catch (Exception ex) {
@@ -213,7 +227,7 @@ public class JpaEventScheduleService {
     private boolean enableAddPartition = true;
 
     public void addPartition() {
-        if(!enableAddPartition){
+        if (!enableAddPartition) {
             return;
         }
         Date now = new Date();

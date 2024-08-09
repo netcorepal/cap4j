@@ -5,6 +5,7 @@ import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.application.distributed.Locker;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEventJpaRepository;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.EventRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -74,8 +75,8 @@ public class RocketMqEventAutoConfiguration {
     }
 
     @Bean
-    public JpaEventScheduleService eventScheduleService(DomainEventPublisher domainEventPublisher) {
-        scheduleService = new JpaEventScheduleService(locker, domainEventPublisher, eventRepository, archivedEventJpaRepository, jdbcTemplate);
+    public JpaEventScheduleService eventScheduleService(DomainEventPublisher domainEventPublisher, @Autowired(required = false) DomainEventMessageInterceptor domainEventMessageInterceptor) {
+        scheduleService = new JpaEventScheduleService(locker, domainEventPublisher, eventRepository, archivedEventJpaRepository, domainEventMessageInterceptor, jdbcTemplate);
         return scheduleService;
     }
 

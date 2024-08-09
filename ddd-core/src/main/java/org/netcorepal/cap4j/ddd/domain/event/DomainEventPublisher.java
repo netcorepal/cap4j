@@ -1,5 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.event;
 
+import org.springframework.messaging.Message;
+
 /**
  * 领域事件发布接口
  *
@@ -10,7 +12,8 @@ public interface DomainEventPublisher {
 
     /**
      * 发布事件
-     * @param eventPayload
+     * @param message
+     * @param event
      */
-    void publish(Object eventPayload);
+    void publish(Message message, EventRecord event);
 }

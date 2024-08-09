@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -45,6 +47,7 @@ public class JpaUnitOfWork implements UnitOfWork {
     private final EventRecordRepository eventRecordRepository;
     private final JpaSpecificationManager jpaSpecificationManager;
     private final JpaPersistListenerManager jpaPersistListenerManager;
+    private final DomainEventMessageInterceptor domainEventMessageInterceptor;
 
     private ThreadLocal<Set<Object>> persistedEntitiesThreadLocal = new ThreadLocal<>();
     private ThreadLocal<Set<Object>> removedEntitiesThreadLocal = new ThreadLocal<>();
@@ -483,13 +486,22 @@ public class JpaUnitOfWork implements UnitOfWork {
     @Value(CONFIG_KEY_4_SVC_NAME)
     private String svcName = null;
 
+    /**
+     * 默认事件过期时间（分钟）
+     */
+    private static final int DEFAULT_EVENT_EXPIRE_MINUTES = 15;
+    /**
+     * 默认事件重试次数
+     */
+    private static final int DEFAULT_EVENT_RETRY_TIMES = 13;
+
     protected void publishTransactionEvent() {
         List<Object> eventPayloads = domainEventSupervisor.getEvents();
         List<Object> persistedEvents = new ArrayList<>(eventPayloads.size());
         List<Object> transientEvents = new ArrayList<>(eventPayloads.size());
         for (Object eventPayload : eventPayloads) {
             EventRecord event = eventRecordRepository.create();
-            event.init(eventPayload, this.svcName, LocalDateTime.now(), Duration.ofMinutes(15), 13);
+            event.init(eventPayload, this.svcName, LocalDateTime.now(), Duration.ofMinutes(DEFAULT_EVENT_EXPIRE_MINUTES), DEFAULT_EVENT_RETRY_TIMES);
             event.beginDelivery(LocalDateTime.now());
             if (!isDomainEventPersist(eventPayload)) {
                 transientEvents.add(event);
@@ -534,8 +546,16 @@ public class JpaUnitOfWork implements UnitOfWork {
     public void onTransactionCommitted(TransactionCommittedEvent transactionCommittedEvent) {
         List<Object> events = transactionCommittedEvent.getEvents();
         if (events != null && !events.isEmpty()) {
-            events.forEach(event -> {
-                domainEventPublisher.publish(event);
+            events.forEach(e -> {
+                EventRecord event = (EventRecord) e;
+                Message message = new GenericMessage(
+                        event.getPayload(),
+                        new DomainEventMessageInterceptor.ModifiableMessageHeaders(null, UUID.fromString(event.getId()), null)
+                );
+                if (domainEventMessageInterceptor != null) {
+                    message = domainEventMessageInterceptor.beforePublish(message);
+                }
+                domainEventPublisher.publish(message, event);
             });
         }
     }
@@ -544,8 +564,9 @@ public class JpaUnitOfWork implements UnitOfWork {
     public void onTransactionCommiting(TransactionCommitingEvent transactionCommitingEvent) {
         List<Object> events = transactionCommitingEvent.getEvents();
         if (events != null && !events.isEmpty()) {
-            events.forEach(event -> {
-                domainEventSubscriberManager.trigger(event);
+            events.forEach(e -> {
+                EventRecord event = (EventRecord) e;
+                domainEventSubscriberManager.trigger(event.getPayload());
             });
         }
     }

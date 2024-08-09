@@ -125,9 +125,9 @@ public class RocketMqDomainEventSubscriberAdapter {
                         msgs) {
                     String strMsg = new String(msg.getBody(), msgCharset);
                     Object event = JSON.parseObject(strMsg, domainEventClass, Feature.SupportNonPublicField);
+                    Map<String, Object> headers = new HashMap<>();
+                    msg.getProperties().forEach((k,v) -> headers.put(k, v));
                     if (domainEventMessageInterceptor != null) {
-                        Map<String, Object> headers = new HashMap<>();
-                        msg.getProperties().forEach((k,v) -> headers.put(k, v));
                         Message message = new GenericMessage(event, new DomainEventMessageInterceptor.ModifiableMessageHeaders(headers));
                         message = domainEventMessageInterceptor.beforeSubscribe(message);
                         event = message.getPayload();

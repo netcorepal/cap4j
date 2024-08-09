@@ -7,18 +7,12 @@ import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.support.GenericMessage;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.UUID;
-
-import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
 
 /**
  * 基于RocketMq的领域事件发布器
@@ -32,16 +26,8 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
     private final RocketMQTemplate rocketMQTemplate;
     private final EventRecordRepository eventRecordRepository;
 
-    @Value(CONFIG_KEY_4_SVC_NAME)
-    private String svcName;
-    private Duration defaultExpireAfter = Duration.ofDays(1);
-    private int defaultRetryTimes = 30;
-
     @Autowired
     Environment environment;
-
-    @Autowired(required = false)
-    private DomainEventMessageInterceptor domainEventMessageInterceptor;
 
     /**
      * 如下配置需配置好，保障RocketMqTemplate被初始化
@@ -67,30 +53,15 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
     /**
      * 发布事件
      *
-     * @param eventPayload
+     * @param event
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void publish(Object eventPayload) {
-        EventRecord event = null;
-        if (eventPayload instanceof EventRecord) {
-            event = (EventRecord) eventPayload;
-        } else {
-            event = eventRecordRepository.create();
-            event.init(eventPayload, svcName, LocalDateTime.now(), defaultExpireAfter, defaultRetryTimes);
-            event.beginDelivery(LocalDateTime.now());
-            eventRecordRepository.save(event);
-        }
+    public void publish(Message message, EventRecord event) {
         try {
             String destination = event.getEventTopic();
             destination = environment.resolvePlaceholders(destination);
+            // MQ消息
             if (destination != null && !destination.isEmpty()) {
-                // MQ消息
-                Message message = null;
-                message = new GenericMessage(event.getPayload(), new DomainEventMessageInterceptor.ModifiableMessageHeaders(null, UUID.fromString(event.getId()), null));
-
-                if (domainEventMessageInterceptor != null) {
-                    message = domainEventMessageInterceptor.beforePublish(message);
-                }
                 rocketMQTemplate.asyncSend(destination, message, new DomainEventSendCallback(event, eventRecordRepository));
             } else {
                 // 进程内消息
