@@ -1,5 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.event;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -16,6 +18,20 @@ public interface DomainEventSupervisor {
     void attach(Object eventPayload);
 
     /**
+     * 附加事件
+     * @param eventPayload
+     * @param delay 延迟发送
+     */
+    void attach(Object eventPayload, Duration delay);
+
+    /**
+     * 附加事件
+     * @param eventPayload
+     * @param schedule 指定时间发送
+     */
+    void attach(Object eventPayload, LocalDateTime schedule);
+
+    /**
      * 剥离事件
      * @param eventPayload
      */
@@ -30,4 +46,11 @@ public interface DomainEventSupervisor {
      * @return
      */
     List<Object> getEvents();
+
+    /**
+     * 获取发送事件
+     * @param eventPlayload
+     * @return
+     */
+    LocalDateTime getDeliverTime(Object eventPlayload);
 }

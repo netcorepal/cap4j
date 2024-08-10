@@ -10,7 +10,6 @@ import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEvent;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEventJpaRepository;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.Event;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.EventRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -25,9 +24,6 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.netcorepal.cap4j.ddd.share.Constants.*;
@@ -42,34 +38,26 @@ import static org.netcorepal.cap4j.ddd.share.Constants.*;
 @RequiredArgsConstructor
 @Slf4j
 public class JpaEventScheduleService {
-    private static final String KEY_COMPENSATION_LOCKER = "event_compense[" + CONFIG_KEY_4_SVC_NAME + "]";
-    private static final String KEY_ARCHIVE_LOCKER = "event_archive[" + CONFIG_KEY_4_SVC_NAME + "]";
 
     private final Locker locker;
     private final DomainEventPublisher domainEventPublisher;
+    private final DomainEventMessageInterceptor domainEventMessageInterceptor;
+    private final EventRecordRepository eventRecordRepository;
     private final EventRepository eventRepository;
     private final ArchivedEventJpaRepository archivedEventJpaRepository;
-    private final DomainEventMessageInterceptor domainEventMessageInterceptor;
+    private final String svcName;
+    private final String compensationLockerKey;
+    private final String archiveLockerKey;
+    private final boolean enableAddPartition;
 
-    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_THREADPOOLSIIZE)
-    private int threadPoolsize;
-    private ThreadPoolExecutor executor = null;
-
-    @Value(CONFIG_KEY_4_SVC_NAME)
-    private String svcName = null;
+    @PostConstruct
+    public void init() {
+        addPartition();
+    }
 
     private String getSvcName() {
         return svcName;
     }
-
-    @PostConstruct
-    public void init() {
-        executor = new ThreadPoolExecutor(threadPoolsize, threadPoolsize, 10, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
-        addPartition();
-    }
-
-    @Value(KEY_COMPENSATION_LOCKER)
-    private String compensationLockerKey = null;
 
     private String getCompensationLockerKey() {
         return compensationLockerKey;
@@ -100,38 +88,60 @@ public class JpaEventScheduleService {
                                 cb.and(
                                         // 【初始状态】
                                         cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.INIT),
-                                        cb.lessThan(root.get(Event.F_NEXT_TRY_TIME), now.plusSeconds(0)),
+                                        cb.lessThan(root.get(Event.F_NEXT_TRY_TIME), now.plus(interval)),
                                         cb.equal(root.get(Event.F_SVC_NAME), svcName)
                                 ), cb.and(
-                                        // 【未知状态】
+                                        // 【发送中状态】
                                         cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.DELIVERING),
-                                        cb.lessThan(root.get(Event.F_NEXT_TRY_TIME), now.plusSeconds(0)),
+                                        cb.lessThan(root.get(Event.F_NEXT_TRY_TIME), now.plus(interval)),
+                                        cb.equal(root.get(Event.F_SVC_NAME), svcName)
+                                ), cb.and(
+                                        // 【异常状态】
+                                        cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.EXCEPTION),
+                                        cb.lessThan(root.get(Event.F_NEXT_TRY_TIME), now.plus(interval)),
                                         cb.equal(root.get(Event.F_SVC_NAME), svcName)
                                 )));
                         return null;
-                    }, PageRequest.of(0, batchSize, Sort.by(Sort.Direction.ASC, Event.F_CREATE_AT)));
+                    }, PageRequest.of(0, batchSize, Sort.by(Sort.Direction.ASC, Event.F_NEXT_TRY_TIME)));
                     if (!events.hasContent()) {
                         noneEvent = true;
                         continue;
                     }
                     for (Event event : events.getContent()) {
                         log.info("事件发送补偿: {}", event.toString());
-                        event.holdState4Delivery(now);
-                        event = eventRepository.saveAndFlush(event);
-                        if (event.isDelivering(now)) {
-                            EventRecordImpl eventRecordImpl = new EventRecordImpl();
-                            eventRecordImpl.resume(event);
+                        LocalDateTime deliverTime = event.getNextTryTime().isAfter(now)
+                                ? event.getNextTryTime()
+                                : now;
+
+                        EventRecordImpl eventRecordImpl = new EventRecordImpl();
+                        eventRecordImpl.resume(event);
+
+                        boolean delivering = eventRecordImpl.beginDelivery(deliverTime);
+
+                        int maxTry = Integer.MAX_VALUE;
+                        while (eventRecordImpl.getNextTryTime().isBefore(now.plus(interval))
+                                && Event.EventState.DELIVERING.equals(eventRecordImpl.getEvent().getEventState())
+                        ) {
+                            eventRecordImpl.beginDelivery(eventRecordImpl.getNextTryTime());
+                            if (maxTry-- <= 0) {
+                                throw new RuntimeException("疑似死循环");
+                            }
+                        }
+
+                        eventRecordRepository.save(eventRecordImpl);
+                        if (delivering) {
                             Message message = new GenericMessage(
-                                    event.getPayload(),
+                                    eventRecordImpl.getPayload(),
                                     new DomainEventMessageInterceptor.ModifiableMessageHeaders(null, UUID.fromString(eventRecordImpl.getId()), null)
                             );
+                            if(deliverTime.isAfter(now)){
+                                message.getHeaders().put(HEADER_KEY_CAP4J_SCHEDULE, deliverTime);
+                            }
                             if (domainEventMessageInterceptor != null) {
                                 message = domainEventMessageInterceptor.beforePublish(message);
                             }
                             final Message finalMessage = message;
-                            executor.submit(() -> {
-                                domainEventPublisher.publish(finalMessage, eventRecordImpl);
-                            });
+                            domainEventPublisher.publish(finalMessage, eventRecordImpl);
                         }
                     }
                 } catch (Exception ex) {
@@ -144,9 +154,6 @@ public class JpaEventScheduleService {
             compensationRunning = false;
         }
     }
-
-    @Value(KEY_ARCHIVE_LOCKER)
-    private String archiveLockerKey = null;
 
     private String getArchiveLockerKey() {
         return archiveLockerKey;
@@ -183,7 +190,7 @@ public class JpaEventScheduleService {
                                     cb.equal(root.get(Event.F_SVC_NAME), svcName)
                             ));
                     return null;
-                }, PageRequest.of(0, batchSize, Sort.by(Sort.Direction.ASC, Event.F_CREATE_AT)));
+                }, PageRequest.of(0, batchSize, Sort.by(Sort.Direction.ASC, Event.F_NEXT_TRY_TIME)));
                 if (!events.hasContent()) {
                     break;
                 }
@@ -211,9 +218,6 @@ public class JpaEventScheduleService {
         archivedEventJpaRepository.saveAll(archivedEvents);
         eventRepository.deleteInBatch(events);
     }
-
-    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ADDPARTITION_ENABLE)
-    private boolean enableAddPartition = true;
 
     public void addPartition() {
         if (!enableAddPartition) {

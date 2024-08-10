@@ -14,11 +14,11 @@ public interface EventRecord {
      * 初始化事件
      * @param payload
      * @param svcName
-     * @param now
+     * @param scheduleAt
      * @param expireAfter
      * @param retryTimes
      */
-    void init(Object payload, String svcName, LocalDateTime now, Duration expireAfter, int retryTimes);
+    void init(Object payload, String svcName, LocalDateTime scheduleAt, Duration expireAfter, int retryTimes);
 
     /**
      * 获取事件ID
@@ -37,6 +37,29 @@ public interface EventRecord {
      * @return
      */
     Object getPayload();
+
+    /**
+     * 获取计划发送事件
+     * @return
+     */
+    LocalDateTime getScheduleTime();
+
+    /**
+     * 获取下次重试时间
+     * @return
+     */
+    LocalDateTime getNextTryTime();
+
+    /**
+     * 是否发送中
+     * @return
+     */
+    boolean isDelivering();
+    /**
+     * 是否已发送
+     * @return
+     */
+    boolean isDelivered();
 
     /**
      * 开始发送事件

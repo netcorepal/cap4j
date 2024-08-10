@@ -56,15 +56,16 @@ public class Event {
     public static final String F_LAST_TRY_TIME = "lastTryTime";
     public static final String F_NEXT_TRY_TIME = "nextTryTime";
 
-    public void init(Object payload, String svcName, LocalDateTime now, Duration expireAfter, int retryTimes) {
+    public void init(Object payload, String svcName, LocalDateTime scheduleAt, Duration expireAfter, int retryTimes) {
         this.eventUuid = UUID.randomUUID().toString();
         this.svcName = svcName;
-        this.createAt = now;
-        this.expireAt = now.plusSeconds((int) expireAfter.getSeconds());
+        this.createAt = scheduleAt;
+        this.expireAt = scheduleAt.plusSeconds((int) expireAfter.getSeconds());
         this.eventState = EventState.INIT;
         this.tryTimes = retryTimes;
-        this.triedTimes = 0;
-        this.lastTryTime = LocalDateTime.of(1, 1, 1, 0, 0, 0);
+        this.triedTimes = 1;
+        this.lastTryTime = scheduleAt;
+        this.nextTryTime = calculateNextTryTime(scheduleAt);
         this.loadPayload(payload);
     }
 
@@ -87,9 +88,12 @@ public class Event {
         return this.payload;
     }
 
-    public boolean isDelivering(LocalDateTime now) {
-        return EventState.DELIVERING.equals(this.eventState)
-                && now.isBefore(this.nextTryTime);
+    public boolean isDelivering() {
+        return EventState.DELIVERING.equals(this.eventState);
+    }
+
+    public boolean isDelivered() {
+        return EventState.DELIVERED.equals(this.eventState);
     }
 
     public boolean holdState4Delivery(LocalDateTime now) {

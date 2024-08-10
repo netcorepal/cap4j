@@ -7,7 +7,6 @@ import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -28,7 +27,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
+import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
 /**
  * 基于Jpa的UnitOfWork实现
@@ -48,6 +47,11 @@ public class JpaUnitOfWork implements UnitOfWork {
     private final JpaSpecificationManager jpaSpecificationManager;
     private final JpaPersistListenerManager jpaPersistListenerManager;
     private final DomainEventMessageInterceptor domainEventMessageInterceptor;
+
+    private final String svcName;
+    private final String entityGetIdMethod;
+    private final int retrieveCountWarnThreshold;
+    private final int eventDeliveryCompensationIntervalSeconds;
 
     private ThreadLocal<Set<Object>> persistedEntitiesThreadLocal = new ThreadLocal<>();
     private ThreadLocal<Set<Object>> removedEntitiesThreadLocal = new ThreadLocal<>();
@@ -74,9 +78,6 @@ public class JpaUnitOfWork implements UnitOfWork {
     public void save() {
         save(Propagation.REQUIRED);
     }
-
-    @Value("${ddd.domain.JpaUnitOfWork.entityGetIdMethod:getId}")
-    private String entityGetIdMethod = null;
 
     public void save(Propagation propagation) {
         Set<Object> persistEntityList = null;
@@ -170,9 +171,6 @@ public class JpaUnitOfWork implements UnitOfWork {
     protected EntityManager entityManager;
     protected static JpaUnitOfWork instance;
 
-    @Value("${ddd.domain.JpaUnitOfWork.retrieveCountWarnThreshold:3000}")
-    private int RETRIEVE_COUNT_WARN_THRESHOLD;
-
     public interface QueryBuilder<R, F> {
         void build(CriteriaBuilder cb, CriteriaQuery<R> cq, Root<F> root);
     }
@@ -214,7 +212,7 @@ public class JpaUnitOfWork implements UnitOfWork {
         Root<F> root = criteriaQuery.from(fromEntityClass);
         queryBuilder.build(criteriaBuilder, criteriaQuery, root);
         List<R> results = getEntityManager().createQuery(criteriaQuery).getResultList();
-        if (results.size() > RETRIEVE_COUNT_WARN_THRESHOLD) {
+        if (results.size() > retrieveCountWarnThreshold) {
             log.warn("查询记录数过多: retrieve_count=" + results.size());
         }
         return results;
@@ -483,9 +481,6 @@ public class JpaUnitOfWork implements UnitOfWork {
         }
     }
 
-    @Value(CONFIG_KEY_4_SVC_NAME)
-    private String svcName = null;
-
     /**
      * 默认事件过期时间（分钟）
      */
@@ -499,11 +494,12 @@ public class JpaUnitOfWork implements UnitOfWork {
         List<Object> eventPayloads = domainEventSupervisor.getEvents();
         List<Object> persistedEvents = new ArrayList<>(eventPayloads.size());
         List<Object> transientEvents = new ArrayList<>(eventPayloads.size());
+        LocalDateTime now = LocalDateTime.now();
         for (Object eventPayload : eventPayloads) {
+            LocalDateTime deliverTime = domainEventSupervisor.getDeliverTime(eventPayload);
             EventRecord event = eventRecordRepository.create();
-            event.init(eventPayload, this.svcName, LocalDateTime.now(), Duration.ofMinutes(DEFAULT_EVENT_EXPIRE_MINUTES), DEFAULT_EVENT_RETRY_TIMES);
-            event.beginDelivery(LocalDateTime.now());
-            if (!isDomainEventPersist(eventPayload)) {
+            event.init(eventPayload, this.svcName, deliverTime, Duration.ofMinutes(DEFAULT_EVENT_EXPIRE_MINUTES), DEFAULT_EVENT_RETRY_TIMES);
+            if (!isDomainEventPersist(eventPayload) && !deliverTime.isAfter(now)) {
                 transientEvents.add(event);
             } else {
                 eventRecordRepository.save(event);
@@ -520,7 +516,7 @@ public class JpaUnitOfWork implements UnitOfWork {
                 ? null
                 : payload.getClass().getAnnotation(DomainEvent.class);
         if (domainEvent != null) {
-            return domainEvent.persist();
+            return domainEvent.persist() || (domainEvent.value() != null && !domainEvent.value().trim().isEmpty());
         } else {
             return false;
         }
@@ -546,12 +542,21 @@ public class JpaUnitOfWork implements UnitOfWork {
     public void onTransactionCommitted(TransactionCommittedEvent transactionCommittedEvent) {
         List<Object> events = transactionCommittedEvent.getEvents();
         if (events != null && !events.isEmpty()) {
+            LocalDateTime now = LocalDateTime.now();
             events.forEach(e -> {
                 EventRecord event = (EventRecord) e;
                 Message message = new GenericMessage(
                         event.getPayload(),
                         new DomainEventMessageInterceptor.ModifiableMessageHeaders(null, UUID.fromString(event.getId()), null)
                 );
+                if(event.getScheduleTime().isAfter(now)){
+                    Duration delay = Duration.between(now, event.getScheduleTime());
+                    if(delay.getSeconds() < eventDeliveryCompensationIntervalSeconds){
+                        message.getHeaders().put(HEADER_KEY_CAP4J_SCHEDULE, event.getScheduleTime());
+                    } else {
+                        return;
+                    }
+                }
                 if (domainEventMessageInterceptor != null) {
                     message = domainEventMessageInterceptor.beforePublish(message);
                 }
@@ -566,6 +571,7 @@ public class JpaUnitOfWork implements UnitOfWork {
         if (events != null && !events.isEmpty()) {
             events.forEach(e -> {
                 EventRecord event = (EventRecord) e;
+                event.beginDelivery(LocalDateTime.now());
                 domainEventSubscriberManager.trigger(event.getPayload());
             });
         }

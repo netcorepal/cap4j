@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -25,6 +26,7 @@ import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
 /**
  * 基于RocketMq的领域事件（集成事件）实现自动配置类
+ *
  * @author binking338
  * @date 2023/9/10
  */
@@ -42,6 +44,7 @@ public class RocketMqEventAutoConfiguration {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final List<RocketMqDomainEventSubscriber> subscribers;
     private final JdbcTemplate jdbcTemplate;
+    private final Environment environment;
 
     @Bean
     @ConditionalOnMissingBean(EventRecordRepository.class)
@@ -57,8 +60,16 @@ public class RocketMqEventAutoConfiguration {
     }
 
     @Bean
-    public RocketMqDomainEventPublisher rocketMqDomainEventPublisher(RocketMqDomainEventSubscriberManager rocketMqDomainEventSubscriberManager, JpaEventRecordRepository jpaEventRecordRepository) {
-        RocketMqDomainEventPublisher rocketMqDomainEventPublisher = new RocketMqDomainEventPublisher(rocketMqDomainEventSubscriberManager, rocketMQTemplate, jpaEventRecordRepository);
+    public RocketMqDomainEventPublisher rocketMqDomainEventPublisher(
+            RocketMqDomainEventSubscriberManager rocketMqDomainEventSubscriberManager,
+            JpaEventRecordRepository jpaEventRecordRepository,
+            @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_THREADPOOLSIIZE) int threadPoolsize) {
+        RocketMqDomainEventPublisher rocketMqDomainEventPublisher = new RocketMqDomainEventPublisher(
+                rocketMqDomainEventSubscriberManager,
+                rocketMQTemplate,
+                jpaEventRecordRepository,
+                threadPoolsize,
+                environment);
         return rocketMqDomainEventPublisher;
     }
 
@@ -75,8 +86,31 @@ public class RocketMqEventAutoConfiguration {
     }
 
     @Bean
-    public JpaEventScheduleService eventScheduleService(DomainEventPublisher domainEventPublisher, @Autowired(required = false) DomainEventMessageInterceptor domainEventMessageInterceptor) {
-        scheduleService = new JpaEventScheduleService(locker, domainEventPublisher, eventRepository, archivedEventJpaRepository, domainEventMessageInterceptor, jdbcTemplate);
+    public JpaEventScheduleService eventScheduleService(
+            DomainEventPublisher domainEventPublisher,
+            JpaEventRecordRepository jpaEventRecordRepository,
+            @Autowired(required = false)
+            DomainEventMessageInterceptor domainEventMessageInterceptor,
+            @Value(CONFIG_KEY_4_SVC_NAME)
+            String svcName,
+            @Value("event_compense[" + CONFIG_KEY_4_SVC_NAME + "]")
+            String compensationLockerKey,
+            @Value("event_archive[" + CONFIG_KEY_4_SVC_NAME + "]")
+            String archiveLockerKey,
+            @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ADDPARTITION_ENABLE)
+            boolean enableAddPartition) {
+        scheduleService = new JpaEventScheduleService(
+                locker,
+                domainEventPublisher,
+                domainEventMessageInterceptor,
+                jpaEventRecordRepository,
+                eventRepository,
+                archivedEventJpaRepository,
+                svcName,
+                compensationLockerKey,
+                archiveLockerKey,
+                enableAddPartition,
+                jdbcTemplate);
         return scheduleService;
     }
 
@@ -102,6 +136,7 @@ public class RocketMqEventAutoConfiguration {
     private int archiveExpireDays;
     @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ARCHIVE_MAXLOCKSECONDS)
     private int archiveMaxLockSeconds;
+
     @Scheduled(cron = CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ARCHIVE_CRON)
     public void archive() {
         if (scheduleService == null) return;
@@ -109,7 +144,7 @@ public class RocketMqEventAutoConfiguration {
     }
 
     @Scheduled(cron = CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ADDPARTITION_CRON)
-    public void addTablePartition(){
+    public void addTablePartition() {
         scheduleService.addPartition();
     }
 

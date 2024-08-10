@@ -14,6 +14,7 @@ import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
 import org.netcorepal.cap4j.ddd.share.ScanUtils;
+import org.netcorepal.cap4j.ddd.share.TextUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
@@ -74,15 +75,15 @@ public class RocketMqDomainEventSubscriberAdapter {
                 mqPushConsumer = mqConsumerConfigure.get(domainEventClass);
             }
             if (mqPushConsumer == null) {
-                createDefaultConsumer(domainEventClass);
+                mqPushConsumer = createDefaultConsumer(domainEventClass);
             }
             try {
-                mqPushConsumer.start();
+                if (mqPushConsumer != null) {
+                    mqPushConsumer.start();
+                    mqPushConsumers.add(mqPushConsumer);
+                }
             } catch (MQClientException e) {
                 log.error("领域事件消息监听启动失败", e);
-            }
-            if (mqPushConsumer != null) {
-                mqPushConsumers.add(mqPushConsumer);
             }
         });
     }
@@ -103,12 +104,12 @@ public class RocketMqDomainEventSubscriberAdapter {
             // 不是集成事件, 或显式标明无订阅
             return null;
         }
-        if (!rocketMqDomainEventSubscriberManager.hasSubscriber(domainEventClass)) {
-            // 不存在订阅
-            return null;
-        }
+//        if (!rocketMqDomainEventSubscriberManager.hasSubscriber(domainEventClass)) {
+//            // 不存在订阅
+//            return null;
+//        }
         String target = domainEvent.value();
-        target = environment.resolvePlaceholders(target);
+        target = TextUtils.resolvePlaceholderWithCache(target, environment);
         String topic = target.lastIndexOf(':') > 0 ? target.substring(0, target.lastIndexOf(':')) : target;
         String tag = target.lastIndexOf(':') > 0 ? target.substring(target.lastIndexOf(':') + 1) : "";
 
@@ -152,7 +153,7 @@ public class RocketMqDomainEventSubscriberAdapter {
         if (StringUtils.isBlank(defaultVal)) {
             defaultVal = topic + "-4-" + applicationName;
         }
-        String group = environment.resolvePlaceholders("${rocketmq." + topic + ".consumer.group:" + defaultVal + "}");
+        String group = TextUtils.resolvePlaceholderWithCache("${rocketmq." + topic + ".consumer.group:" + defaultVal + "}", environment);
         return group;
     }
 
@@ -160,7 +161,7 @@ public class RocketMqDomainEventSubscriberAdapter {
         if (StringUtils.isBlank(defaultVal)) {
             defaultVal = defaultNameSrv;
         }
-        String nameServer = environment.resolvePlaceholders("${rocketmq." + topic + ".name-server:" + defaultVal + "}");
+        String nameServer = TextUtils.resolvePlaceholderWithCache("${rocketmq." + topic + ".name-server:" + defaultVal + "}", environment);
         return nameServer;
     }
 }

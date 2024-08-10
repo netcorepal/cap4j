@@ -4,12 +4,15 @@ import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+
+import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
 /**
  * 基于Jpa的仓储实现自动配置类
@@ -40,8 +43,33 @@ public class JpaRepositoryAutoConfiguration {
     }
 
     @Bean
-    public JpaUnitOfWork jpaUnitOfWork(JpaSpecificationManager jpaSpecificationManager, JpaPersistListenerManager jpaPersistListenerManager, @Autowired(required = false) DomainEventMessageInterceptor domainEventMessageInterceptor) {
-        JpaUnitOfWork unitOfWork = new JpaUnitOfWork(applicationEventPublisher, domainEventSupervisor, domainEventPublisher, domainEventSubscriberManager, eventRecordRepository, jpaSpecificationManager, jpaPersistListenerManager, domainEventMessageInterceptor);
+    public JpaUnitOfWork jpaUnitOfWork(
+            JpaSpecificationManager jpaSpecificationManager,
+            JpaPersistListenerManager jpaPersistListenerManager,
+            @Autowired(required = false)
+            DomainEventMessageInterceptor domainEventMessageInterceptor,
+            @Value(CONFIG_KEY_4_SVC_NAME)
+            String svcName,
+            @Value(CONFIG_KEY_4_DOMAIN_JPAUOW_ENTITYGETIDMETHOD)
+            String entityGetIdMethod,
+            @Value(CONFIG_KEY_4_DOMAIN_JPAUOW_RETRIEVECOUNTWARNTHRESHOLD)
+            int retrieveCountWarnThreshold,
+            @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_INTERVALSECONDS)
+            int eventDeliveryCompensationIntervalSeconds
+    ) {
+        JpaUnitOfWork unitOfWork = new JpaUnitOfWork(
+                applicationEventPublisher,
+                domainEventSupervisor,
+                domainEventPublisher,
+                domainEventSubscriberManager,
+                eventRecordRepository,
+                jpaSpecificationManager,
+                jpaPersistListenerManager,
+                domainEventMessageInterceptor,
+                svcName,
+                entityGetIdMethod,
+                retrieveCountWarnThreshold,
+                eventDeliveryCompensationIntervalSeconds);
         return unitOfWork;
     }
 

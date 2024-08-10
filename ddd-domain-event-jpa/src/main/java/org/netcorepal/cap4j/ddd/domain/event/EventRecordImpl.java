@@ -55,6 +55,26 @@ public class EventRecordImpl implements EventRecord {
     }
 
     @Override
+    public LocalDateTime getScheduleTime() {
+        return event.getCreateAt();
+    }
+
+    @Override
+    public LocalDateTime getNextTryTime() {
+        return event.getNextTryTime();
+    }
+
+    @Override
+    public boolean isDelivering() {
+        return event.isDelivering();
+    }
+
+    @Override
+    public boolean isDelivered() {
+        return event.isDelivered();
+    }
+
+    @Override
     public boolean beginDelivery(LocalDateTime now) {
         return event.holdState4Delivery(now);
     }

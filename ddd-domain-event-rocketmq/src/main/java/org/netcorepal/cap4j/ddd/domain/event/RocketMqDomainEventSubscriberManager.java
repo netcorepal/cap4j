@@ -8,6 +8,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.OrderUtils;
 
+import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +24,20 @@ public class RocketMqDomainEventSubscriberManager implements DomainEventSubscrib
     private final ApplicationEventPublisher applicationEventPublisher;
     private Map<Class, List<RocketMqDomainEventSubscriber>> subscriberMap = null;
 
+    @PostConstruct
+    public void init(){
+        subscriberMap = new java.util.HashMap<Class, List<RocketMqDomainEventSubscriber>>();
+        subscribers.sort((a, b) ->
+                OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE) - OrderUtils.getOrder(b.getClass(), Ordered.LOWEST_PRECEDENCE)
+        );
+        for (RocketMqDomainEventSubscriber subscriber : subscribers) {
+            if (subscriberMap.get(subscriber.forDomainEventClass()) == null) {
+                subscriberMap.put(subscriber.forDomainEventClass(), new java.util.ArrayList<RocketMqDomainEventSubscriber>());
+            }
+            subscriberMap.get(subscriber.forDomainEventClass()).add(subscriber);
+        }
+    }
+
     @Override
     public <Event> void trigger(Event eventPayload) {
         try {
@@ -32,20 +47,7 @@ public class RocketMqDomainEventSubscriberManager implements DomainEventSubscrib
             throw new DomainException("领域事件处理失败 eventPayload=" + JSON.toJSONString(eventPayload), e);
         }
         if (subscriberMap == null) {
-            synchronized (this) {
-                if (subscriberMap == null) {
-                    subscriberMap = new java.util.HashMap<Class, List<RocketMqDomainEventSubscriber>>();
-                    subscribers.sort((a, b) ->
-                            OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE) - OrderUtils.getOrder(b.getClass(), Ordered.LOWEST_PRECEDENCE)
-                    );
-                    for (RocketMqDomainEventSubscriber subscriber : subscribers) {
-                        if (subscriberMap.get(subscriber.forDomainEventClass()) == null) {
-                            subscriberMap.put(subscriber.forDomainEventClass(), new java.util.ArrayList<RocketMqDomainEventSubscriber>());
-                        }
-                        subscriberMap.get(subscriber.forDomainEventClass()).add(subscriber);
-                    }
-                }
-            }
+
         }
         List<RocketMqDomainEventSubscriber> subscribersForEvent = subscriberMap.get(eventPayload.getClass());
         if (subscribersForEvent == null || subscribersForEvent.isEmpty()) {
