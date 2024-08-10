@@ -16,6 +16,8 @@ import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
 import javax.persistence.*;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -45,6 +47,7 @@ public class Event {
     public static final String F_EVENT_TYPE = "eventType";
     public static final String F_DATA = "data";
     public static final String F_DATA_TYPE = "dataType";
+    public static final String F_EXCEPTION = "exception";
     public static final String F_CREATE_AT = "createAt";
     public static final String F_EXPIRE_AT = "expireAt";
     public static final String F_EVENT_STATE = "eventState";
@@ -92,7 +95,7 @@ public class Event {
     public boolean holdState4Delivery(LocalDateTime now) {
         // 超过重试次数
         if (this.triedTimes >= this.tryTimes) {
-            this.eventState = EventState.FAILED;
+            this.eventState = EventState.EXHAUSTED;
             return false;
         }
         // 事件过期
@@ -116,16 +119,33 @@ public class Event {
         return true;
     }
 
-    public void confirmDelivered(LocalDateTime now) {
+    public void confirmedDelivery(LocalDateTime now) {
         this.eventState = EventState.DELIVERED;
     }
 
-    public void cancel(LocalDateTime now) {
+    public boolean cancelDelivery(LocalDateTime now) {
+        if (EventState.DELIVERED.equals(this.eventState)
+                || EventState.EXHAUSTED.equals(this.eventState)
+                || EventState.EXPIRED.equals(this.eventState)
+                || EventState.CANCEL.equals(this.eventState)) {
+            return false;
+        }
         this.eventState = EventState.CANCEL;
+        return true;
+    }
+
+    public void occuredException(LocalDateTime now, Throwable ex) {
+        if(EventState.DELIVERED.equals(this.eventState)) {
+            return;
+        }
+        this.eventState = EventState.EXCEPTION;
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw,true));
+        this.exception = sw.toString();
     }
 
     private void loadPayload(Object payload) {
-        if(payload == null){
+        if (payload == null) {
             throw new DomainException("事件体不能为null");
         }
         this.payload = payload;
@@ -187,31 +207,38 @@ public class Event {
 
     /**
      * 服务
-     * varchar
+     * varchar(255)
      */
     @Column(name = "`svc_name`")
     private String svcName;
 
     /**
      * 事件类型
-     * varchar(100)
+     * varchar(255)
      */
     @Column(name = "`event_type`")
     private String eventType;
 
     /**
      * 事件数据
-     * varchar(1000)
+     * text
      */
     @Column(name = "`data`")
     private String data;
 
     /**
      * 事件数据类型
-     * varchar(200)
+     * varchar(255)
      */
     @Column(name = "`data_type`")
     private String dataType;
+
+    /**
+     * 异常信息
+     * text
+     */
+    @Column(name = "`exception`")
+    private String exception;
 
     /**
      * 创建时间
@@ -306,7 +333,11 @@ public class Event {
         /**
          * 用完重试次数
          */
-        FAILED(-4, "failed"),
+        EXHAUSTED(-4, "exhausted"),
+        /**
+         * 发送异常
+         */
+        EXCEPTION(-9, "exception"),
         /**
          * 已发送
          */

@@ -56,16 +56,16 @@ public class JdbcLocker implements Locker {
             }
             String sql = String.format("select count(*) from `%s` where `%s` = ? ", table, fieldName);
             if (showSql) {
-                log.info(sql);
-                log.info(String.format("binding parameters: [%s]", key));
+                log.debug(sql);
+                log.debug(String.format("binding parameters: [%s]", key));
             }
             Integer exists = jdbcTemplate.queryForObject(sql, Integer.class, key);
             if (exists == null || exists == 0) {
                 try {
                     sql = String.format("insert into `%s`(`%s`, `%s`, `%s`, `%s`) values(?, ?, ?, ?)", table, fieldName, fieldPwd, fieldLockAt, fieldUnlockAt);
                     if (showSql) {
-                        log.info(sql);
-                        log.info(String.format("binding parameters: [%s, %s, %s, %s]", key, pwd, now, now.plusSeconds(expireDuration.getSeconds())));
+                        log.debug(sql);
+                        log.debug(String.format("binding parameters: [%s, %s, %s, %s]", key, pwd, now, now.plusSeconds(expireDuration.getSeconds())));
                     }
                     jdbcTemplate.update(sql, key, pwd, now, now.plusSeconds(expireDuration.getSeconds()));
                     lockerExpireMap.put(key, now.plusSeconds(expireDuration.getSeconds()));
@@ -78,8 +78,8 @@ public class JdbcLocker implements Locker {
                 try {
                     sql = String.format("update `%s` set `%s` = ?, `%s` = ?, `%s` = ? where `%s` = ? and (`%s` < ? or `%s` = ?)", table, fieldPwd, fieldLockAt, fieldUnlockAt, fieldName, fieldUnlockAt, fieldPwd);
                     if (showSql) {
-                        log.info(sql);
-                        log.info(String.format("binding parameters: [%s, %s, %s, %s, %s, %s]", pwd, now, now.plusSeconds(expireDuration.getSeconds()), key, now, pwd));
+                        log.debug(sql);
+                        log.debug(String.format("binding parameters: [%s, %s, %s, %s, %s, %s]", pwd, now, now.plusSeconds(expireDuration.getSeconds()), key, now, pwd));
                     }
                     int success = jdbcTemplate.update(sql, pwd, now, now.plusSeconds(expireDuration.getSeconds()), key, now, pwd);
                     return success > 0;
@@ -103,8 +103,8 @@ public class JdbcLocker implements Locker {
         }
         String sql = String.format("select count(*) from `%s` where `%s` = ? and `%s` = ?", table, fieldName, fieldPwd);
         if (showSql) {
-            log.info(sql);
-            log.info(String.format("binding parameters: [%s, %s]", key, pwd));
+            log.debug(sql);
+            log.debug(String.format("binding parameters: [%s, %s]", key, pwd));
         }
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, key, pwd);
         if (count == null || count == 0) {
@@ -112,8 +112,8 @@ public class JdbcLocker implements Locker {
         }
         sql = String.format("update `%s` set `%s` = ? where `%s` = ? and `%s` = ? and `%s` > ?", table, fieldUnlockAt, fieldName, fieldPwd, fieldUnlockAt);
         if (showSql) {
-            log.info(sql);
-            log.info(String.format("binding parameters: [%s, %s, %s, %s]", now, key, pwd, now));
+            log.debug(sql);
+            log.debug(String.format("binding parameters: [%s, %s, %s, %s]", now, key, pwd, now));
         }
         jdbcTemplate.update(sql, now, key, pwd, now);
         return true;

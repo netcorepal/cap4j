@@ -66,7 +66,7 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
             } else {
                 // 进程内消息
                 rocketMqDomainEventSubscriberManager.trigger(event.getPayload());
-                event.confirmDelivered(LocalDateTime.now());
+                event.confirmedDelivery(LocalDateTime.now());
                 eventRecordRepository.save(event);
             }
         } catch (Exception ex) {
@@ -86,13 +86,13 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
 
         @Override
         public void onSuccess(SendResult sendResult) {
-            // 修改事件消费状态
             if (event == null) {
                 throw new DomainException("集成事件为NULL");
             }
             try {
                 LocalDateTime now = LocalDateTime.now();
-                event.confirmDelivered(now);
+                // 修改事件消费状态
+                event.confirmedDelivery(now);
                 eventRecordRepository.save(event);
                 log.info(String.format("集成事件发送成功, destination=%s, body=%s", event.getEventTopic(), JSON.toJSONString(event.getPayload())));
             } catch (Exception ex) {
@@ -106,6 +106,10 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
                 throw new DomainException("集成事件为NULL");
             }
             try {
+                LocalDateTime now = LocalDateTime.now();
+                // 修改事件异常状态
+                event.occuredException(now, throwable);
+                eventRecordRepository.save(event);
                 log.error(String.format("集成事件发送失败, destination=%s, body=%s", event.getEventTopic(), JSON.toJSONString(event.getPayload())), throwable);
             } catch (Exception ex) {
                 log.error("本地事件库持久化失败", ex);

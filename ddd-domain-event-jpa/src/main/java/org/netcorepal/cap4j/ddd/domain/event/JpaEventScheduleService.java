@@ -129,7 +129,7 @@ public class JpaEventScheduleService {
                                 message = domainEventMessageInterceptor.beforePublish(message);
                             }
                             final Message finalMessage = message;
-                            executor.submit(() ->{
+                            executor.submit(() -> {
                                 domainEventPublisher.publish(finalMessage, eventRecordImpl);
                             });
                         }
@@ -176,7 +176,7 @@ public class JpaEventScheduleService {
                                     cb.or(
                                             cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.CANCEL),
                                             cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.EXPIRED),
-                                            cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.FAILED),
+                                            cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.EXHAUSTED),
                                             cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.DELIVERED)
                                     ),
                                     cb.lessThan(root.get(Event.F_EXPIRE_AT), DateUtils.addDays(now, expireDays)),
@@ -187,22 +187,11 @@ public class JpaEventScheduleService {
                 if (!events.hasContent()) {
                     break;
                 }
-                List<ArchivedEvent> archivedEvents = events.stream().map(e -> ArchivedEvent.builder()
-                        .id(e.getId())
-                        .eventUuid(e.getEventUuid())
-                        .svcName(e.getSvcName())
-                        .eventType(e.getEventType())
-                        .data(e.getData())
-                        .dataType(e.getDataType())
-                        .createAt(e.getCreateAt())
-                        .expireAt(e.getExpireAt())
-                        .eventState(e.getEventState())
-                        .tryTimes(e.getTryTimes())
-                        .triedTimes(e.getTriedTimes())
-                        .lastTryTime(e.getLastTryTime())
-                        .nextTryTime(e.getNextTryTime())
-                        .version(e.getVersion())
-                        .build()
+                List<ArchivedEvent> archivedEvents = events.stream().map(e -> {
+                            ArchivedEvent ae = new ArchivedEvent();
+                            ae.archiveFrom(e);
+                            return ae;
+                        }
                 ).collect(Collectors.toList());
                 migrate(events.toList(), archivedEvents);
             } catch (Exception ex) {

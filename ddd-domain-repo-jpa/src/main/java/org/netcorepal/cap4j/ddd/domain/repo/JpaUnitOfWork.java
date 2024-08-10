@@ -489,11 +489,11 @@ public class JpaUnitOfWork implements UnitOfWork {
     /**
      * 默认事件过期时间（分钟）
      */
-    private static final int DEFAULT_EVENT_EXPIRE_MINUTES = 15;
+    private static final int DEFAULT_EVENT_EXPIRE_MINUTES = 30;
     /**
      * 默认事件重试次数
      */
-    private static final int DEFAULT_EVENT_RETRY_TIMES = 13;
+    private static final int DEFAULT_EVENT_RETRY_TIMES = 16;
 
     protected void publishTransactionEvent() {
         List<Object> eventPayloads = domainEventSupervisor.getEvents();

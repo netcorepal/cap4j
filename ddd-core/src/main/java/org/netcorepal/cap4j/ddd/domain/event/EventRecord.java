@@ -46,8 +46,23 @@ public interface EventRecord {
     boolean beginDelivery(LocalDateTime now);
 
     /**
+     * 取消发送
+     * @param now
+     * @return
+     */
+    boolean cancelDelivery(LocalDateTime now);
+
+    /**
+     * 发生异常
+     * @param now
+     * @param throwable
+     * @return
+     */
+    void occuredException(LocalDateTime now, Throwable throwable);
+
+    /**
      * 确认时间已发出
      * @param now
      */
-    void confirmDelivered(LocalDateTime now);
+    void confirmedDelivery(LocalDateTime now);
 }

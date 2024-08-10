@@ -31,6 +31,24 @@ import java.util.Date;
 @Getter
 @Slf4j
 public class ArchivedEvent {
+    public void archiveFrom(Event event) {
+        this.id = event.getId();
+        this.eventUuid = event.getEventUuid();
+        this.svcName = event.getSvcName();
+        this.eventType = event.getEventType();
+        this.data = event.getData();
+        this.dataType = event.getDataType();
+        this.exception =event.getException();
+        this.createAt = event.getCreateAt();
+        this.expireAt = event.getExpireAt();
+        this.eventState = event.getEventState();
+        this.tryTimes = event.getTryTimes();
+        this.triedTimes = event.getTriedTimes();
+        this.lastTryTime = event.getLastTryTime();
+        this.nextTryTime = event.getNextTryTime();
+        this.version = event.getVersion();
+    }
+
     @Override
     public String toString() {
         return JSON.toJSONString(this);
@@ -50,31 +68,38 @@ public class ArchivedEvent {
 
     /**
      * 服务
-     * varchar
+     * varchar(255)
      */
     @Column(name = "`svc_name`")
     private String svcName;
 
     /**
      * 事件类型
-     * varchar(100)
+     * varchar(255)
      */
     @Column(name = "`event_type`")
     private String eventType;
 
     /**
      * 事件数据
-     * varchar(1000)
+     * text
      */
     @Column(name = "`data`")
     private String data;
 
     /**
      * 事件数据类型
-     * varchar(200)
+     * varchar(255)
      */
     @Column(name = "`data_type`")
     private String dataType;
+
+    /**
+     * 异常信息
+     * text
+     */
+    @Column(name = "`exception`")
+    private String exception;
 
     /**
      * 创建时间

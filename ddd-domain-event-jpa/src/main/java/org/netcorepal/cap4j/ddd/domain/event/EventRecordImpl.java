@@ -60,7 +60,17 @@ public class EventRecordImpl implements EventRecord {
     }
 
     @Override
-    public void confirmDelivered(LocalDateTime now) {
-        event.confirmDelivered(now);
+    public boolean cancelDelivery(LocalDateTime now) {
+        return event.cancelDelivery(now);
+    }
+
+    @Override
+    public void occuredException(LocalDateTime now, Throwable throwable) {
+        event.occuredException(now, throwable);
+    }
+
+    @Override
+    public void confirmedDelivery(LocalDateTime now) {
+        event.confirmedDelivery(now);
     }
 }
