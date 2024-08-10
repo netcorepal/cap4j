@@ -83,17 +83,24 @@ public class RocketMqDomainEventSubscriberAdapter {
                     mqPushConsumers.add(mqPushConsumer);
                 }
             } catch (MQClientException e) {
-                log.error("领域事件消息监听启动失败", e);
+                log.error("集成事件消息监听启动失败", e);
             }
         });
     }
 
     public void shutdown() {
+        log.info("集成事件消息监听退出...");
         if (mqPushConsumers == null || mqPushConsumers.isEmpty()) {
             return;
         }
         mqPushConsumers.forEach(mqPushConsumer -> {
-            mqPushConsumer.shutdown();
+            try {
+                if (mqPushConsumer != null) {
+                    mqPushConsumer.shutdown();
+                }
+            } catch (Exception ex){
+                log.error("集成事件消息监听退出异常", ex);
+            }
         });
     }
 
@@ -137,14 +144,14 @@ public class RocketMqDomainEventSubscriberAdapter {
                 }
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             } catch (Exception ex) {
-                log.error("领域事件消息消费失败", ex);
+                log.error("集成事件消息消费失败", ex);
                 return ConsumeConcurrentlyStatus.RECONSUME_LATER;
             }
         });
         try {
             mqPushConsumer.subscribe(topic, tag);
         } catch (MQClientException e) {
-            log.error("领域事件消息监听订阅失败", e);
+            log.error("集成事件消息监听订阅失败", e);
         }
         return mqPushConsumer;
     }
