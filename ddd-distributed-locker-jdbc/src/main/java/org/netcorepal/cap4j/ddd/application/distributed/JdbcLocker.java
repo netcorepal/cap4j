@@ -2,15 +2,12 @@ package org.netcorepal.cap4j.ddd.application.distributed;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
 /**
  * 基于Jdbc实现的锁
@@ -22,22 +19,16 @@ import static org.netcorepal.cap4j.ddd.share.Constants.*;
 @Slf4j
 public class JdbcLocker implements Locker {
     private final JdbcTemplate jdbcTemplate;
+    private final String table;
+    private final String fieldName;
+    private final String fieldPwd;
+    private final String fieldLockAt;
+    private final String fieldUnlockAt;
+
+    private final Boolean showSql;
     private ConcurrentHashMap<String, LocalDateTime> lockerExpireMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, String> lockerPwdMap = new ConcurrentHashMap<>();
 
-    @Value(CONFIG_KEY_4_DISTRIBUTED_LOCKER_JDBC_TABLE)
-    private String table = "__locker";
-    @Value(CONFIG_KEY_4_DISTRIBUTED_LOCKER_JDBC_FIELD_NAME)
-    private String fieldName = "name";
-    @Value(CONFIG_KEY_4_DISTRIBUTED_LOCKER_JDBC_FIELD_PWD)
-    private String fieldPwd = "pwd";
-    @Value(CONFIG_KEY_4_DISTRIBUTED_LOCKER_JDBC_FIELD_LOCKAT)
-    private String fieldLockAt = "lock_at";
-    @Value(CONFIG_KEY_4_DISTRIBUTED_LOCKER_JDBC_FIELD_UNLOCKAT)
-    private String fieldUnlockAt = "unlock_at";
-
-    @Value("${spring.jpa.show-sql:${spring.jpa.showSql:false}}")
-    private Boolean showSql = false;
 
     @Override
     public boolean acquire(String key, String pwd, Duration expireDuration) {

@@ -3,6 +3,8 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.domain.event.*;
+import org.netcorepal.cap4j.ddd.domain.event.configure.EventScheduleProperties;
+import org.netcorepal.cap4j.ddd.domain.repo.configure.JpaUnitOfWorkProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -48,14 +50,10 @@ public class JpaRepositoryAutoConfiguration {
             JpaPersistListenerManager jpaPersistListenerManager,
             @Autowired(required = false)
             DomainEventMessageInterceptor domainEventMessageInterceptor,
+            JpaUnitOfWorkProperties jpaUnitOfWorkProperties,
+            EventScheduleProperties eventScheduleProperties,
             @Value(CONFIG_KEY_4_SVC_NAME)
-            String svcName,
-            @Value(CONFIG_KEY_4_DOMAIN_JPAUOW_ENTITYGETIDMETHOD)
-            String entityGetIdMethod,
-            @Value(CONFIG_KEY_4_DOMAIN_JPAUOW_RETRIEVECOUNTWARNTHRESHOLD)
-            int retrieveCountWarnThreshold,
-            @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_INTERVALSECONDS)
-            int eventDeliveryCompensationIntervalSeconds
+            String svcName
     ) {
         JpaUnitOfWork unitOfWork = new JpaUnitOfWork(
                 applicationEventPublisher,
@@ -67,9 +65,9 @@ public class JpaRepositoryAutoConfiguration {
                 jpaPersistListenerManager,
                 domainEventMessageInterceptor,
                 svcName,
-                entityGetIdMethod,
-                retrieveCountWarnThreshold,
-                eventDeliveryCompensationIntervalSeconds);
+                jpaUnitOfWorkProperties.getEntityGetIdMethod(),
+                jpaUnitOfWorkProperties.getRetrieveCountWarnThreshold(),
+                eventScheduleProperties.getCompenseIntervalSeconds());
         return unitOfWork;
     }
 

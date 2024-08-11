@@ -32,6 +32,7 @@
         <module>ddd-domain-event-jpa</module>
         <module>ddd-domain-repo-jpa</module>
         <module>ddd-distributed-locker-jdbc</module>
+        <module>ddd-distributed-idgenerator-snowflake</module>
         <module>starter/ddd-starter-jpa-rocketmq</module>
     </modules>
 

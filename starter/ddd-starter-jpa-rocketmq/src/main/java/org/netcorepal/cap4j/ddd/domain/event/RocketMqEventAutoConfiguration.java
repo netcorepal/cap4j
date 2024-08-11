@@ -3,6 +3,8 @@ package org.netcorepal.cap4j.ddd.domain.event;
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.application.distributed.Locker;
+import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
+import org.netcorepal.cap4j.ddd.domain.event.configure.EventScheduleProperties;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEventJpaRepository;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.EventRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,8 @@ public class RocketMqEventAutoConfiguration {
     private final JdbcTemplate jdbcTemplate;
     private final Environment environment;
 
+    private final EventScheduleProperties eventScheduleProperties;
+
     @Bean
     @ConditionalOnMissingBean(EventRecordRepository.class)
     public JpaEventRecordRepository jpaEventRecordRepository() {
@@ -63,12 +67,12 @@ public class RocketMqEventAutoConfiguration {
     public RocketMqDomainEventPublisher rocketMqDomainEventPublisher(
             RocketMqDomainEventSubscriberManager rocketMqDomainEventSubscriberManager,
             JpaEventRecordRepository jpaEventRecordRepository,
-            @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_THREADPOOLSIIZE) int threadPoolsize) {
+            EventProperties eventProperties) {
         RocketMqDomainEventPublisher rocketMqDomainEventPublisher = new RocketMqDomainEventPublisher(
                 rocketMqDomainEventSubscriberManager,
                 rocketMQTemplate,
                 jpaEventRecordRepository,
-                threadPoolsize,
+                eventProperties.getPublisherThreadPoolSize(),
                 environment);
         return rocketMqDomainEventPublisher;
     }
@@ -80,8 +84,30 @@ public class RocketMqEventAutoConfiguration {
     }
 
     @Bean
-    public RocketMqDomainEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter(RocketMqDomainEventSubscriberManager rocketMqDomainEventSubscriberManager) {
-        RocketMqDomainEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter = new RocketMqDomainEventSubscriberAdapter(rocketMqDomainEventSubscriberManager);
+    public RocketMqDomainEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter(
+            RocketMqDomainEventSubscriberManager rocketMqDomainEventSubscriberManager,
+            @Autowired(required = false)
+            DomainEventMessageInterceptor domainEventMessageInterceptor,
+            @Autowired(required = false)
+            MQConsumerConfigure mqConsumerConfigure,
+            EventProperties eventProperties,
+            @Value(CONFIG_KEY_4_SVC_NAME)
+            String applicationName,
+            @Value("${rocketmq.name-server:}")
+            String defaultNameSrv,
+            @Value("${rocketmq.msg-charset:UTF-8}")
+            String msgCharset
+    ) {
+        RocketMqDomainEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter = new RocketMqDomainEventSubscriberAdapter(
+                rocketMqDomainEventSubscriberManager,
+                environment,
+                domainEventMessageInterceptor,
+                mqConsumerConfigure,
+                applicationName,
+                defaultNameSrv,
+                msgCharset,
+                eventProperties.getSubscriberScanPackage()
+        );
         return rocketMqDomainEventSubscriberAdapter;
     }
 
@@ -96,9 +122,7 @@ public class RocketMqEventAutoConfiguration {
             @Value("event_compense[" + CONFIG_KEY_4_SVC_NAME + "]")
             String compensationLockerKey,
             @Value("event_archive[" + CONFIG_KEY_4_SVC_NAME + "]")
-            String archiveLockerKey,
-            @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ADDPARTITION_ENABLE)
-            boolean enableAddPartition) {
+            String archiveLockerKey) {
         scheduleService = new JpaEventScheduleService(
                 locker,
                 domainEventPublisher,
@@ -109,41 +133,35 @@ public class RocketMqEventAutoConfiguration {
                 svcName,
                 compensationLockerKey,
                 archiveLockerKey,
-                enableAddPartition,
+                eventScheduleProperties.isAddPartitionEnable(),
                 jdbcTemplate);
         return scheduleService;
     }
 
     private JpaEventScheduleService scheduleService = null;
-    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_BATCHSIZE)
-    private int batchSize;
-    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_MAXCONCURRENT)
-    private int maxConcurrency;
-    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_INTERVALSECONDS)
-    private int intervalSeconds;
-    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_MAXLOCKSECONDS)
-    private int maxLockSeconds;
 
-    @Scheduled(cron = CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_CRON)
+    @Scheduled(cron = "${cap4j.ddd.domain.event.schedule.compenseCron:0 */1 * * * ?}")
     public void compensation() {
         if (scheduleService == null) return;
-        scheduleService.compense(batchSize, maxConcurrency, Duration.ofSeconds(intervalSeconds), Duration.ofSeconds(maxLockSeconds));
+        scheduleService.compense(
+                eventScheduleProperties.getCompenseBatchSize(),
+                eventScheduleProperties.getCompenseMaxConcurrency(),
+                Duration.ofSeconds(eventScheduleProperties.getCompenseIntervalSeconds()),
+                Duration.ofSeconds(eventScheduleProperties.getCompenseMaxLockSeconds())
+        );
     }
 
-    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ARCHIVE_BATCHSIZE)
-    private int archiveBatchSize;
-    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ARCHIVE_EXPIREDAYS)
-    private int archiveExpireDays;
-    @Value(CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ARCHIVE_MAXLOCKSECONDS)
-    private int archiveMaxLockSeconds;
-
-    @Scheduled(cron = CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ARCHIVE_CRON)
+    @Scheduled(cron = "${cap4j.ddd.domain.event.schedule.archiveCron:0 0 2 * * ?}")
     public void archive() {
         if (scheduleService == null) return;
-        scheduleService.archive(archiveExpireDays, archiveBatchSize, Duration.ofSeconds(archiveMaxLockSeconds));
+        scheduleService.archive(
+                eventScheduleProperties.getArchiveExpireDays(),
+                eventScheduleProperties.getArchiveBatchSize(),
+                Duration.ofSeconds(eventScheduleProperties.getArchiveMaxLockSeconds())
+        );
     }
 
-    @Scheduled(cron = CONFIG_KEY_4_DISTRIBUTED_EVENT_SCHEDULE_ADDPARTITION_CRON)
+    @Scheduled(cron = "${cap4j.ddd.domain.event.schedule.addPartitionCron:0 0 0 * * ?}")
     public void addTablePartition() {
         scheduleService.addPartition();
     }

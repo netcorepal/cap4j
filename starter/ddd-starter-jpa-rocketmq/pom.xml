@@ -20,6 +20,11 @@
     <dependencies>
         <dependency>
             <groupId>io.github.netcorepal</groupId>
+            <artifactId>ddd-distributed-idgenerator-snowflake</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-distributed-locker-jdbc</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
@@ -63,6 +68,12 @@
             <artifactId>junit</artifactId>
             <version>3.8.1</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ddd</groupId>
+            <artifactId>ddd-distributed-idgenerator-snowflake</artifactId>
+            <version>1.0.0-alpha1</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>
