@@ -16,4 +16,5 @@ import org.springframework.context.annotation.Configuration;
 public class SnowflakeProperties {
     Long workerId = null;
     Long datacenterId = null;
+    int maxPongContinuousErrorCount = 10;
 }

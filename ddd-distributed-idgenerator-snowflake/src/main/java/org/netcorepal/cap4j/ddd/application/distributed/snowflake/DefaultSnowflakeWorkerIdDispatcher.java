@@ -32,4 +32,9 @@ public class DefaultSnowflakeWorkerIdDispatcher implements SnowflakeWorkerIdDisp
     public boolean pong() {
         return true;
     }
+
+    @Override
+    public void remind(){
+
+    }
 }
