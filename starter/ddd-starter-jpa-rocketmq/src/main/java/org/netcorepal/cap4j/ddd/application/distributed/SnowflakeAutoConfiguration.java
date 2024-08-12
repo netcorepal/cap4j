@@ -7,6 +7,7 @@ import org.netcorepal.cap4j.ddd.application.distributed.snowflake.DefaultSnowfla
 import org.netcorepal.cap4j.ddd.application.distributed.snowflake.SnowflakeIdGenerator;
 import org.netcorepal.cap4j.ddd.application.distributed.snowflake.SnowflakeWorkerIdDispatcher;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,12 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(
+        prefix = "cap4j.ddd.distributed.idgenerator.snowflake",
+        name = "enable",
+        havingValue = "true",
+        matchIfMissing = true
+)
 public class SnowflakeAutoConfiguration {
     private final SnowflakeProperties properties;
 

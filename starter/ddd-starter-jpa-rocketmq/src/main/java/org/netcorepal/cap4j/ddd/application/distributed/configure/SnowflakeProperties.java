@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties("cap4j.ddd.distributed.idgenerator.snowflake")
 public class SnowflakeProperties {
+    boolean enable = true;
     Long workerId = null;
     Long datacenterId = null;
     int maxPongContinuousErrorCount = 10;
