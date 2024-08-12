@@ -65,8 +65,13 @@ public class EventRecordImpl implements EventRecord {
     }
 
     @Override
-    public boolean isDelivering() {
-        return event.isDelivering();
+    public boolean isTrying() {
+        return event.isTrying();
+    }
+
+    @Override
+    public boolean isInvalid() {
+        return event.isInvalid();
     }
 
     @Override

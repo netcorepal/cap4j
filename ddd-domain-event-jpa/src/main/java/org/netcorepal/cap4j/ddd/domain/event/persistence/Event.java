@@ -88,8 +88,16 @@ public class Event {
         return this.payload;
     }
 
-    public boolean isDelivering() {
-        return EventState.DELIVERING.equals(this.eventState);
+    public boolean isTrying() {
+        return EventState.INIT.equals(this.eventState)
+                || EventState.DELIVERING.equals(this.eventState)
+                || EventState.EXCEPTION.equals(this.eventState);
+    }
+
+    public boolean isInvalid() {
+        return EventState.CANCEL.equals(this.eventState)
+                || EventState.EXPIRED.equals(this.eventState)
+                || EventState.EXHAUSTED.equals(this.eventState);
     }
 
     public boolean isDelivered() {
@@ -107,9 +115,8 @@ public class Event {
             this.eventState = EventState.EXPIRED;
             return false;
         }
-        // 初始状态或者确认中状态
-        if (!EventState.INIT.equals(this.eventState)
-                && !EventState.DELIVERING.equals(this.eventState)) {
+        // 初始状态或者确认中或者异常
+        if (!isTrying()) {
             return false;
         }
         // 未到下次重试时间
@@ -128,10 +135,7 @@ public class Event {
     }
 
     public boolean cancelDelivery(LocalDateTime now) {
-        if (EventState.DELIVERED.equals(this.eventState)
-                || EventState.EXHAUSTED.equals(this.eventState)
-                || EventState.EXPIRED.equals(this.eventState)
-                || EventState.CANCEL.equals(this.eventState)) {
+        if (isDelivered() || isInvalid()) {
             return false;
         }
         this.eventState = EventState.CANCEL;
@@ -139,7 +143,7 @@ public class Event {
     }
 
     public void occuredException(LocalDateTime now, Throwable ex) {
-        if(EventState.DELIVERED.equals(this.eventState)) {
+        if(isDelivered()) {
             return;
         }
         this.eventState = EventState.EXCEPTION;

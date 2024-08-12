@@ -51,10 +51,16 @@ public interface EventRecord {
     LocalDateTime getNextTryTime();
 
     /**
-     * 是否发送中
+     * 是否发送中（等待确认结果）
      * @return
      */
-    boolean isDelivering();
+    boolean isTrying();
+
+    /**
+     * 是否失效（未发送）
+     * @return
+     */
+    boolean isInvalid();
     /**
      * 是否已发送
      * @return

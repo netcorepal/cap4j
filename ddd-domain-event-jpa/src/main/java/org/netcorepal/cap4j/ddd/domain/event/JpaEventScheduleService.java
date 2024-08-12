@@ -120,7 +120,7 @@ public class JpaEventScheduleService {
 
                         int maxTry = Integer.MAX_VALUE;
                         while (eventRecordImpl.getNextTryTime().isBefore(now.plus(interval))
-                                && Event.EventState.DELIVERING.equals(eventRecordImpl.getEvent().getEventState())
+                                && eventRecordImpl.isTrying()
                         ) {
                             eventRecordImpl.beginDelivery(eventRecordImpl.getNextTryTime());
                             if (maxTry-- <= 0) {
