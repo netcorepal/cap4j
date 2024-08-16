@@ -44,7 +44,7 @@ public class SnowflakeAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(SnowflakeWorkerIdDispatcher.class)
     public DefaultSnowflakeWorkerIdDispatcher defaultSnowflakeWorkerIdDispatcher(SnowflakeProperties properties) {
-        log.warn("默认调度器需通过手工配置完成WorkerId、DatacenterId分发，有重复分配风险！！！请根据项目实际情况自行实现SnowflakeWorkerIdDispatcher。");
+        log.warn("注意！！！默认调度器需通过手工配置完成WorkerId、DatacenterId分发，有重复分配风险，请根据项目实际情况自行实现SnowflakeWorkerIdDispatcher。");
         DefaultSnowflakeWorkerIdDispatcher dispatcher = new DefaultSnowflakeWorkerIdDispatcher(
                 properties.getWorkerId() == null ? 0 : properties.getWorkerId().longValue(),
                 properties.getDatacenterId() == null ? 0 : properties.getDatacenterId().longValue()
