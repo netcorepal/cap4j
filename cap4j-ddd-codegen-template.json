@@ -101,7 +101,21 @@
                           "children": [
                             {
                               "type": "dir",
-                              "name": "_share"
+                              "name": "_share",
+                              "children": [
+                                {
+                                  "type": "dir",
+                                  "name": "configure",
+                                  "children": [
+                                    {
+                                      "type": "file",
+                                      "name": "MyDomainEventMessageInterceptor.java",
+                                      "format": "raw",
+                                      "data": "package ${basePackage}.adapter.domain._share.configure;\n\nimport org.netcorepal.cap4j.ddd.domain.event.DomainEventMessageInterceptor;\nimport org.springframework.messaging.Message;\nimport org.springframework.stereotype.Service;\n\n/**\n * 领域事件消息拦截器\n *\n * @author binking338\n */\n@Service\npublic class MyDomainEventMessageInterceptor implements DomainEventMessageInterceptor {\n    @Override\n    public Message beforePublish(Message message) {\n        return message;\n    }\n\n    @Override\n    public Message beforeSubscribe(Message message) {\n        return message;\n    }\n}\n"
+                                    }
+                                  ]
+                                }
+                              ]
                             },
                             {
                               "type": "dir",
@@ -257,18 +271,6 @@
                             },
                             {
                               "type": "dir",
-                              "name": "configure",
-                              "children": [
-                                {
-                                  "type": "file",
-                                  "name": "MyDomainEventMessageInterceptor.java",
-                                  "format": "raw",
-                                  "data": "package ${basePackage}.application._share.configure;\n\nimport org.netcorepal.cap4j.ddd.domain.event.DomainEventMessageInterceptor;\nimport org.springframework.messaging.Message;\nimport org.springframework.stereotype.Service;\n\n/**\n * 领域事件消息拦截器\n *\n * @author binking338\n */\n@Service\npublic class MyDomainEventMessageInterceptor implements DomainEventMessageInterceptor {\n    @Override\n    public Message beforePublish(Message message) {\n        return message;\n    }\n\n    @Override\n    public Message beforeSubscribe(Message message) {\n        return message;\n    }\n}\n"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "dir",
                               "name": "enums"
                             },
                             {
@@ -318,7 +320,8 @@
                   ]
                 }
               ]
-            },{
+            },
+            {
               "type": "dir",
               "name": "resources",
               "children": [
@@ -343,14 +346,15 @@
               ]
             }
           ]
-        },{
+        },
+        {
           "type": "dir",
           "name": "test",
-          "children":[
+          "children": [
             {
               "type": "dir",
               "name": "java",
-              "children":[
+              "children": [
                 {
                   "type": "dir",
                   "name": "${basePackage}",
@@ -376,7 +380,6 @@
       "data": "target/\n!.mvn/wrapper/maven-wrapper.jar\n!**/src/main/**/target/\n!**/src/test/**/target/\n\n### IntelliJ IDEA ###\n.idea/modules.xml\n.idea/jarRepositories.xml\n.idea/compiler.xml\n.idea/libraries/\n*.iws\n*.iml\n*.ipr\n\n### Eclipse ###\n.apt_generated\n.classpath\n.factorypath\n.project\n.settings\n.springBeans\n.sts4-cache\n\n### NetBeans ###\n/nbproject/private/\n/nbbuild/\n/dist/\n/nbdist/\n/.nb-gradle/\nbuild/\n!**/src/main/**/build/\n!**/src/test/**/build/\n\n### VS Code ###\n.vscode/\n\n### Mac OS ###\n.DS_Store"
     },
     {
-
       "type": "file",
       "name": "pom.xml",
       "format": "raw",
