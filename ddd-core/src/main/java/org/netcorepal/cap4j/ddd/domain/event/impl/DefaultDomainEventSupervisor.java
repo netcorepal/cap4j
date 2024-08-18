@@ -16,7 +16,7 @@ import java.util.Map;
  * @date 2023/8/13
  */
 public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
-    public static DomainEventSupervisor Instance = new DefaultDomainEventSupervisor();
+    public static DomainEventSupervisor instance = new DefaultDomainEventSupervisor();
     private static final ThreadLocal<List<Object>> TL_EVENT_PAYLOADS = new ThreadLocal<List<Object>>();
     private static final ThreadLocal<Map<Object, LocalDateTime>> TL_EVENT_SCHEDULE_MAP = new ThreadLocal<Map<Object, LocalDateTime>>();
     private static final List<Object> EMPTY_EVENT_PAYLOADS = Collections.emptyList();
