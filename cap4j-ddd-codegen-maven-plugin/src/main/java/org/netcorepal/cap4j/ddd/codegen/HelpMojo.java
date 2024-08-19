@@ -25,61 +25,87 @@ public class HelpMojo extends AbstractMojo {
         getLog().info("--------------------------------------------------");
         getLog().info("\n" +
                 "                <configuration>\n" +
-                "                    <!-- 数据库链接 --><connectionString>\n" +
-                "                    <![CDATA[jdbc:mysql://localhost:3306/information_schema?serverTimezone=Hongkong&useSSL=false&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull]]></connectionString>\n" +
-                "                    <!-- 数据库账户 -->\n" +
-                "                    <user>root</user>\n" +
-                "                    <!-- 数据库密码 -->\n" +
-                "                    <pwd></pwd>\n" +
-                "                    <!-- 数据库DB -->\n" +
-                "                    <schema>test</schema>\n" +
-                "                    <!-- 数据库表过滤，支持通配符，支持匹配任一过滤条件（多条件逗号\",\"或分号\";\"分割） -->\n" +
-                "                    <table>tb1_%,tb2%</table>\n" +
-                "                    <!-- 数据库表忽略，支持通配符，支持匹配任一过滤条件（多条件逗号\",\"或分号\";\"分割） -->\n" +
-                "                    <ignoreTable>tb1_%,tb2%</ignoreTable>\n" +
-                "                    <!-- 主键字段名 默认 id -->\n" +
-                "                    <idField>id</idField>\n" +
-                "                    <!-- 主键生成器 org.hibernate.id.IdentifierGenerator 默认 数据库自增 -->\n" +
-                "                    <idGenerator></idGenerator>\n" +
-                "                    <!-- 设置软删字段 -->\n" +
-                "                    <deletedField>deleted</deletedField>\n" +
-                "                    <!-- 设置乐观锁字段 -->\n" +
-                "                    <versionField>version</versionField>\n" +
-                "                    <!-- 定义只读字段，逗号\",\"或分号\";\"分割，不会通过ORM更新到数据库 -->\n" +
-                "                    <readonlyFields>create_at,update_at</readonlyFields>\n" +
-                "                    <!-- 标记忽略字段，逗号\",\"或分号\";\"分割，不会通过ORM绑定到实体 -->\n" +
-                "                    <ignoreFields></ignoreFields>\n" +
-                "                    <!-- 设置枚举【值】字段 -->\n" +
-                "                    <enumValueField>code</enumValueField>\n" +
-                "                    <!-- 设置枚举【名】字段 -->\n" +
-                "                    <enumNameField>name</enumNameField>\n" +
-                "                    <!-- 数据库字段类型 到 代码类型 映射 -->\n" +
-                "                    <!-- varchar、text、mediumtext、longtext、char、timestamp、datetime、date、time、int、bigint、smallint、bit、tinyint、float、double、decimal -->\n" +
-                "                    <typeRemapping>\n" +
-                "                        <varchar>String</varchar>\n" +
-                "                    </typeRemapping>\n" +
-                "                    <!-- 日期类型映射使用的包 java.util | java.time -->\n" +
-                "                    <datePackage4Java>java.time</datePackage4Java>\n" +
-                "                    <!-- 是否生成默认值 -->\n" +
-                "                    <generateDefault>false</generateDefault>\n" +
-                "                    <!-- 是否生成Schema -->\n" +
-                "                    <generateSchema>false</generateSchema>\n" +
-                "                    <!-- 是否生成数据库类型注释 -->\n" +
-                "                    <generateDbType>true</generateDbType>\n" +
-                "                    <!-- 关联实体加载模式 LAZY | EAGER -->\n" +
-                "                    <fetchType>LAZY</fetchType>\n" +
-                "                    <!-- 关联实体查询模式 SUBSELECT | JOIN | SELECT -->\n" +
-                "                    <fetchMode>SUBSELECT</fetchMode>\n" +
-                "                    <!-- 是否生成EntityBuilder -->\n" +
-                "                    <generateBuild>false</generateBuild>\n" +
-                "                    <!-- 是否多模块项目 -->\n" +
-                "                    <multiModule>true</multiModule>\n" +
-                "                    <!-- 实体辅助类输出包 -->\n" +
-                        "            <entityMetaInfoClassOutputPackage></entityMetaInfoClassOutputPackage>\n" +
-                "                    <!-- 实体辅助类输出模式，绝对路径或相对路径，abs|ref -->\n" +
-                "                    <entityMetaInfoClassOutputMode>abs</entityMetaInfoClassOutputMode>\n" +
-                "                    <!-- 项目包根路径 -->\n" +
+                "                    <!-- 代码模板配置文件地址 -->\n" +
+                "                    <archTemplate>/Users/wangbin/source/my/cap4j/cap4j-ddd-codegen-template.json</archTemplate>\n" +
+                "                    <!-- 基础包路径 -->\n" +
                 "                    <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>\n" +
+                "                    <!-- 是否多模块项目 -->\n" +
+                "                    <multiModule>false</multiModule>\n" +
+                "                    <!-- adapter模块名称后缀 -->\n" +
+                "                    <moduleNameSuffix4Adapter>-adapter</moduleNameSuffix4Adapter>\n" +
+                "                    <!-- domain模块名称后缀 -->\n" +
+                "                    <moduleNameSuffix4Domain>-domain</moduleNameSuffix4Domain>\n" +
+                "                    <!-- application模块名称后缀 -->\n" +
+                "                    <moduleNameSuffix4Application>-application</moduleNameSuffix4Application>\n" +
+                "                    <!-- 数据库链接地址 -->\n" +
+                "                    <connectionString>\n" +
+                "                        <![CDATA[jdbc:mysql://127.0.0.1:3306/test?serverTimezone=Asia/Shanghai&useSSL=false&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull]]>\n" +
+                "                    </connectionString>\n" +
+                "                    <!-- 数据库连接用户 -->\n" +
+                "                    <user>root</user>\n" +
+                "                    <!-- 数据库连接密码 -->\n" +
+                "                    <pwd></pwd>\n" +
+                "                    <!-- 数据库过滤 -->\n" +
+                "                    <schema>test</schema>\n" +
+                "                    <!-- 数据表过滤 -->\n" +
+                "                    <!-- 逗号','或分号';'分割，支持通配符'%' -->\n" +
+                "                    <table></table>\n" +
+                "                    <!-- 数据表忽略 -->\n" +
+                "                    <!-- 被忽略的表不生成实体 -->\n" +
+                "                    <ignoreTable></ignoreTable>\n" +
+                "                    <!-- 主键字段名 默认'id' -->\n" +
+                "                    <idField>id</idField>\n" +
+                "                    <!-- 乐观锁字段 默认'version' -->\n" +
+                "                    <versionField>version</versionField>\n" +
+                "                    <!-- 软删字段 默认'deleted' -->\n" +
+                "                    <deletedField>db_deleted</deletedField>\n" +
+                "                    <!-- 只读字段 -->\n" +
+                "                    <!-- 逗号','或分号';'分割，不会通过ORM更新到数据库 -->\n" +
+                "                    <readonlyFields>db_created_at,db_updated_at</readonlyFields>\n" +
+                "                    <!-- 忽略字段 -->\n" +
+                "                    <!-- 逗号','或分号';'分割，不会通过ORM绑定到实体 -->\n" +
+                "                    <ignoreFields></ignoreFields>\n" +
+                "                    <!-- 实体基类 -->\n" +
+                "                    <entityBaseClass></entityBaseClass>\n" +
+                "                    <!-- 实体辅助类输出模式，绝对路径或相对路径，abs | ref -->\n" +
+                "                    <entityMetaInfoClassOutputMode>abs</entityMetaInfoClassOutputMode>\n" +
+                "                    <!-- 实体辅助类输出包 -->\n" +
+                "                    <entityMetaInfoClassOutputPackage>domain._share.meta</entityMetaInfoClassOutputPackage>\n" +
+                "                    <!-- 关联实体加载模式 LAZY | EAGER -->\n" +
+                "                    <fetchMode>SUBSELECT</fetchMode>\n" +
+                "                    <!-- 关联实体加载模式 SUBSELECT | JOIN | SELECT -->\n" +
+                "                    <fetchType>EAGER</fetchType>\n" +
+                "                    <!-- 主键生成器 默认自增策略 -->\n" +
+                "                    <idGenerator></idGenerator>\n" +
+                "                    <!-- 枚举类型【值】字段名称 默认'value' -->\n" +
+                "                    <enumValueField>code</enumValueField>\n" +
+                "                    <!-- 枚举类型【名】字段名称 默认'name' -->\n" +
+                "                    <enumNameField>name</enumNameField>\n" +
+                "                    <!-- 枚举值转换不匹配时，是否抛出异常 -->\n" +
+                "                    <enumUnmatchedThrowException>true</enumUnmatchedThrowException>\n" +
+                "                    <!-- 日期类型映射使用的包，java.util | java.time，默认java.util -->\n" +
+                "                    <datePackage4Java>java.time</datePackage4Java>\n" +
+                "                    <!-- 自定义数据库字段【类型】到【代码类型】映射 -->\n" +
+                "                    <typeRemapping></typeRemapping>\n" +
+                "                    <!-- 实体字段是否生成默认值，来源数据库默认值 -->\n" +
+                "                    <generateDefault>false</generateDefault>\n" +
+                "                    <!-- 实体字段注释是否包含生成数据库字段类型 -->\n" +
+                "                    <generateDbType>true</generateDbType>\n" +
+                "                    <!-- 是否生成Schema类，辅助Jpa查询 -->\n" +
+                "                    <generateSchema>true</generateSchema>\n" +
+                "                    <!-- 是否生成EntitBuilder类 -->\n" +
+                "                    <generateBuild>false</generateBuild>\n" +
+                "                    <!-- 聚合唯一标识类型 -->\n" +
+                "                    <aggregateIdentityClass>Long</aggregateIdentityClass>\n" +
+                "                    <!-- 聚合根注解 -->\n" +
+                "                    <aggregateRootAnnotation></aggregateRootAnnotation>\n" +
+                "                    <!-- 聚合仓储基类型 -->\n" +
+                "                    <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>\n" +
+                "                    <!-- 聚合仓储自定义代码 -->\n" +
+                "                    <aggregateRepositoryCustomerCode></aggregateRepositoryCustomerCode>\n" +
+                "                    <!-- 忽略聚合根 -->\n" +
+                "                    <!-- 逗号','或分号';'分割 -->\n" +
+                "                    <ignoreAggregateRoots></ignoreAggregateRoots>\n" +
                 "                </configuration>");
         getLog().info("");
         getLog().info("");

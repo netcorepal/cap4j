@@ -15,7 +15,7 @@ import java.util.Map;
 public abstract class MyAbstractMojo extends AbstractMojo {
 
     /**
-     * 模板文件地址
+     * 代码模板配置文件地址
      *
      * @parameter expression="${archTemplate}"
      */
@@ -31,28 +31,28 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     String basePackage = "";
 
     /**
-     * 是否多项目
+     * 是否多模块项目
      *
      * @parameter expression="${multiModule}"
      */
     @Parameter(property = "multiModule", defaultValue = "false")
     Boolean multiModule = false;
     /**
-     * adapter模块名称
+     * adapter模块名称后缀
      *
      * @parameter expression="${moduleNameSuffix4Adapter}"
      */
     @Parameter(property = "moduleNameSuffix4Adapter", defaultValue = "-adapter")
     String moduleNameSuffix4Adapter = "-adapter";
     /**
-     * domain模块名称
+     * domain模块名称后缀
      *
      * @parameter expression="${moduleNameSuffix4Domain}"
      */
     @Parameter(property = "moduleNameSuffix4Domain", defaultValue = "-domain")
     String moduleNameSuffix4Domain = "-domain";
     /**
-     * application模块名称
+     * application模块名称后缀
      *
      * @parameter expression="${moduleNameSuffix4Application}"
      */
@@ -60,65 +60,81 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     String moduleNameSuffix4Application = "-application";
 
     /**
+     * 数据库连接地址
+     *
      * @parameter expression="${connectionString}"
      */
     @Parameter(property = "connectionString")
     String connectionString = "";
     /**
+     * 数据库连接用户
+     *
      * @parameter expression="${user}"
      */
     @Parameter(property = "user")
     String user = "";
     /**
+     * 数据库连接密码
+     *
      * @parameter expression="${pwd}"
      */
     @Parameter(property = "pwd")
     String pwd = "";
     /**
+     * 数据库过滤
+     *
      * @parameter expression="${schema}"
      */
     @Parameter(property = "schema")
     String schema = "";
     /**
+     * 数据表过滤
+     * 逗号','或分号';'分割，支持通配符'%'
+     *
      * @parameter expression="${table}"
      */
-    @Parameter(property = "table", defaultValue = "%")
+    @Parameter(property = "table", defaultValue = "")
     String table = "";
     /**
+     * 数据表忽略
+     * 被忽略的表不生成实体
+     *
      * @parameter expression="${ignoreTable}"
      */
     @Parameter(property = "ignoreTable", defaultValue = "")
     String ignoreTable = "";
     /**
-     * 主键字段名 默认 id
+     * 主键字段名 默认'id'
      *
      * @parameter expression="${idField}"
      */
     @Parameter(property = "idField", defaultValue = "id")
     String idField = "id";
     /**
-     * 乐观锁字段
+     * 乐观锁字段 默认'version'
      *
      * @parameter expression="${versionField}"
      */
     @Parameter(property = "versionField", defaultValue = "version")
     String versionField = "version";
     /**
-     * 软删字段
+     * 软删字段 默认'deleted'
      *
      * @parameter expression="${deletedField}"
      */
     @Parameter(property = "deletedField", defaultValue = "deleted")
     String deletedField = "deleted";
     /**
-     * 标记只读字段，逗号","或分号";"分割，不会通过ORM更新到数据库
+     * 只读字段
+     * 逗号','或分号';'分割，不会通过ORM更新到数据库
      *
      * @parameter expression="${readonlyFields}"
      */
     @Parameter(property = "readonlyFields", defaultValue = "")
     String readonlyFields = "";
     /**
-     * 标记忽略字段，逗号","或分号";"分割，不会通过ORM绑定到实体
+     * 忽略字段
+     * 逗号','或分号';'分割，不会通过ORM绑定到实体
      *
      * @parameter expression="${ignoreFields}"
      */
@@ -126,19 +142,12 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     String ignoreFields = "";
 
     /**
-     * 实体基础类
+     * 实体基类
      *
      * @parameter expression="${entityBaseClass}"
      */
     @Parameter(property = "entityBaseClass", defaultValue = "")
     String entityBaseClass = "";
-    /**
-     * 实体辅助类输出包
-     *
-     * @parameter expression="${entityMetaInfoClassOutputPackage}"
-     */
-    @Parameter(property = "entityMetaInfoClassOutputPackage", defaultValue = "domain._share.meta")
-    String entityMetaInfoClassOutputPackage = "domain._share.meta";
     /**
      * 实体辅助类输出模式，绝对路径或相对路径，abs|ref
      *
@@ -146,14 +155,14 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "entityMetaInfoClassOutputMode", defaultValue = "")
     String entityMetaInfoClassOutputMode = "abs";
-
     /**
-     * 主键生成器 默认自增策略
+     * 实体辅助类输出包
      *
-     * @parameter expression="${idGenerator}"
+     * @parameter expression="${entityMetaInfoClassOutputPackage}"
      */
-    @Parameter(property = "idGenerator", defaultValue = "")
-    String idGenerator = "";
+    @Parameter(property = "entityMetaInfoClassOutputPackage", defaultValue = "domain._share.meta")
+    String entityMetaInfoClassOutputPackage = "domain._share.meta";
+
     /**
      * 关联实体加载模式 LAZY | EAGER
      *
@@ -169,21 +178,28 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     @Parameter(property = "fetchMode", defaultValue = "SUBSELECT")
     String fetchMode = "SUBSELECT";
     /**
-     * 枚举【值】字段配置
+     * 主键生成器 默认自增策略
+     *
+     * @parameter expression="${idGenerator}"
+     */
+    @Parameter(property = "idGenerator", defaultValue = "")
+    String idGenerator = "";
+    /**
+     * 枚举类型【值】字段名称
      *
      * @parameter expression="${enumValueField}"
      */
     @Parameter(property = "enumValueField", defaultValue = "value")
     String enumValueField = "value";
     /**
-     * 枚举【名】字段配置
+     * 枚举类型【名】字段名称
      *
      * @parameter expression="${enumNameField}"
      */
     @Parameter(property = "enumNameField", defaultValue = "name")
     String enumNameField = "name";
     /**
-     * 枚举不匹配时，是否抛出异常
+     * 枚举值转换不匹配时，是否抛出异常
      *
      * @parameter expression="${enumUnmatchedThrowException}"
      */
@@ -191,15 +207,14 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     Boolean enumUnmatchedThrowException = true;
 
     /**
-     * 日期类型映射使用的包 默认java.util
-     * java.util | java.time
+     * 日期类型映射使用的包，java.util | java.time，默认java.util
      *
      * @parameter expression="${datePackage}"
      */
     @Parameter(property = "datePackage4Java", defaultValue = "java.util")
     String datePackage4Java = "java.util";
     /**
-     * 数据库字段类型 到 代码类型 映射
+     * 自定义数据库字段【类型】到【代码类型】映射
      *
      * @parameter expression="${typeRemapping}"
      */
@@ -207,21 +222,21 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     Map<String, String> typeRemapping = new HashMap<>();
 
     /**
-     * 生成默认值，来源数据库默认值
+     * 实体字段是否生成默认值，来源数据库默认值
      *
      * @parameter expression="${generateDefault}"
      */
     @Parameter(property = "generateDefault", defaultValue = "false")
     Boolean generateDefault = false;
     /**
-     * 生成数据库字段类型到字段注释中
+     * 实体字段注释是否包含生成数据库字段类型
      *
      * @parameter expression="${generateDbType}"
      */
     @Parameter(property = "generateDbType", defaultValue = "false")
     Boolean generateDbType = false;
     /**
-     * 生成Schema类
+     * 是否生成Schema类，辅助Jpa查询
      *
      * @parameter expression="${generateSchema}"
      */
@@ -229,12 +244,20 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     Boolean generateSchema = false;
 
     /**
-     * 生成EntitBuilder类
+     * 是否生成EntitBuilder类
      *
      * @parameter expression="${generateBuild}"
      */
     @Parameter(property = "generateBuild", defaultValue = "false")
     Boolean generateBuild = false;
+
+    /**
+     * 聚合唯一标识类型
+     *
+     * @parameter expression="${aggregateIdentityClass}"
+     */
+    @Parameter(property = "aggregateIdentityClass", defaultValue = "Long")
+    String aggregateIdentityClass = "Long";
 
     /**
      * 聚合根注解
@@ -253,14 +276,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     String aggregateRepositoryBaseClass = "";
 
     /**
-     * 聚合唯一标识类型
-     *
-     * @parameter expression="${aggregateIdentityClass}"
-     */
-    @Parameter(property = "aggregateIdentityClass", defaultValue = "Long")
-    String aggregateIdentityClass = "Long";
-
-    /**
      * 聚合仓储自定义代码
      *
      * @parameter expression="${aggregateRepositoryCustomerCode}"
@@ -269,7 +284,8 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     String aggregateRepositoryCustomerCode = "";
 
     /**
-     * 忽略聚合根，逗号分割
+     * 忽略聚合根
+     * 逗号','或分号';'分割
      *
      * @parameter expression="${ignoreAggregateRoots}"
      */

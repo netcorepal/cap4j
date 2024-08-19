@@ -90,7 +90,7 @@ public class GenRepositoryMojo extends MyAbstractMojo {
                     this.getLog().info("发现聚合根类型: " + SourceFileUtils.resolveClassName(file.getAbsolutePath()));
 
                     String simpleClassName = SourceFileUtils.resolveSimpleClassName(file.getAbsolutePath());
-                    if (Arrays.stream(ignoreAggregateRoots.split("\\,"))
+                    if (Arrays.stream(ignoreAggregateRoots.split("[\\,\\;]"))
                             .anyMatch(i -> i.equalsIgnoreCase(simpleClassName))) {
                         return;
                     }

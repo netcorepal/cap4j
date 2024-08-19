@@ -79,12 +79,12 @@ public class GenEntityMojo extends MyAbstractMojo {
         String tableSql = "select * from `information_schema`.`tables` where table_schema= '" + schema + "'";
         String columnSql = "select * from `information_schema`.`columns` where table_schema= '" + schema + "'";
         if (StringUtils.isNotBlank(table)) {
-            String whereClause = String.join(" or ", Arrays.stream(table.split(",")).map(t -> "table_name like '" + t + "'").collect(Collectors.toList()));
+            String whereClause = String.join(" or ", Arrays.stream(table.split("[\\,\\;]")).map(t -> "table_name like '" + t + "'").collect(Collectors.toList()));
             tableSql += " and (" + whereClause + ")";
             columnSql += " and (" + whereClause + ")";
         }
         if (StringUtils.isNotBlank(ignoreTable)) {
-            String whereClause = String.join(" or ", Arrays.stream(ignoreTable.split(",")).map(t -> "table_name like '" + t + "'").collect(Collectors.toList()));
+            String whereClause = String.join(" or ", Arrays.stream(ignoreTable.split("[\\,\\;]")).map(t -> "table_name like '" + t + "'").collect(Collectors.toList()));
             tableSql += " and not (" + whereClause + ")";
             columnSql += " and not (" + whereClause + ")";
         }
