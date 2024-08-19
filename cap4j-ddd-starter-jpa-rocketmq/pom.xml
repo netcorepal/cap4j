@@ -5,13 +5,13 @@
         <groupId>io.github.netcorepal</groupId>
         <artifactId>cap4j</artifactId>
         <version>1.0.0-alpha1</version>
-        <relativePath>../../pom.xml</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>ddd-starter-jpa-rocketmq</artifactId>
+    <artifactId>cap4j-ddd-starter-jpa-rocketmq</artifactId>
     <packaging>jar</packaging>
 
-    <name>ddd-domain-starter-jpa-rocketmq</name>
+    <name>cap4j-ddd-domain-starter-jpa-rocketmq</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
