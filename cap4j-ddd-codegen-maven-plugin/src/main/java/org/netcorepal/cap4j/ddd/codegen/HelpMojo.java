@@ -16,13 +16,13 @@ public class HelpMojo extends AbstractMojo {
         getLog().info("");
         getLog().info("");
         getLog().info("plugins goals:");
-        getLog().info("    gen-ddd:gen-arch       生成初始代码、包结构（支持自定义脚手架配置）");
-        getLog().info("    gen-ddd:gen-entity     生成聚合实体");
-        getLog().info("    gen-ddd:gen-repository 生成聚合根仓储");
-        getLog().info("    gen-ddd:help 帮助");
+        getLog().info("    gen-ddd:gen-arch         生成初始代码、包结构（支持自定义脚手架配置）");
+        getLog().info("    gen-ddd:gen-entity       生成聚合实体");
+        getLog().info("    gen-ddd:gen-repository   生成聚合根仓储");
+        getLog().info("    gen-ddd:help             帮助");
         getLog().info("");
         getLog().info("");
-        getLog().info("配置");
+        getLog().info("pom.xml插件配置");
         getLog().info("--------------------------------------------------");
         getLog().info("\n" +
                 "                <configuration>\n" +
