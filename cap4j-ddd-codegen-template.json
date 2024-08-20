@@ -326,6 +326,10 @@
               "name": "resources",
               "children": [
                 {
+                  "type": "dir",
+                  "name": "mapper"
+                },
+                {
                   "type": "file",
                   "name": "application.properties",
                   "format": "raw",
