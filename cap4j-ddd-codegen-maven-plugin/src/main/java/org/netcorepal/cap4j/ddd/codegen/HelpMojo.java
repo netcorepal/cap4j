@@ -27,7 +27,7 @@ public class HelpMojo extends AbstractMojo {
         getLog().info("\n" +
                 "                <configuration>\n" +
                 "                    <!-- 代码模板配置文件地址 -->\n" +
-                "                    <archTemplate>/Users/wangbin/source/my/cap4j/cap4j-ddd-codegen-template.json</archTemplate>\n" +
+                "                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/main/cap4j-ddd-codegen-template.json</archTemplate>\n" +
                 "                    <!-- 基础包路径 -->\n" +
                 "                    <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>\n" +
                 "                    <!-- 是否多模块项目 -->\n" +
@@ -45,7 +45,7 @@ public class HelpMojo extends AbstractMojo {
                 "                    <!-- 数据库连接用户 -->\n" +
                 "                    <user>root</user>\n" +
                 "                    <!-- 数据库连接密码 -->\n" +
-                "                    <pwd></pwd>\n" +
+                "                    <pwd>123456</pwd>\n" +
                 "                    <!-- 数据库过滤 -->\n" +
                 "                    <schema>test</schema>\n" +
                 "                    <!-- 数据表过滤 -->\n" +
