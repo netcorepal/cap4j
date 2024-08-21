@@ -4,10 +4,7 @@ import org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisor;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 默认领域事件管理器
@@ -17,9 +14,10 @@ import java.util.Map;
  */
 public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
     public static DomainEventSupervisor instance = new DefaultDomainEventSupervisor();
-    private static final ThreadLocal<List<Object>> TL_EVENT_PAYLOADS = new ThreadLocal<List<Object>>();
+    private static final ThreadLocal<Set<Object>> TL_EVENT_PAYLOADS = new ThreadLocal<Set<Object>>();
+    private static final ThreadLocal<Map<Object, Set<Object>>> TL_ENTITY_EVENT_PAYLOADS = new ThreadLocal<Map<Object, Set<Object>>>();
     private static final ThreadLocal<Map<Object, LocalDateTime>> TL_EVENT_SCHEDULE_MAP = new ThreadLocal<Map<Object, LocalDateTime>>();
-    private static final List<Object> EMPTY_EVENT_PAYLOADS = Collections.emptyList();
+    private static final Set<Object> EMPTY_EVENT_PAYLOADS = Collections.emptySet();
 
     @Override
     public void attach(Object eventPayload) {
@@ -27,21 +25,92 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
     }
 
     @Override
-    public void attach(Object eventPayload, Duration delay){
+    public void attach(Object eventPayload, Duration delay) {
         attach(eventPayload, LocalDateTime.now().plus(delay));
     }
 
     @Override
-    public void attach(Object eventPayload, LocalDateTime schedule){
-        List<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
-        if(eventPayloads == null){
-            eventPayloads = new java.util.ArrayList<Object>();
+    public void attach(Object eventPayload, LocalDateTime schedule) {
+        Set<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
+        if (eventPayloads == null) {
+            eventPayloads = new HashSet<>();
             TL_EVENT_PAYLOADS.set(eventPayloads);
         }
         eventPayloads.add(eventPayload);
 
+        putDeliverTime(eventPayload, schedule);
+    }
+
+    @Override
+    public void attach(Object eventPayload, Object entity) {
+        attach(eventPayload, entity, LocalDateTime.now());
+    }
+
+    @Override
+    public void attach(Object eventPayload, Object entity, Duration delay) {
+        attach(eventPayload, entity, LocalDateTime.now().plus(delay));
+    }
+
+    @Override
+    public void attach(Object eventPayload, Object entity, LocalDateTime schedule) {
+        Map<Object, Set<Object>> entityEventPayloads = TL_ENTITY_EVENT_PAYLOADS.get();
+        if (entityEventPayloads == null) {
+            entityEventPayloads = new HashMap<>();
+            TL_ENTITY_EVENT_PAYLOADS.set(entityEventPayloads);
+        }
+        if (!entityEventPayloads.containsKey(entity)) {
+            entityEventPayloads.put(entity, new HashSet<>());
+        }
+        entityEventPayloads.get(entity).add(eventPayload);
+
+        putDeliverTime(eventPayload, schedule);
+    }
+
+    @Override
+    public void detach(Object eventPayload) {
+        Set<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
+        if (eventPayloads == null) {
+            return;
+        }
+        eventPayloads.remove(eventPayload);
+    }
+
+    @Override
+    public void detach(Object eventPayload, Object entity) {
+        Map<Object, Set<Object>> entityEventPayloads = TL_ENTITY_EVENT_PAYLOADS.get();
+        if (entityEventPayloads == null) {
+            return;
+        }
+        Set<Object> eventPayloads = entityEventPayloads.containsKey(entity) ? entityEventPayloads.get(entity) : null;
+        if (eventPayloads == null) {
+            return;
+        }
+
+        eventPayloads.remove(eventPayload);
+    }
+
+    @Override
+    public void reset() {
+        TL_EVENT_PAYLOADS.remove();
+        TL_ENTITY_EVENT_PAYLOADS.remove();
+        TL_EVENT_SCHEDULE_MAP.remove();
+    }
+
+    @Override
+    public Set<Object> getEvents() {
+        Set<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
+        return eventPayloads != null ? eventPayloads : EMPTY_EVENT_PAYLOADS;
+    }
+
+    @Override
+    public Set<Object> getEvents(Object entity) {
+        Map<Object, Set<Object>> entityEventPayloads = TL_ENTITY_EVENT_PAYLOADS.get();
+        return entityEventPayloads != null && entityEventPayloads.containsKey(entity) ? entityEventPayloads.get(entity) : EMPTY_EVENT_PAYLOADS;
+    }
+
+    protected void putDeliverTime(Object eventPayload, LocalDateTime schedule) {
         Map<Object, LocalDateTime> eventScheduleMap = TL_EVENT_SCHEDULE_MAP.get();
-        if(eventScheduleMap == null){
+        if (eventScheduleMap == null) {
             eventScheduleMap = new HashMap<>();
             TL_EVENT_SCHEDULE_MAP.set(eventScheduleMap);
         }
@@ -49,30 +118,10 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
     }
 
     @Override
-    public void detach(Object eventPayload) {
-        List<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
-        if(eventPayloads != null){
-            eventPayloads.remove(eventPayload);
-        }
-    }
-
-    @Override
-    public void reset() {
-        TL_EVENT_PAYLOADS.remove();
-        TL_EVENT_SCHEDULE_MAP.remove();;
-    }
-
-    @Override
-    public List<Object> getEvents() {
-        List<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
-        return eventPayloads != null ? eventPayloads : EMPTY_EVENT_PAYLOADS;
-    }
-
-    @Override
-    public LocalDateTime getDeliverTime(Object eventPlayload) {
+    public LocalDateTime getDeliverTime(Object eventPayload) {
         Map<Object, LocalDateTime> eventScheduleMap = TL_EVENT_SCHEDULE_MAP.get();
-        if(eventScheduleMap != null && eventScheduleMap.containsKey(eventPlayload)){
-            return eventScheduleMap.get(eventPlayload);
+        if (eventScheduleMap != null && eventScheduleMap.containsKey(eventPayload)) {
+            return eventScheduleMap.get(eventPayload);
         } else {
             return LocalDateTime.now();
         }

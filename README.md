@@ -3,11 +3,9 @@
 [![Maven Central Version](https://img.shields.io/maven-central/v/io.github.netcorepal/cap4j)](https://central.sonatype.com/artifact/io.github.netcorepal/cap4j)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/netcorepal/cap4j/blob/main/LICENSE)
 
-本项目是 [CAP](https://github.com/dotnetcore/CAP) 项目的 Java 实现，其基于 Outbox 模式的事件总线可用于解决微服务架构中的分布式事务问题。
+本项目是 [CAP](https://github.com/dotnetcore/CAP) 项目的 Java 实现，基于[整洁架构](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)、领域模型、Outbox模式、CQS模式以及UoW等理念，cap4j期望解决如何实现领域驱动设计的问题。
 
-同时，基于[整洁架构](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)、领域模型以及CQS模式，cap4j期望解决如何实现领域驱动设计的问题。
-
-如果对整洁架构、领域模型和CQS模式有充分了解，那么cap4j的使用将会非常顺手。另一方面，通过cap4j来构建你的服务，将会对你展示一种实现领域驱动设计的完整落地方法。
+如果对以上架构理念有充分了解，那么cap4j的使用将会非常顺手。另一方面，通过cap4j来构建你的服务，你将学会一种实现领域驱动设计的完整落地方法。
 
 ## 快速开始
 
@@ -880,17 +878,31 @@ public class OrderPlacedDomainEvent {
 
 ```java
 import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultDomainEventSupervisor;
-import java.time.LocalDateTime;
 
-// 省略
+
+// 代码省略...
 public class Order {
-    // 省略
-    DefaultDomainEventSupervisor.instance.attach(OrderPlacedDomainEvent.builder()
-            .orderNo(this.orderNo)
-            .amount(this.amount)
-            .orderTime(LocalDateTime.now())
-            .build());
-    // 省略
+    // 代码省略...
+    public class Order {
+
+        // 【行为方法开始】
+
+        /**
+         * 下单初始化
+         * @param items
+         */
+        public void init(List<OrderItem> items){
+            // 代码省略...
+            DefaultDomainEventSupervisor.instance.attach(OrderPlacedDomainEvent.builder()
+                    .orderNo(this.orderNo)
+                    .amount(this.amount)
+                    .orderTime(LocalDateTime.now())
+                    .build(), this);
+        }
+
+        // 【行为方法结束】
+        // 代码省略...
+    }
 }
 ```
 
@@ -909,7 +921,7 @@ import org.springframework.stereotype.Service;
 public class OrderPlacedDomainEventSubscriber{
     @EventListener(DeliveryReceivedDomainEvent.class)
     public void onEvent(DeliveryReceivedDomainEvent event){
-        // 处理事件
+        // 事件处理逻辑
     }
 }
 ```

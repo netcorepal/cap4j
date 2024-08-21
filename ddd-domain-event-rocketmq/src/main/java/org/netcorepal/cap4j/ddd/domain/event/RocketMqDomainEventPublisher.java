@@ -69,7 +69,7 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
         Duration delay = Duration.ZERO;
         if (message.getHeaders().containsKey(HEADER_KEY_CAP4J_SCHEDULE)) {
             LocalDateTime scheduleAt = (LocalDateTime) message.getHeaders().get(HEADER_KEY_CAP4J_SCHEDULE);
-            if(scheduleAt!=null) {
+            if (scheduleAt != null) {
                 delay = Duration.between(LocalDateTime.now(), scheduleAt);
             }
         }
@@ -85,11 +85,12 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
     }
 
     private void internalPublish(Message message, EventRecord event) {
+        String destination = event.getEventTopic();
+        destination = TextUtils.resolvePlaceholderWithCache(destination, environment);
+        boolean isIntergrationEvent = destination != null && !destination.isEmpty();
         try {
-            String destination = event.getEventTopic();
-            destination = TextUtils.resolvePlaceholderWithCache(destination, environment);
             // MQ消息
-            if (destination != null && !destination.isEmpty()) {
+            if (isIntergrationEvent) {
                 rocketMQTemplate.asyncSend(destination, message, new DomainEventSendCallback(event, eventRecordRepository, environment));
             } else {
                 // 进程内消息
@@ -98,7 +99,7 @@ public class RocketMqDomainEventPublisher implements DomainEventPublisher {
                 eventRecordRepository.save(event);
             }
         } catch (Exception ex) {
-            log.error(String.format("集成事件发布失败: %s", event.toString()), ex);
+            log.error(String.format("%s发布失败: %s", isIntergrationEvent ? "集成事件" : "领域事件", event.toString()), ex);
         }
     }
 

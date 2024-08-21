@@ -155,7 +155,7 @@ public class JpaUnitOfWork implements UnitOfWork {
                 applicationEventPublisher.publishEvent(entityPersisttedEventThreadLocal.get().clone());
                 entityPersisttedEventThreadLocal.get().reset();
             }
-            publishTransactionEvent();
+            publishTransactionEvent(saveAndDeleteEntityList);
             return null;
         }, saveAndDeleteEntityList, propagation);
     }
@@ -387,6 +387,7 @@ public class JpaUnitOfWork implements UnitOfWork {
 
     /**
      * 校验持久化实体
+     *
      * @param entities
      */
     protected void specifyEntitesInTransaction(Set<Object> entities) {
@@ -402,6 +403,7 @@ public class JpaUnitOfWork implements UnitOfWork {
 
     /**
      * 校验持久化实体(事务开启前)
+     *
      * @param entities
      */
     protected void specifyEntitesBeforeTransaction(Set<Object> entities) {
@@ -464,19 +466,20 @@ public class JpaUnitOfWork implements UnitOfWork {
         @Getter
         Set<Object> deletedEntities;
 
-        public EntityPersisttedEvent(Object source, Set<Object> createdEntities, Set<Object> updatedEntities, Set<Object> deletedEntities){
+        public EntityPersisttedEvent(Object source, Set<Object> createdEntities, Set<Object> updatedEntities, Set<Object> deletedEntities) {
             super(source);
             this.createdEntities = createdEntities;
             this.updatedEntities = updatedEntities;
             this.deletedEntities = deletedEntities;
         }
 
-        public void reset(){
+        public void reset() {
             this.createdEntities.clear();
             this.updatedEntities.clear();
             this.deletedEntities.clear();
         }
-        public EntityPersisttedEvent clone(){
+
+        public EntityPersisttedEvent clone() {
             return new EntityPersisttedEvent(this.getSource(), new HashSet<>(createdEntities), new HashSet<>(updatedEntities), new HashSet<>(deletedEntities));
         }
     }
@@ -490,8 +493,14 @@ public class JpaUnitOfWork implements UnitOfWork {
      */
     private static final int DEFAULT_EVENT_RETRY_TIMES = 16;
 
-    protected void publishTransactionEvent() {
-        List<Object> eventPayloads = domainEventSupervisor.getEvents();
+    protected void publishTransactionEvent(Set<Object>... entities) {
+        Set<Object> eventPayloads = new HashSet<>();
+        eventPayloads.addAll(domainEventSupervisor.getEvents());
+        for (Set<Object> entitySet : entities) {
+            for (Object entity : entitySet) {
+                eventPayloads.addAll(domainEventSupervisor.getEvents(entity));
+            }
+        }
         List<Object> persistedEvents = new ArrayList<>(eventPayloads.size());
         List<Object> transientEvents = new ArrayList<>(eventPayloads.size());
         LocalDateTime now = LocalDateTime.now();
@@ -523,7 +532,7 @@ public class JpaUnitOfWork implements UnitOfWork {
     }
 
     @TransactionalEventListener(fallbackExecution = true, classes = EntityPersisttedEvent.class)
-    public void onTransactionCommitted(EntityPersisttedEvent event){
+    public void onTransactionCommitted(EntityPersisttedEvent event) {
         for (Object entity : event.getCreatedEntities()) {
             jpaPersistListenerManager.onChange(entity);
             jpaPersistListenerManager.onCreate(entity);
@@ -549,9 +558,9 @@ public class JpaUnitOfWork implements UnitOfWork {
                         event.getPayload(),
                         new DomainEventMessageInterceptor.ModifiableMessageHeaders(null, UUID.fromString(event.getId()), null)
                 );
-                if(event.getScheduleTime().isAfter(now)){
+                if (event.getScheduleTime().isAfter(now)) {
                     Duration delay = Duration.between(now, event.getScheduleTime());
-                    if(delay.getSeconds() < eventDeliveryCompensationIntervalSeconds){
+                    if (delay.getSeconds() < eventDeliveryCompensationIntervalSeconds) {
                         message.getHeaders().put(HEADER_KEY_CAP4J_SCHEDULE, event.getScheduleTime());
                     } else {
                         return;
