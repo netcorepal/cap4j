@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.netcorepal</groupId>
         <artifactId>cap4j</artifactId>
-        <version>1.0.0-alpha1</version>
+        <version>1.0.0-alpha-1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -72,7 +72,7 @@
         <dependency>
             <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-distributed-idgenerator-snowflake</artifactId>
-            <version>1.0.0-alpha1</version>
+            <version>1.0.0-alpha-1</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
