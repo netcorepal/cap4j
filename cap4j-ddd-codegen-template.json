@@ -289,7 +289,7 @@
                         },
                         {
                           "type": "dir",
-                          "name": "subscribes"
+                          "name": "subscribers"
                         }
                       ]
                     },
