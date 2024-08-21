@@ -31,20 +31,20 @@
             <plugin>
                 <groupId>io.github.netcorepal</groupId>
                 <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
-                <version>1.0.0-alpha1</version>
+                <version>1.0.0-alpha-1</version>
                 <configuration>
-                    <archTemplate>/Users/wangbin/source/my/cap4j/cap4j-ddd-codegen-template.json</archTemplate>
+                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/main/cap4j-ddd-codegen-template.json</archTemplate>
                     <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>
                     <multiModule>false</multiModule>
                     <moduleNameSuffix4Adapter>-adapter</moduleNameSuffix4Adapter>
                     <moduleNameSuffix4Domain>-domain</moduleNameSuffix4Domain>
                     <moduleNameSuffix4Application>-application</moduleNameSuffix4Application>
                     <connectionString>
-                        <![CDATA[jdbc:mysql://127.0.0.1:3307/ddd_example?serverTimezone=Hongkong&useSSL=false&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull]]>
+                        <![CDATA[jdbc:mysql://127.0.0.1:3306/test?serverTimezone=Asia/Shanghai&useSSL=false&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull]]>
                     </connectionString>
                     <user>root</user>
                     <pwd>123456</pwd>
-                    <schema>ddd</schema>
+                    <schema>test</schema>
                     <table></table>
                     <ignoreTable></ignoreTable>
                     <idField>id</idField>
@@ -326,7 +326,7 @@ CREATE TABLE `order_item` (
 > 
 > 如果想要对这套语法有个详细完整的了解，可以通过如下maven指令获取语法帮助。
 > ```shell
-> mvn io.github.netcorepal:cap4j-ddd-codegen-maven-plugin:1.0.0-alpha1:help
+> mvn io.github.netcorepal:cap4j-ddd-codegen-maven-plugin:1.0.0-alpha-1:help
 > # or
 > mvn cap4j-ddd-codegen:help
 > ```
@@ -732,7 +732,7 @@ public class PlaceOrderCmd {
 ##### 事件定义、订阅、发布
 **创建发件箱表**
 
-为了实现Outbox模式，cap4j需要在业务库中创建发件箱表。
+为了实现Outbox模式，cap4j需要在业务库中创建发件箱表。脚手架初始化后，`resources/ddl.sql`包含完整的发件箱表建表语句
 ```sql
 -- Create syntax for TABLE '__event'
 CREATE TABLE `__event` (
@@ -763,7 +763,7 @@ CREATE TABLE `__event` (
                            KEY `idx_create_at` (`create_at`),
                            KEY `idx_expire_at` (`expire_at`),
                            KEY `idx_next_try_time` (`next_try_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='集成事件\n@I;'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='事件发件箱 support by cap4j\n@I;'
 # partition by range(to_days(db_created_at))
 # (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)
 ;
@@ -796,7 +796,7 @@ CREATE TABLE `__achrived_event` (
                            KEY `idx_create_at` (`create_at`),
                            KEY `idx_expire_at` (`expire_at`),
                            KEY `idx_next_try_time` (`next_try_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='集成事件存档\n@I;'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='事件发件箱存档 support by cap4j\n@I;'
 # partition by range(to_days(db_created_at))
 # (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)
 ;
@@ -814,7 +814,7 @@ CREATE TABLE `__locker` (
                             KEY `idx_db_created_at` (`db_created_at`),
                             KEY `idx_db_updated_at` (`db_updated_at`),
                             UNIQUE `uniq_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='锁\n@I;';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='锁 support by cap4j\n@I;';
 
 ```
 
@@ -866,15 +866,28 @@ public class OrderPlacedDomainEvent {
 }
 
 ```
-> DomainEvent注解详解
-> - `value()` 如果定义了value字段，则事件会被识别为集成事件，意味着该事件将通过消息队列适配，通知到分布式系统中的其他服务进程。
-> - `subscriber()` 如果是集成事件订阅场景，必须定义该字段，通常该字段的值将会被适配的消息队列应用到消费分组配置中。
-> - `persist()` 如果领域事件并不是集成事件（仅在本服务进程内部有订阅需求），可以通过`persist=true`控制事件进入发件箱表，并脱离事件发布上线文事务中。以避免订阅逻辑影响发布事务的完成。
+> 注解属性详解
+> - `value()` value字段非空，则事件会被识别为集成事件，意味着该事件将通过消息队列适配，通知到分布式系统中的其他服务进程。
+> - `subscriber()` 集成事件订阅场景，必须定义该字段，通常该字段的值将会被适配的消息队列应用到消费分组配置中。
+> - `persist()` 控制事件发布记录持久化。集成事件发布场景，该字段无意义。非集成事件发布场景（仅在本服务进程内部有订阅需求），可以通过`persist=true`控制事件进入发件箱表，并脱离事件发布上下文事务中。以避免订阅逻辑异常影响发布事务的完成。
+> 
+> 应用场景例子说明
+> - `基于MQ发送方` DomainEvent(value="event-name-used-for-mq-topic")
+> - `基于MQ订阅方` DomainEvent(subscriber="consumer-group")
+> - `消费方与订阅方事务隔离` DomainEvent(persist=true)
+> - `消费方与订阅方同一事务` DomainEvent
 
 
 **领域事件发布**
 
-在实体行为中，发布领域事件。
+通常应在实体行为中，发布领域事件。
+
+接口[DomainEventSupervisor.java](ddd-core/src/main/java/org/netcorepal/cap4j/ddd/domain/event/DomainEventSupervisor.java)
+> `即时发送` DefaultDomainEventSupervisor.instance.attach(Object eventPayload, Object entity)
+> 
+> `延时发送` DefaultDomainEventSupervisor.instance.attach(Object eventPayload, Object entity, Duration delay)
+> 
+> `定时发送` DefaultDomainEventSupervisor.instance.attach(Object eventPayload, Object entity, LocalDateTime schedule)
 
 ```java
 import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultDomainEventSupervisor;
@@ -910,7 +923,7 @@ public class Order {
 
 领域事件订阅定义在应用层（application），通常放置在 subscribers 包中。
 
-领域事件订阅支持Spring事件的方式来触发。
+领域事件订阅支持Spring注解式声明订阅(监听)的方式。
 
 ```java
 
