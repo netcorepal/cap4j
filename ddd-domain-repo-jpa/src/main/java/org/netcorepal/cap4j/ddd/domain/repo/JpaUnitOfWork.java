@@ -495,10 +495,10 @@ public class JpaUnitOfWork implements UnitOfWork {
 
     protected void publishTransactionEvent(Set<Object>... entities) {
         Set<Object> eventPayloads = new HashSet<>();
-        eventPayloads.addAll(domainEventSupervisor.getEvents());
+        eventPayloads.addAll(domainEventSupervisor.popEvents());
         for (Set<Object> entitySet : entities) {
             for (Object entity : entitySet) {
-                eventPayloads.addAll(domainEventSupervisor.getEvents(entity));
+                eventPayloads.addAll(domainEventSupervisor.popEvents(entity));
             }
         }
         List<Object> persistedEvents = new ArrayList<>(eventPayloads.size());
@@ -515,7 +515,6 @@ public class JpaUnitOfWork implements UnitOfWork {
                 persistedEvents.add(event);
             }
         }
-        domainEventSupervisor.reset();
         applicationEventPublisher.publishEvent(new TransactionCommitingEvent(this, transientEvents));
         applicationEventPublisher.publishEvent(new TransactionCommittedEvent(this, persistedEvents));
     }
