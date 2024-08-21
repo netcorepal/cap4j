@@ -97,15 +97,20 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
     }
 
     @Override
-    public Set<Object> getEvents() {
+    public Set<Object> popEvents() {
         Set<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
+        TL_EVENT_PAYLOADS.remove();
         return eventPayloads != null ? eventPayloads : EMPTY_EVENT_PAYLOADS;
     }
 
     @Override
-    public Set<Object> getEvents(Object entity) {
+    public Set<Object> popEvents(Object entity) {
         Map<Object, Set<Object>> entityEventPayloads = TL_ENTITY_EVENT_PAYLOADS.get();
-        return entityEventPayloads != null && entityEventPayloads.containsKey(entity) ? entityEventPayloads.get(entity) : EMPTY_EVENT_PAYLOADS;
+        if(entityEventPayloads == null || !entityEventPayloads.containsKey(entity)){
+            return EMPTY_EVENT_PAYLOADS;
+        }
+        Set<Object> eventPayloads = entityEventPayloads.remove(entity);
+        return eventPayloads != null ? eventPayloads : EMPTY_EVENT_PAYLOADS;
     }
 
     protected void putDeliverTime(Object eventPayload, LocalDateTime schedule) {

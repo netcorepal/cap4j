@@ -2,7 +2,6 @@ package org.netcorepal.cap4j.ddd.domain.event;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -72,17 +71,17 @@ public interface DomainEventSupervisor {
     void reset();
 
     /**
-     * 获取事件列表
+     * 弹出事件列表
      * @return
      */
-    Set<Object> getEvents();
+    Set<Object> popEvents();
 
     /**
-     * 获取实体绑定的事件列表
+     * 弹出实体绑定的事件列表
      * @param entity
      * @return
      */
-    public Set<Object> getEvents(Object entity);
+    public Set<Object> popEvents(Object entity);
 
     /**
      * 获取发送事件
