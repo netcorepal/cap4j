@@ -1,4 +1,4 @@
-``# cap4j 　　　　　　　　　　　　　　　　　　　　[English](https://github.com/netcorepal/cap4j/blob/main/README.en-us.md)
+# cap4j 　　　　　　　　　　　　　　　　　　　　[English](https://github.com/netcorepal/cap4j/blob/main/README.en-us.md)
 
 [![Maven Central Version](https://img.shields.io/maven-central/v/io.github.netcorepal/cap4j)](https://central.sonatype.com/artifact/io.github.netcorepal/cap4j)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/netcorepal/cap4j/blob/main/LICENSE)
@@ -78,8 +78,8 @@
     </build>
 </project>
 ```
-通常我们只需要调整以下配置项即可。
-> - `basePackage`: 项目基础包名
+通常我们只需要根据团队或项目的实际情况调整以下配置项即可。
+> - `basePackage`: 项目基础包名，一般为com.yourcompany.project
 > - `connectionString`: 数据库连接串
 > - `user`: 数据库账号
 > - `pwd`: 数据库密码
@@ -270,7 +270,7 @@ mvn cap4j-ddd-codegen:gen-arch
 
 ### 编码最佳实践
 
-#### 领域层编码最近实践
+#### 领域层
 ##### ORM代码生成
 根据领域模型中的实体以及聚合关系，完成数据库表设计。
 
@@ -927,7 +927,7 @@ public class OrderPlacedDomainEventSubscriber{
 ```
 
 
-#### 应用层编码最佳实践
+#### 应用层
 ##### IDEA代码模板
 `${basePackage}.application.commands`中的类模板
 
@@ -1113,7 +1113,7 @@ public class ${NAME} extends PageParam {
 ```
 
 
-#### 适配层编码最佳实践
+#### 适配层
 ##### IDEA LiveTemplate
 `acmd` 适配mvc透出命令
 ```java
@@ -1186,4 +1186,4 @@ public ResponseData<PageData<$Qry$.$Qry$Dto>> $qry$(@RequestBody @Valid $Qry$ pa
         }esponseData.success(result);
         }
 ```
-### have a nice trip!``
+### have a nice trip!
