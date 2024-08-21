@@ -87,7 +87,7 @@ public class GenRepositoryMojo extends MyAbstractMojo {
                         .anyMatch(line -> line.matches("^\\s*(@(\\s*[A-Za-z_][A-Za-z0-9_]*\\s*\\.?)+)+$") && line.matches("^\\s*@([^.]*\\.)*AggregateRoot\\s*\\s*$")
                                         || line.matches("^\\s*\\/\\*\\s*@AggregateRoot\\s*\\*\\/\\s*$"));
                 if (isAggregateRoot) {
-                    this.getLog().info("发现聚合根类型: " + SourceFileUtils.resolveClassName(file.getAbsolutePath()));
+                    this.getLog().info("发现聚合根: " + SourceFileUtils.resolveClassName(file.getAbsolutePath()));
 
                     String simpleClassName = SourceFileUtils.resolveSimpleClassName(file.getAbsolutePath());
                     if (Arrays.stream(ignoreAggregateRoots.split("[\\,\\;]"))
