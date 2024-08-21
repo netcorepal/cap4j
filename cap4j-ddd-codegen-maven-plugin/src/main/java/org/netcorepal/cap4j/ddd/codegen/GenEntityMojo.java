@@ -678,7 +678,7 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
             importLines.add(" *");
             // importLines.add(" * " + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", " "));
-            importLines.add(" * 本文件由[gen-ddd-maven-plugin]生成");
+            importLines.add(" * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
             importLines.add(" * 警告：请勿手工修改该文件的字段声明，重新生成会覆盖字段声明");
             importLines.add(" */");
         } else {
@@ -695,6 +695,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     public void processAnnotationLines(Map<String, Object> table, List<Map<String, Object>> columns, List<String> annotationLines) {
         String tableName = MysqlSchemaUtils.getTableName(table);
         boolean annotationEmpty = annotationLines.size() == 0;
+        SourceFileUtils.addIfNone(annotationLines, "@Entity(\\(.*\\))?", "@Entity");
         if (StringUtils.isNotBlank(aggregateRootAnnotation)) {
             String aggregateRootAnnotationSimpleClassName = aggregateRootAnnotation.substring(aggregateRootAnnotation.contains(".") ? aggregateRootAnnotation.lastIndexOf(".") + 1 : 0);
             if (MysqlSchemaUtils.isAggregateRoot(table)) {
@@ -710,7 +711,6 @@ public class GenEntityMojo extends MyAbstractMojo {
                 SourceFileUtils.removeText(annotationLines, "\\/\\* @AggregateRoot(\\(.*\\))? \\*\\/");
             }
         }
-        SourceFileUtils.addIfNone(annotationLines, "@Entity(\\(.*\\))?", "@Entity");
         SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(name = \"`" + tableName + "`\")");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicInsert(\\(.*\\))?", "@DynamicInsert");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicUpdate(\\(.*\\))?", "@DynamicUpdate");
@@ -801,7 +801,7 @@ public class GenEntityMojo extends MyAbstractMojo {
             writeLine(out, "");
             writeLine(out, "");
         }
-        writeLine(out, "    // 【字段映射开始】本段落由[gen-ddd-maven-plugin]维护，请不要手工改动");
+        writeLine(out, "    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
         writeLine(out, "");
         writeLine(out, "    @Id");
         if (MysqlSchemaUtils.hasIdGenerator(table)) {
@@ -835,7 +835,7 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
         }
         writeLine(out, "");
-        writeLine(out, "    // 【字段映射结束】本段落由[gen-ddd-maven-plugin]维护，请不要手工改动");
+        writeLine(out, "    // 【字段映射结束】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
         writeLine(out, "}");
         writeLine(out, "");
         out.close();
@@ -899,7 +899,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
         writeLine(out, "");
         writeLine(out, "/**");
-        writeLine(out, " * 本文件由[gen-ddd-maven-plugin]生成");
+        writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
         writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
         writeLine(out, " */");
         writeLine(out, "public class EntityBuilder {");
@@ -1177,7 +1177,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, "import java.util.Map;");
         writeLine(out, "");
         writeLine(out, "/**");
-        writeLine(out, " * 本文件由[gen-ddd-maven-plugin]生成");
+        writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
         writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
         writeLine(out, " */");
         writeLine(out, "public enum " + enumType + " {");
@@ -1270,7 +1270,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, "");
         writeLine(out, "/**");
         writeLine(out, " * " + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", " "));
-        writeLine(out, " * 本文件由[gen-ddd-maven-plugin]生成");
+        writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
         writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
         writeLine(out, " */");
         writeLine(out, "@RequiredArgsConstructor");

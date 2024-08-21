@@ -217,7 +217,7 @@ public class GenRepositoryMojo extends MyAbstractMojo {
         } else {
             writeLine(out, "");
             writeLine(out, "/**");
-            writeLine(out, " * 本文件由[gen-ddd-maven-plugin]生成");
+            writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
             writeLine(out, " */");
         }
         writeLine(out, "public interface " + simpleClassName + "Repository extends " + aggregateRepositoryBaseClass.replace("${EntityType}", simpleClassName).replace("${IdentityType}", aggregateIdentityClass) + " {");
@@ -226,11 +226,11 @@ public class GenRepositoryMojo extends MyAbstractMojo {
                 writeLine(out, line);
             }
         } else {
-            writeLine(out, "    // 【自定义代码开始】本段落之外代码由[gen-ddd-maven-plugin]维护，请不要手工改动");
+            writeLine(out, "    // 【自定义代码开始】本段落之外代码由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
             writeLine(out, "");
             writeLine(out, "    " + aggregateRepositoryCustomerCode.replace("${EntityType}", simpleClassName).replace("${IdentityType}", aggregateIdentityClass));
             writeLine(out, "");
-            writeLine(out, "    // 【自定义代码结束】本段落之外代码由[gen-ddd-maven-plugin]维护，请不要手工改动");
+            writeLine(out, "    // 【自定义代码结束】本段落之外代码由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
 
         }
         writeLine(out, "}");

@@ -26,6 +26,14 @@
     <packaging>jar</packaging>
 
     <name>cap4j-ddd-mvc-example</name>
+    <dependencies>
+        <dependency>
+            <groupId>io.github.netcorepal</groupId>
+            <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
+            <version>1.0.0-alpha-1</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
     <build>
         <plugins>
             <plugin>
@@ -358,7 +366,7 @@ import javax.persistence.*;
 /**
  * 订单
  *
- * 本文件由[gen-ddd-maven-plugin]生成
+ * 本文件由[cap4j-ddd-codegen-maven-plugin]生成
  * 警告：请勿手工修改该文件的字段声明，重新生成会覆盖字段声明
  */
 /* @AggregateRoot */
@@ -383,7 +391,7 @@ public class Order {
 
 
 
-    // 【字段映射开始】本段落由[gen-ddd-maven-plugin]维护，请不要手工改动
+    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
 
     @Id
     @GeneratedValue(generator = "org.netcorepal.cap4j.ddd.application.distributed.SnowflakeIdentifierGenerator")
@@ -426,7 +434,7 @@ public class Order {
     @Column(name = "`version`")
     Integer version;
 
-    // 【字段映射结束】本段落由[gen-ddd-maven-plugin]维护，请不要手工改动
+    // 【字段映射结束】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
 }
 
 ```
@@ -452,7 +460,7 @@ import javax.persistence.*;
  * 订单项
  *  
  *
- * 本文件由[gen-ddd-maven-plugin]生成
+ * 本文件由[cap4j-ddd-codegen-maven-plugin]生成
  * 警告：请勿手工修改该文件的字段声明，重新生成会覆盖字段声明
  */
 @Entity
@@ -476,7 +484,7 @@ public class OrderItem {
 
 
 
-    // 【字段映射开始】本段落由[gen-ddd-maven-plugin]维护，请不要手工改动
+    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
 
     @Id
     @GeneratedValue(generator = "org.netcorepal.cap4j.ddd.application.distributed.SnowflakeIdentifierGenerator")
@@ -513,7 +521,7 @@ public class OrderItem {
     @Column(name = "`version`")
     Integer version;
 
-    // 【字段映射结束】本段落由[gen-ddd-maven-plugin]维护，请不要手工改动
+    // 【字段映射结束】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
 }
 
 
@@ -529,7 +537,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 本文件由[gen-ddd-maven-plugin]生成
+ * 本文件由[cap4j-ddd-codegen-maven-plugin]生成
  * 警告：请勿手工修改该文件，重新生成会覆盖该文件
  */
 public enum OrderStatus {
@@ -596,10 +604,10 @@ package org.netcorepal.cap4j.ddd.example.adapter.domain.repositories;
 import org.netcorepal.cap4j.ddd.example.domain.aggregates.Order;
 
 /**
- * 本文件由[gen-ddd-maven-plugin]生成
+ * 本文件由[cap4j-ddd-codegen-maven-plugin]生成
  */
 public interface OrderRepository extends org.netcorepal.cap4j.ddd.domain.repo.AggregateRepository<Order, Long> {
-    // 【自定义代码开始】本段落之外代码由[gen-ddd-maven-plugin]维护，请不要手工改动
+    // 【自定义代码开始】本段落之外代码由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
 
     @org.springframework.stereotype.Component
     public static class OrderJpaRepositoryAdapter extends org.netcorepal.cap4j.ddd.domain.repo.AbstractJpaRepository<Order, Long>
@@ -609,7 +617,7 @@ public interface OrderRepository extends org.netcorepal.cap4j.ddd.domain.repo.Ag
         }
     }
 
-    // 【自定义代码结束】本段落之外代码由[gen-ddd-maven-plugin]维护，请不要手工改动
+    // 【自定义代码结束】本段落之外代码由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
 }
 
 ```
@@ -993,6 +1001,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.netcorepal.cap4j.ddd.application.query.Query;
+import org.netcorepal.cap4j.ddd.domain.repo.AggregateRepository;
 import org.springframework.stereotype.Service;
 
 #parse("File Header.java")
@@ -1006,6 +1016,7 @@ import org.springframework.stereotype.Service;
 @Data
 @Builder
 public class ${NAME} {
+    private Long id;
     
     @Service
     @RequiredArgsConstructor
@@ -1016,10 +1027,10 @@ public class ${NAME} {
         @Override
         public ${NAME}Dto exec(${NAME} param) {
             ${Entity} entity = repo.findOne(${Entity}Schema.specify(
-                root -> root.id().eq(1)
+                root -> root.id().eq(param.id)
             )).orElseThrow(() -> new KnownException("不存在"));
             
-            return MapperUtil.map(entity, ${NAME}Dto.class);
+            return null;
         }
     }
     
@@ -1040,6 +1051,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.netcorepal.cap4j.ddd.application.query.ListQuery;
+import org.netcorepal.cap4j.ddd.domain.repo.AggregateRepository;
 import org.springframework.stereotype.Service;
 
 #parse("File Header.java")
@@ -1053,6 +1066,7 @@ import org.springframework.stereotype.Service;
 @Data
 @Builder
 public class ${NAME} {
+    private Long id;
     
     @Service
     @RequiredArgsConstructor
@@ -1063,10 +1077,10 @@ public class ${NAME} {
         @Override
         public List<${NAME}Dto> exec(${NAME} param) {
             List<${Entity}> list = repo.findAll(${Entity}Schema.specify(
-                root -> root.id().gt(0)
+                root -> root.id().gt(param.id)
             ));
             
-            return MapperUtil.mapAsList(list, ${NAME}Dto.class);
+            return null;
         }
     }
     
@@ -1080,47 +1094,61 @@ public class ${NAME} {
 
 模板名称：`QueryPage`
 ```java
-
 #if (${PACKAGE_NAME} && ${PACKAGE_NAME} != "")package ${PACKAGE_NAME};#end
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.netcorepal.cap4j.ddd.application.query.PageQuery;
+import org.netcorepal.cap4j.ddd.domain.repo.AggregateRepository;
+import org.netcorepal.cap4j.ddd.domain.repo.JpaPageUtils;
+import org.netcorepal.cap4j.ddd.share.PageData;
+import org.netcorepal.cap4j.ddd.share.PageParam;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 #parse("File Header.java")
 
 /**
  * todo: 查询描述
- *
  * @author binking338
  * @date ${DATE}
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ${NAME} extends PageParam {
-    
+    private Long id;
+
     @Service
     @RequiredArgsConstructor
     @Slf4j
     public static class Handler implements PageQuery<${NAME}, ${NAME}Dto>{
         private final AggregateRepository<${Entity}, Long> repo;
-
+    
         @Override
         public PageData<${NAME}Dto> exec(${NAME} param) {
             Page<${Entity}> page = repo.findAll(${Entity}Schema.specify(
-                root -> root.id().gt(0)
-            ), param.toSpringData());
-            
-            return PageData.fromSpringData(page, ${NAME}Dto.class);
+                root -> root.id().gt(param.id)
+            ), JpaPageUtils.toSpringData(param));
+    
+            return JpaPageUtils.fromSpringData(page, p -> UserPageDto.builder()
+                .id(p.getId())
+                .build());
         }
     }
     
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class ${NAME}Dto{
         private Long id;
-        
+    
     }
 }
 ```
