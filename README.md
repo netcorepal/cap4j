@@ -3,7 +3,7 @@
 [![Maven Central Version](https://img.shields.io/maven-central/v/io.github.netcorepal/cap4j)](https://central.sonatype.com/artifact/io.github.netcorepal/cap4j)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/netcorepal/cap4j/blob/main/LICENSE)
 
-本项目是 [CAP](https://github.com/dotnetcore/CAP) 项目的 Java 实现，基于[整洁架构](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)、领域模型、Outbox模式、CQS模式以及UoW等理念，cap4j期望解决如何实现领域驱动设计的问题。
+本项目是 [CAP](https://github.com/dotnetcore/CAP) 项目的 Java 实现，基于[整洁架构](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)、`领域模型`、`Outbox`模式、`CQS`模式以及`UoW`模式等理念，cap4j期望解决如何`实现领域驱动设计`的问题。
 
 如果对以上架构理念有充分了解，那么cap4j的使用将会非常顺手。另一方面，通过cap4j来构建你的服务，你将学会一种实现领域驱动设计的完整落地方法。
 
@@ -86,7 +86,7 @@
     </build>
 </project>
 ```
-通常我们只需要根据团队或项目的实际情况调整以下配置项即可。
+通常，`cap4j-ddd-codegen`插件只需要我们根据团队或项目的实际情况调整以下配置项即可使用。
 > - `basePackage`: 项目基础包名，一般为com.yourcompany.project
 > - `connectionString`: 数据库连接串
 > - `user`: 数据库账号
@@ -95,23 +95,23 @@
 
 
 #### **第三步**：执行插件命令，生成项目脚手架
-> `archTemplate`是脚手架目录与项目基础代码的配置文件地址。开放自定义方便大家根据自己团队需求进行定制化。格式说明后续再，不过格式很简单，按示例中的配置自己应该就能看懂并应用。有兴趣更详细了解的参考源码[GenArchMojo](cap4j-ddd-codegen-maven-plugin/src/main/java/org/netcorepal/cap4j/ddd/codegen/GenArchMojo.java)
+> 插件配置项`archTemplate`是`gen-arch`命令生成脚手架目录与项目基础代码的配置文件地址。开放自定义方便大家根据自己团队需求进行定制化。格式说明后续再，不过格式很简单，按示例中的配置自己应该就能看懂并应用。有兴趣更详细了解的参考源码[GenArchMojo](cap4j-ddd-codegen-maven-plugin/src/main/java/org/netcorepal/cap4j/ddd/codegen/GenArchMojo.java)
 
 ```shell
 mvn cap4j-ddd-codegen:gen-arch
 ```
-如果没有意外，项目结构通过插件已初始化完毕！
+如果没有意外，项目结构通过`cap4j-ddd-codegen`插件已初始化完毕！
 
 ### 目录结构介绍
 #### 简介
 ```xml
 <basePackage>org.netcorepal.cap4j.ddd.example</basePackage> 
 ```
-基于基础包路径配置，在maven项目源码目录`src/main/java/org/netcorepal/cap4j/ddd/example`下有4个`package`。
-> - _share       公共代码
-> - adapter      适配层(Interface Adapter)
-> - application  应用层(Application Business Rules)
-> - domain       领域层(Enterpprise Business Rules)
+基于基础包路径配置，在maven项目源码目录`src/main/java/org/netcorepal/cap4j/ddd/example`下将会生成4个`package`。
+> - `_share`       公共代码
+> - `adapter`      适配层(Interface Adapter)
+> - `application`  应用层(Application Business Rules)
+> - `domain`       领域层(Enterpprise Business Rules)
 
 以上代码分层完全遵循[整洁架构](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)对于代码分层组织的观点。
 ![整洁架构](https://blog.cleancoder.com/uncle-bob/images/2012-08-13-the-clean-architecture/CleanArchitecture.jpg)
@@ -127,7 +127,7 @@ mvn cap4j-ddd-codegen:gen-arch
 ```
 
 #### 应用层
-实现CQS模式，将功能用例(UseCase)抽象成命令或查询。
+实现`CQS`模式，将功能用例(`UseCase`)抽象成命令或查询来实现。
 ```text
 └── org.netcorepal.cap4j.ddd.example
     └── application
@@ -141,7 +141,12 @@ mvn cap4j-ddd-codegen:gen-arch
 ```
 
 #### 适配层
-放置领域层（domain）、应用层（application）定义的接口实现。整洁架构中称为接口适配层（Interface Adapters）。
+如适配字面意思，放置各层（领域层`domain`、应用层`application`）定义的接口实现。整洁架构中称其为接口适配层（`Interface Adapters`）。
+
+该层是领域层和应用层业务逻辑所依赖的`抽象功能接口`的技术适配实现，遵循DI原则。
+
+举个例子来理解抽象功能接口，比如我们常见的电商场景，用户在商城下单，需要通知仓库打包发货。那么这个`通知`可能就会需要抽象出一个`通知功能接口`，来承接下单流程的连续性。至此，通知功能接口的定义都是应用层关心的事。但是通知功能接口如何实现，就是适配层的事了，你是短信也好、电话也好，能够实现通知功能接口定义的核心效果即可。
+
 ```text
 └── org.netcorepal.cap4j.ddd.example
     └── adapter
@@ -156,7 +161,7 @@ mvn cap4j-ddd-codegen:gen-arch
         │   │   └── configure
         │   │       └── MyDomainEventMessageInterceptor.java (集成事件消息拦截器)
         │   └── repositories (实现聚合仓储接口)
-        ├── infra (基础设施适配器）
+        ├── infra (基础设施适配接口实现）
         │   ├── _share
         │   ├── jdbc (服务于应用层CQS的Q，jdbc查询工具类)
         │   │   └── NamedParameterJdbcTemplateDao.java
@@ -286,8 +291,8 @@ mvn cap4j-ddd-codegen:gen-arch
 通常情况下（比如都是单实体聚合的领域模型）我们不需要这些注解语法也可以让实体代码生成正常工作。
 
 大部分情况下，我们也只需要熟悉一个表注解和两个列注解即可：
-- 表注解 @P=_root_entity_table_;
-- 列注解 @T=_JavaType_; @E=0:_ENUM_FIELD_:枚举字段注释;
+- 表注解 `@P`=_root_entity_table_;
+- 列注解 `@T`=_JavaType_; `@E`=_0_:_ENUM_FIELD_:_枚举字段注释_;
 
 ```sql
 CREATE TABLE `order` (
@@ -318,19 +323,17 @@ CREATE TABLE `order_item` (
   KEY `idx_db_created_at` (`db_created_at`),
   KEY `idx_db_updated_at` (`db_updated_at`)
 ) COMMENT='订单项\n @P=order';
-# 以上sql语句隐含了如下聚合关系：
-# 订单order是一个聚合根，并且订单项order_item是order聚合的实体成员。
-# 订单order_status将会映射成OrderStatus的Java类型，该OrderStatus是一个enum类型，有3个字段成员，INIT、PAID、CLOSED
+# 以上sql语句隐含了如下实体映射关系：
+# 订单表(order)对应实体是一个聚合根，并且订单项表(order_item)对应实体是order聚合的实体成员。
+# 订单表(order)的订单状态字段(order_status)将会映射成OrderStatus的Java类型，该OrderStatus是一个enum类型，有3个字段成员，INIT、PAID、CLOSED
 ```
-默认情况下，所有数据库表都将会映射成一个Java实体类，该实体类将构成一个聚合，并且作为该聚合的聚合根。
-
-
+默认情况下，所有数据库表都将会映射成一个Java实体类，该实体类将构成一个聚合，并且作为该聚合的聚合根。如果聚合存在其他实体，则其他实体对应的表注释标注@P注解即可。
 
 > @P指示该表对应的Java实体类属于某个聚合内的实体成员。
 > 
-> @E负责生成OrderStatus枚举。
+> @E负责生成OrderStatus枚举。@E需要配合@T才能完成数据库字段的Java枚举映射。
 > 
-> @T负责将Order实体的orderStatus字段映射成OrderStatus枚举
+> @T负责将Order实体的orderStatus字段映射成OrderStatus枚举，@T可以单独工作，用于DB类型<->Java类型的强制自定义映射。
 > 
 > 如果想要对这套语法有个详细完整的了解，可以通过如下maven指令获取语法帮助。
 > ```shell
@@ -338,7 +341,7 @@ CREATE TABLE `order_item` (
 > # or
 > mvn cap4j-ddd-codegen:help
 > ```
-> 需要注意的是，当前cap4j仅支持基于MySQL数据库注释的注解解析。
+> 需要注意的是，当前`cap4j-ddd-codegen:gen-entity`仅支持基于MySQL数据库注释的注解解析。
 
 先后执行
 ```shell
@@ -627,8 +630,8 @@ public interface OrderRepository extends org.netcorepal.cap4j.ddd.domain.repo.Ag
 
 UnitOfWork 常用接口
 - `persist(Object entity)` 待持久化添加或更新
-- `remove(Object entity)` 待持久化移除
-- `save()` 以整体事务提交以上持久化变更
+- `remove(Object entity)` 待持久化删除
+- `save()` 以整体事务提交以上待持久化的变更(添加、更新或删除)
 
 示例
 ```java
@@ -740,7 +743,7 @@ public class PlaceOrderCmd {
 ##### 事件定义、订阅、发布
 **创建发件箱表**
 
-为了实现Outbox模式，cap4j需要在业务库中创建发件箱表。脚手架初始化后，`resources/ddl.sql`包含完整的发件箱表建表语句
+为了实现`Outbox`模式，cap4j需要在业务库中创建发件箱表。脚手架初始化后，项目内`resources/ddl.sql`包含完整的发件箱表建表语句
 ```sql
 -- Create syntax for TABLE '__event'
 CREATE TABLE `__event` (
@@ -828,7 +831,7 @@ CREATE TABLE `__locker` (
 
 **领域事件定义**
 
-通常领域事件都是因聚合内部属性状态变更发出，所以基于保障代码业务逻辑的内聚性，更合理的做法是领域事件一般定义在领域层（domain)。
+通常领域事件发布需配合`UnitOfWork`模式实现，这指的是领域事件的发布与聚合内实体属性状态变更的持久化是捆绑的（归属同一事务），所以更合理的做法是领域事件一般定义在领域层（`domain`)。
 
 通过[`DomainEvent`](ddd-core/src/main/java/org/netcorepal/cap4j/ddd/domain/event/annotation/DomainEvent.java)注解的类，cap4j将会识别成领域事件。
 后续即可通过[`DefaultDomainEventSupervisor`](ddd-core/src/main/java/org/netcorepal/cap4j/ddd/domain/event/impl/DefaultDomainEventSupervisor.java).`instance`.`attach`方法来向当前线程上线文附加领域事件。
@@ -884,6 +887,11 @@ public class OrderPlacedDomainEvent {
 > - `基于MQ订阅方` DomainEvent(subscriber="consumer-group")
 > - `消费方与订阅方事务隔离` DomainEvent(persist=true)
 > - `消费方与订阅方同一事务` DomainEvent
+> 
+> 关于领域事件与集成事件
+> 
+> 集成事件指会对系统内其他服务发布的领域事件。通常如果要区分领域事件和集成事件，那么领域事件一般指的是不需要对外发布的业务事件，仅在内部聚合之间应用。很多地方都不区分领域事件与集成事件，但是我认为这个区分是价值的。
+>
 
 
 **领域事件发布**
@@ -929,7 +937,7 @@ public class Order {
 
 **领域事件订阅**
 
-领域事件订阅定义在应用层（application），通常放置在 subscribers 包中。
+领域事件订阅定义在应用层（`application`），通常放置在 `${basePackage}.application.subscribers` 包中。
 
 领域事件订阅支持Spring注解式声明订阅(监听)的方式。
 
