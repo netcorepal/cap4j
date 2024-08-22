@@ -524,7 +524,7 @@ public class JpaUnitOfWork implements UnitOfWork {
                 ? null
                 : payload.getClass().getAnnotation(DomainEvent.class);
         if (domainEvent != null) {
-            return domainEvent.persist() || (domainEvent.value() != null && !domainEvent.value().trim().isEmpty());
+            return domainEvent.persist() || (domainEvent.intergration() != null && !domainEvent.intergration().trim().isEmpty());
         } else {
             return false;
         }

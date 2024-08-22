@@ -878,15 +878,15 @@ public class OrderPlacedDomainEvent {
 
 ```
 > 注解属性详解
-> - `value()` value字段非空，则事件会被识别为集成事件，意味着该事件将通过消息队列适配，通知到分布式系统中的其他服务进程。
+> - `intergration()` intergration 字段非空，则事件会被识别为集成事件，意味着该事件将通过消息队列适配，通知到分布式系统中的其他服务进程。
 > - `subscriber()` 集成事件订阅场景，必须定义该字段，通常该字段的值将会被适配的消息队列应用到消费分组配置中。
 > - `persist()` 控制事件发布记录持久化。集成事件发布场景，该字段无意义。非集成事件发布场景（仅在本服务进程内部有订阅需求），可以通过`persist=true`控制事件进入发件箱表，并脱离事件发布上下文事务中。以避免订阅逻辑异常影响发布事务的完成。
 > 
 > 应用场景例子说明
-> - `基于MQ发送方` DomainEvent(value="event-name-used-for-mq-topic")
-> - `基于MQ订阅方` DomainEvent(subscriber="consumer-group")
-> - `消费方与订阅方事务隔离` DomainEvent(persist=true)
-> - `消费方与订阅方同一事务` DomainEvent
+> - `基于MQ发送方` @DomainEvent(intergration="event-name-used-for-mq-topic")
+> - `基于MQ订阅方` @DomainEvent(subscriber="subscriber-name-used-for-mq-consumer-group")
+> - `消费方与订阅方事务隔离` @DomainEvent(persist=true)
+> - `消费方与订阅方同一事务` @DomainEvent
 > 
 > 关于领域事件与集成事件
 > 
@@ -899,11 +899,9 @@ public class OrderPlacedDomainEvent {
 通常应在实体行为中，发布领域事件。
 
 接口[DomainEventSupervisor.java](ddd-core/src/main/java/org/netcorepal/cap4j/ddd/domain/event/DomainEventSupervisor.java)
-> `即时发送` DefaultDomainEventSupervisor.instance.attach(Object eventPayload, Object entity)
-> 
-> `延时发送` DefaultDomainEventSupervisor.instance.attach(Object eventPayload, Object entity, Duration delay)
-> 
-> `定时发送` DefaultDomainEventSupervisor.instance.attach(Object eventPayload, Object entity, LocalDateTime schedule)
+> - `即时发送` DefaultDomainEventSupervisor.instance.attach(Object eventPayload, Object entity)
+> - `延时发送` DefaultDomainEventSupervisor.instance.attach(Object eventPayload, Object entity, Duration delay)
+> - `定时发送` DefaultDomainEventSupervisor.instance.attach(Object eventPayload, Object entity, LocalDateTime schedule)
 
 ```java
 import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultDomainEventSupervisor;

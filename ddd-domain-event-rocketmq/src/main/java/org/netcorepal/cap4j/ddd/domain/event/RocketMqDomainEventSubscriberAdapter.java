@@ -47,7 +47,7 @@ public class RocketMqDomainEventSubscriberAdapter {
         Set<Class<?>> classes = ScanUtils.scanClass(scanPath, true);
         classes.stream().filter(cls -> {
             DomainEvent domainEvent = cls.getAnnotation(DomainEvent.class);
-            if (!Objects.isNull(domainEvent) && StringUtils.isNotEmpty(domainEvent.value())
+            if (!Objects.isNull(domainEvent) && StringUtils.isNotEmpty(domainEvent.intergration())
                     & !DomainEvent.NONE_SUBSCRIBER.equalsIgnoreCase(domainEvent.subscriber())) {
                 return true;
             } else {
@@ -90,7 +90,7 @@ public class RocketMqDomainEventSubscriberAdapter {
 
     public DefaultMQPushConsumer createDefaultConsumer(Class domainEventClass) {
         DomainEvent domainEvent = (DomainEvent) domainEventClass.getAnnotation(DomainEvent.class);
-        if (Objects.isNull(domainEvent) || StringUtils.isBlank(domainEvent.value())
+        if (Objects.isNull(domainEvent) || StringUtils.isBlank(domainEvent.intergration())
                 || DomainEvent.NONE_SUBSCRIBER.equalsIgnoreCase(domainEvent.subscriber())) {
             // 不是集成事件, 或显式标明无订阅
             return null;
@@ -99,7 +99,7 @@ public class RocketMqDomainEventSubscriberAdapter {
 //            // 不存在订阅
 //            return null;
 //        }
-        String target = domainEvent.value();
+        String target = domainEvent.intergration();
         target = TextUtils.resolvePlaceholderWithCache(target, environment);
         String topic = target.lastIndexOf(':') > 0 ? target.substring(0, target.lastIndexOf(':')) : target;
         String tag = target.lastIndexOf(':') > 0 ? target.substring(target.lastIndexOf(':') + 1) : "";

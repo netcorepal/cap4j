@@ -163,7 +163,7 @@ public class Event {
                 ? null
                 : payload.getClass().getAnnotation(DomainEvent.class);
         if (domainEvent != null) {
-            this.eventType = domainEvent.value();
+            this.eventType = domainEvent.intergration();
         }
         Retry retry = payload == null
                 ? null
