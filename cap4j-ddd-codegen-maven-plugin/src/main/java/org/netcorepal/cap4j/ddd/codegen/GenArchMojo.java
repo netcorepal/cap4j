@@ -100,7 +100,6 @@ public class GenArchMojo extends MyAbstractMojo {
 
     public void render(PathNode pathNode, String parentPath) {
         String path = parentPath + File.separator + pathNode.name;
-        getLog().info("创建 " + escapePath(path));
         switch (pathNode.type) {
             case "file":
                 renderFile(pathNode, parentPath);
@@ -125,7 +124,7 @@ public class GenArchMojo extends MyAbstractMojo {
 
     public void renderDir(PathNode pathNode, String parentPath) {
         if (!"dir".equalsIgnoreCase(pathNode.type)) {
-            throw new RuntimeException("节点类型必须是文件");
+            throw new RuntimeException("节点类型必须是目录");
         }
         if (pathNode.name == null || pathNode.name.isEmpty()) {
             throw new RuntimeException("模板节点配置 name 不得为空 parentPath = " + parentPath);
@@ -133,7 +132,29 @@ public class GenArchMojo extends MyAbstractMojo {
         String path = parentPath + File.separator + pathNode.name;
         path = escapePath(path);
 
-        new File(path).mkdirs();
+        if (FileUtils.fileExists(path)) {
+
+            switch (pathNode.conflict) {
+                case "warn":
+                    getLog().warn("目录存在：" + path);
+                    return;
+                case "overwrite":
+                    getLog().info("目录覆盖：" + path);
+                    break;
+                case "skip":
+                    getLog().info("目录存在：" + path);
+                    return;
+                default:
+                    getLog().info("目录创建：" + path);
+                    break;
+            }
+        }
+        try {
+            FileUtils.deleteDirectory(path);
+        } catch (IOException ex) {
+            getLog().error("获取模板源文件异常", ex);
+        }
+        FileUtils.mkdir(path);
     }
 
     public void renderFile(PathNode pathNode, String parentPath) {
@@ -163,15 +184,17 @@ public class GenArchMojo extends MyAbstractMojo {
         if (FileUtils.fileExists(path)) {
             switch (pathNode.conflict) {
                 case "warn":
-                    getLog().warn("文件已存在：" + path);
+                    getLog().warn("文件存在：" + path);
                     return;
                 case "overwrite":
-                    getLog().info("文件将覆盖：" + path);
+                    getLog().info("文件覆盖：" + path);
                     break;
                 case "skip":
-                default:
-                    getLog().info("文件已存在：" + path);
+                    getLog().info("文件存在：" + path);
                     return;
+                default:
+                    getLog().info("文件创建：" + path);
+                    break;
             }
         }
 
