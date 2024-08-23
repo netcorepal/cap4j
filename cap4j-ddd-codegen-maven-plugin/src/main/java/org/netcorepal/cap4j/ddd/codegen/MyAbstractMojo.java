@@ -23,6 +23,14 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     String archTemplate = "";
 
     /**
+     * 代码模板配置文件编码，默认UFT-8
+     *
+     * @parameter expression="${archTemplateEncoding}"
+     */
+    @Parameter(property = "archTemplateEncoding", defaultValue = "UTF-8")
+    String archTemplateEncoding = "UTF-8";
+
+    /**
      * 基础包路径
      *
      * @parameter expression="${basePackage}"
@@ -284,7 +292,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     String aggregateRepositoryCustomerCode = "";
 
     /**
-     * 忽略聚合根
+     * 跳过生成仓储的聚合根
      * 逗号','或分号';'分割
      *
      * @parameter expression="${ignoreAggregateRoots}"

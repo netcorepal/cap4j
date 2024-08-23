@@ -11,6 +11,7 @@ import org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
@@ -61,18 +62,22 @@ public class GenArchMojo extends MyAbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        getLog().info("当前默认编码：" + Charset.defaultCharset().name());
+        getLog().info("archTemplate设置编码：" + Charset.defaultCharset().name());
+
         String templateContent = "";
         try {
             if (null == archTemplate || archTemplate.isEmpty()) {
-//                templateContent = SourceFileUtils.loadResourceFileContent("template.json");
+//                templateContent = SourceFileUtils.loadResourceFileContent("template.json", archTemplateEncoding);
                 getLog().error("请设置archTemplate参数");
                 return;
             } else {
-                templateContent = SourceFileUtils.loadFileContent(archTemplate);
+                templateContent = SourceFileUtils.loadFileContent(archTemplate, archTemplateEncoding);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        getLog().debug(templateContent);
         if (basePackage == null || basePackage.isEmpty()) {
             getLog().warn("请设置basePackage参数");
             return;
@@ -148,7 +153,7 @@ public class GenArchMojo extends MyAbstractMojo {
                 break;
             case "url":
                 try {
-                    content = SourceFileUtils.loadFileContent(pathNode.data);
+                    content = SourceFileUtils.loadFileContent(pathNode.data, archTemplateEncoding);
                 } catch (IOException ex) {
                     getLog().error("获取模板源文件异常", ex);
                 }
@@ -172,7 +177,7 @@ public class GenArchMojo extends MyAbstractMojo {
 
         try {
             FileUtils.fileDelete(path);
-            FileUtils.fileWrite(path, "utf-8", content);
+            FileUtils.fileWrite(path, content);
         } catch (IOException e) {
             getLog().error("写入模板文件异常", e);
         }
@@ -191,6 +196,7 @@ public class GenArchMojo extends MyAbstractMojo {
         content = content.replace("${artifactId}", projectArtifactId);
         content = content.replace("${version}", projectVersion);
         content = content.replace("${archTemplate}", archTemplate);
+        content = content.replace("${archTemplateEncoding}", archTemplateEncoding);
         content = content.replace("${basePackage}", basePackage);
         content = content.replace("${multiModule}", multiModule ? "true" : "false");
         content = content.replace("${moduleNameSuffix4Adapter}", moduleNameSuffix4Adapter);

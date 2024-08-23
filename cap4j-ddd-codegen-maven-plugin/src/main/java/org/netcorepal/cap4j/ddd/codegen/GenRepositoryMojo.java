@@ -8,6 +8,7 @@ import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.*;
 
 import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.writeLine;
@@ -21,6 +22,13 @@ public class GenRepositoryMojo extends MyAbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        getLog().info("当前默认编码：" + Charset.defaultCharset().name());
+        getLog().info("聚合根标注注解：" + aggregateRootAnnotation);
+        getLog().info("聚合根基类：" + aggregateRepositoryBaseClass);
+        getLog().info("跳过生成仓储的聚合根：" + ignoreAggregateRoots);
+        getLog().info("聚合仓储自定义代码：");
+        getLog().info(aggregateRepositoryCustomerCode);
+        getLog().info("");
         this.getLog().info("开始生成仓储代码");
 
         // 项目结构解析

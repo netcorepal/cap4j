@@ -28,6 +28,8 @@ public class HelpMojo extends AbstractMojo {
                 "                <configuration>\n" +
                 "                    <!-- 代码模板配置文件地址 -->\n" +
                 "                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/main/cap4j-ddd-codegen-template.json</archTemplate>\n" +
+                "                    <!-- 代码模板配置文件编码 -->\n" +
+                "                    <archTemplateEncoding>UTF-8</archTemplateEncoding>\n" +
                 "                    <!-- 基础包路径 -->\n" +
                 "                    <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>\n" +
                 "                    <!-- 是否多模块项目 -->\n" +
@@ -100,13 +102,13 @@ public class HelpMojo extends AbstractMojo {
                 "                    <aggregateIdentityClass>Long</aggregateIdentityClass>\n" +
                 "                    <!-- 聚合根注解 -->\n" +
                 "                    <aggregateRootAnnotation></aggregateRootAnnotation>\n" +
+                "                    <!-- 跳过生成仓储的聚合根 -->\n" +
+                "                    <!-- 逗号','或分号';'分割 -->\n" +
+                "                    <ignoreAggregateRoots></ignoreAggregateRoots>\n" +
                 "                    <!-- 聚合仓储基类型 -->\n" +
                 "                    <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>\n" +
                 "                    <!-- 聚合仓储自定义代码 -->\n" +
                 "                    <aggregateRepositoryCustomerCode></aggregateRepositoryCustomerCode>\n" +
-                "                    <!-- 忽略聚合根 -->\n" +
-                "                    <!-- 逗号','或分号';'分割 -->\n" +
-                "                    <ignoreAggregateRoots></ignoreAggregateRoots>\n" +
                 "                </configuration>");
         getLog().info("");
         getLog().info("");

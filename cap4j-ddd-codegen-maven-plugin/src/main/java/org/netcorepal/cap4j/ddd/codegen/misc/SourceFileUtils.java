@@ -6,8 +6,6 @@ import org.codehaus.plexus.util.FileUtils;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -54,12 +52,12 @@ public class SourceFileUtils {
         return result;
     }
 
-    public static String loadFileContent(String location) throws IOException {
+    public static String loadFileContent(String location, String charsetName) throws IOException {
         String content = "";
         if (location.startsWith("http://") || location.startsWith("https://")) {
             try {
                 URL url = new URL(location);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), charsetName));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     content += line;
@@ -70,7 +68,7 @@ public class SourceFileUtils {
             }
         } else {
             try {
-                content = new String(Files.readAllBytes(Paths.get(location)));
+                content = FileUtils.fileRead(location, charsetName);
             } catch (IOException ex){
                 throw ex;
             }
@@ -78,9 +76,9 @@ public class SourceFileUtils {
         return content;
     }
 
-    public static String loadResourceFileContent(String path) throws IOException {
+    public static String loadResourceFileContent(String path, String charsetName) throws IOException {
         InputStream in = SourceFileUtils.class.getClassLoader().getResourceAsStream(path);
-        InputStreamReader reader = new InputStreamReader(in);
+        InputStreamReader reader = new InputStreamReader(in, charsetName);
         BufferedReader bufferedReader = new BufferedReader(reader);
         StringBuilder stringBuilder = new StringBuilder();
         bufferedReader.lines().forEachOrdered(line -> {

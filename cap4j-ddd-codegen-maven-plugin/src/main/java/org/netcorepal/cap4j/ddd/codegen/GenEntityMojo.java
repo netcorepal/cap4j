@@ -13,6 +13,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +36,31 @@ public class GenEntityMojo extends MyAbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        getLog().info("当前默认编码：" + Charset.defaultCharset().name());
+        getLog().info("数据库连接：" + connectionString);
+        getLog().info("数据库账号：" + user);
+        getLog().info("数据库密码：" + pwd);
+        getLog().info("数据库名称：" + schema);
+        getLog().info("包含表：" + table);
+        getLog().info("忽略表：" + ignoreTable);
+        getLog().info("主键字段：" + idField);
+        getLog().info("乐观锁字段：" + versionField);
+        getLog().info("软删字段：" + deletedField);
+        getLog().info("只读字段：" +readonlyFields );
+        getLog().info("忽略字段：" + ignoreFields);
+        getLog().info("");
+        getLog().info("主键ID生成器：" + idGenerator);
+        getLog().info("聚合根主键映射Java类型：" + aggregateIdentityClass);
+        getLog().info("日期类型映射Java包：" + datePackage4Java);
+        getLog().info("枚举值Java字段名称：" + enumValueField);
+        getLog().info("枚举名Java字段名称：" + enumNameField);
+        getLog().info("枚举类型Jpa类型映射转换期不匹配是否抛出异常：" + enumUnmatchedThrowException);
+        getLog().info("类型强制映射规则：");
+        for (Map.Entry<String, String> entry :
+                typeRemapping.entrySet()) {
+            getLog().info("  " + entry.getKey() + " <-> " + entry.getValue());
+        }
+        getLog().info("");
         this.getLog().info("开始生成实体代码");
         MysqlSchemaUtils.mojo = this;
 
@@ -70,6 +96,8 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("应用层目录：" + applicationModulePath);
         getLog().info("领域层目录：" + domainModulePath);
         getLog().info("基础包名：" + basePackage);
+        getLog().info("实体基类：" + entityBaseClass);
+        getLog().info("聚合根标注注解：" + aggregateRootAnnotation);
 
         if (StringUtils.isBlank(entityMetaInfoClassOutputPackage)) {
             entityMetaInfoClassOutputPackage = "domain._share.meta";
