@@ -1145,7 +1145,7 @@ public class ${NAME} extends PageParam {
                 root -> root.id().gt(param.id)
             ), JpaPageUtils.toSpringData(param));
     
-            return JpaPageUtils.fromSpringData(page, p -> UserPageDto.builder()
+            return JpaPageUtils.fromSpringData(page, p -> ${NAME}Dto.builder()
                 .id(p.getId())
                 .build());
         }
@@ -1205,9 +1205,9 @@ $Qry$.Handler $qry$Handler;
 @Schema(description = "接口说明")
 @GetMapping("/$qry$")
 public ResponseData<$Qry$.$Qry$Dto> $qry$(@Valid $Qry$ param) {
-        $Qry$.$Qry$Dto result = $qry$Handler.exec(param);
-        return ResponseData.success(result);
-        }
+    $Qry$.$Qry$Dto result = $qry$Handler.exec(param);
+    return ResponseData.success(result);
+}
 ```
 `aqryl` 适配mvc透出查询列表
 ```java
@@ -1218,9 +1218,9 @@ $Qry$.Handler $qry$Handler;
 @Schema(description = "接口说明")
 @GetMapping("/$qry$")
 public ResponseData<List<$Qry$.$Qry$Dto>> $qry$(@Valid $Qry$ param) {
-        List<$Qry$.$Qry$Dto> result = $qry$Handler.exec(param);
-        return ResponseData.success(result);
-        }
+    List<$Qry$.$Qry$Dto> result = $qry$Handler.exec(param);
+    return ResponseData.success(result);
+}
 ```
 `aqryp` 适配mvc透出查询分页列表
 ```java
@@ -1231,9 +1231,8 @@ $Qry$.Handler $qry$Handler;
 @Schema(description = "接口说明")
 @PostMapping("/$qry$")
 public ResponseData<PageData<$Qry$.$Qry$Dto>> $qry$(@RequestBody @Valid $Qry$ param) {
-        PageData<$Qry$.$Qry$Dto> result = $qry$Handler.exec(param);
-        return ResponseData.success(result);
-        }esponseData.success(result);
-        }
+    PageData<$Qry$.$Qry$Dto> result = $qry$Handler.exec(param);
+    return ResponseData.success(result);
+}
 ```
 ### have a nice trip!
