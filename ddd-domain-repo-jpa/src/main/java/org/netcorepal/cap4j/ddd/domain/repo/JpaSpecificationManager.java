@@ -20,22 +20,25 @@ public class JpaSpecificationManager implements SpecificationManager {
     private final List<AbstractJpaSpecification> specifications;
     private Map<Class, List<AbstractJpaSpecification>> specificationMap;
 
-    private void init(){
-        if(specificationMap == null){
-            synchronized (this){
-                if(specificationMap == null){
-                    specificationMap = new java.util.HashMap<Class, List<AbstractJpaSpecification>>();
-                    specifications.sort((a,b)->
-                            OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE) - OrderUtils.getOrder(b.getClass(), Ordered.LOWEST_PRECEDENCE)
-                    );
-                    for (AbstractJpaSpecification specification : specifications) {
-                        if(!specificationMap.containsKey(specification.forEntityClass())){
-                            specificationMap.put(specification.forEntityClass(), new java.util.ArrayList<AbstractJpaSpecification>());
-                        }
-                        List<AbstractJpaSpecification> specificationList = specificationMap.get(specification.forEntityClass());
-                        specificationList.add(specification);
-                    }
+    public void init(){
+        if(specificationMap != null){
+            return;
+        }
+        synchronized (this){
+
+            if(specificationMap != null){
+                return;
+            }
+            specificationMap = new java.util.HashMap<Class, List<AbstractJpaSpecification>>();
+            specifications.sort((a,b)->
+                    OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE) - OrderUtils.getOrder(b.getClass(), Ordered.LOWEST_PRECEDENCE)
+            );
+            for (AbstractJpaSpecification specification : specifications) {
+                if(!specificationMap.containsKey(specification.forEntityClass())){
+                    specificationMap.put(specification.forEntityClass(), new java.util.ArrayList<AbstractJpaSpecification>());
                 }
+                List<AbstractJpaSpecification> specificationList = specificationMap.get(specification.forEntityClass());
+                specificationList.add(specification);
             }
         }
     }

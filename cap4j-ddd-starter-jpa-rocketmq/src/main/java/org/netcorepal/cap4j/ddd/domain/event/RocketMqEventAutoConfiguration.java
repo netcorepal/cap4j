@@ -5,6 +5,7 @@ import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.application.distributed.Locker;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventScheduleProperties;
+import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultDomainEventSupervisor;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEventJpaRepository;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.EventRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +60,9 @@ public class RocketMqEventAutoConfiguration {
 
     @Bean
     public RocketMqDomainEventSubscriberManager rocketMqDomainEventSubscriberManager() {
-        RocketMqDomainEventSubscriberManager domainEventSubscriberManager = new RocketMqDomainEventSubscriberManager(subscribers, applicationEventPublisher);
+        RocketMqDomainEventSubscriberManager domainEventSubscriberManager = new RocketMqDomainEventSubscriberManager(
+                subscribers,
+                applicationEventPublisher);
         return domainEventSubscriberManager;
     }
 
@@ -78,9 +81,8 @@ public class RocketMqEventAutoConfiguration {
     }
 
     @Bean
-    public RocketMqDomainEventSupervisor rocketMqDomainEventSupervisor() {
-        RocketMqDomainEventSupervisor rocketMqDomainEventSupervisor = new RocketMqDomainEventSupervisor();
-        return rocketMqDomainEventSupervisor;
+    public DefaultDomainEventSupervisor defaultDomainEventSupervisor() {
+        return (DefaultDomainEventSupervisor) DomainEventSupervisor.getInstance();
     }
 
     @Bean

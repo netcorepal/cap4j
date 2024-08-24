@@ -22,25 +22,30 @@ public class JpaPersistListenerManager implements PersistListenerManager {
 
     private Map<Class, List<AbstractJpaPersistListener>> persistListenersMap;
 
-    private void init() {
-        if (persistListenersMap == null) {
-            synchronized (this) {
-                if (persistListenersMap == null) {
-                    persistListenersMap = new HashMap<>();
-                    persistListeners.sort((a, b) ->
-                            OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE) - OrderUtils.getOrder(b.getClass(), Ordered.LOWEST_PRECEDENCE)
-                    );
-                    for (AbstractJpaPersistListener persistListener : persistListeners) {
-                        if (!persistListenersMap.containsKey(persistListener.forEntityClass())) {
-                            persistListenersMap.put(persistListener.forEntityClass(), new java.util.ArrayList<AbstractJpaPersistListener>());
-                        }
-                        List<AbstractJpaPersistListener> persistListenerList = persistListenersMap.get(persistListener.forEntityClass());
-                        persistListenerList.add(persistListener);
-                    }
+    public void init() {
+        if (persistListenersMap != null) {
+            return;
+        }
+        synchronized (this) {
+            if (persistListenersMap != null) {
+                return;
+            }
+            persistListenersMap = new HashMap<>();
+            persistListeners.sort((a, b) ->
+                    OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE) - OrderUtils.getOrder(b.getClass(), Ordered.LOWEST_PRECEDENCE)
+            );
+            for (AbstractJpaPersistListener persistListener : persistListeners) {
+                if (!persistListenersMap.containsKey(persistListener.forEntityClass())) {
+                    persistListenersMap.put(persistListener.forEntityClass(), new java.util.ArrayList<AbstractJpaPersistListener>());
                 }
+                List<AbstractJpaPersistListener> persistListenerList = persistListenersMap.get(persistListener.forEntityClass());
+                persistListenerList.add(persistListener);
             }
         }
     }
+
+
+
 
     /**
      * onCreate & onUpdate & onDelete

@@ -16,10 +16,11 @@ public abstract class RocketMqDomainEventSubscriber<Event> implements DomainEven
      * @return
      */
     public Class<Event> forDomainEventClass() {
-        return ((Class<Event>) ClassUtils.findMethod(
+        return (Class<Event>) ClassUtils.findMethod(
                 this.getClass(),
                 "onEvent",
-                m -> m.getParameterCount() == 1).getParameters()[0].getType());
+                m -> m.getParameterCount() == 1
+        ).getParameters()[0].getType();
     }
 
     /**

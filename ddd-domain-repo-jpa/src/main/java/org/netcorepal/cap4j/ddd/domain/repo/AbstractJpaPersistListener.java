@@ -28,7 +28,8 @@ public abstract class AbstractJpaPersistListener<Entity> implements PersistListe
         return ((Class<Entity>) ClassUtils.findMethod(
                 this.getClass(),
                 "onChange",
-                m -> m.getParameterCount() == 1).getParameters()[0].getType());
+                m -> m.getParameterCount() == 1
+        ).getParameters()[0].getType());
     }
 
     public boolean throwOnException() {

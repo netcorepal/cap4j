@@ -35,12 +35,14 @@ public class JpaRepositoryAutoConfiguration {
     @Bean
     public JpaPersistListenerManager jpaPersistListenerManager(List<AbstractJpaPersistListener> persistListeners) {
         JpaPersistListenerManager persistListenerManager = new JpaPersistListenerManager(persistListeners);
+        persistListenerManager.init();
         return persistListenerManager;
     }
 
     @Bean
     public JpaSpecificationManager jpaSpecificationManager(List<AbstractJpaSpecification> specifications) {
         JpaSpecificationManager specificationManager = new JpaSpecificationManager(specifications);
+        specificationManager.init();
         return specificationManager;
     }
 

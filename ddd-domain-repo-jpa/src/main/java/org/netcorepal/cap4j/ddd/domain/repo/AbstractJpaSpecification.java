@@ -13,7 +13,8 @@ public abstract class AbstractJpaSpecification<Entity> implements Specification<
         return ((Class<Entity>) ClassUtils.findMethod(
                 this.getClass(),
                 "specify",
-                m -> m.getParameterCount() == 1).getParameters()[0].getType());
+                m -> m.getParameterCount() == 1
+        ).getParameters()[0].getType());
     }
 
     public boolean forceBeforeTransaction(){

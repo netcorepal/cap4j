@@ -13,7 +13,6 @@ import java.util.*;
  * @date 2023/8/13
  */
 public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
-    public static DomainEventSupervisor instance = new DefaultDomainEventSupervisor();
     private static final ThreadLocal<Set<Object>> TL_EVENT_PAYLOADS = new ThreadLocal<Set<Object>>();
     private static final ThreadLocal<Map<Object, Set<Object>>> TL_ENTITY_EVENT_PAYLOADS = new ThreadLocal<Map<Object, Set<Object>>>();
     private static final ThreadLocal<Map<Object, LocalDateTime>> TL_EVENT_SCHEDULE_MAP = new ThreadLocal<Map<Object, LocalDateTime>>();
