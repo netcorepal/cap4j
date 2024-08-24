@@ -1,8 +1,8 @@
 package org.netcorepal.cap4j.ddd.codegen.misc;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.Mojo;
 import org.apache.maven.plugin.logging.Log;
+import org.codehaus.plexus.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -129,22 +129,22 @@ public class MysqlSchemaUtils {
         return hasAnyAnnotation(table, Arrays.asList("Lazy", "L"));
     }
 
-    public static boolean isLazy(Map<String, Object> table){
+    public static boolean isLazy(Map<String, Object> table) {
         return isLazy(table, false);
     }
 
     public static boolean isLazy(Map<String, Object> table, boolean defaultLazy) {
         String val = getAnyAnnotation(table, Arrays.asList("Lazy", "L"));
-        if(defaultLazy) {
-            return StringUtils.compareIgnoreCase(val, "false") == 0 || StringUtils.compareIgnoreCase(val, "0") == 0 ? false : true;
+        if (defaultLazy) {
+            return "false".equalsIgnoreCase(val) || "0".equalsIgnoreCase(val) ? false : true;
         } else {
-            return StringUtils.compareIgnoreCase(val, "true") == 0 || StringUtils.compareIgnoreCase(val, "1") == 0 ? true : false;
+            return "true".equalsIgnoreCase(val) || "1".equalsIgnoreCase(val) ? true : false;
         }
     }
 
     public static boolean countIsOne(Map<String, Object> table) {
         String val = getAnyAnnotation(table, Arrays.asList("Count", "C"));
-        return StringUtils.compareIgnoreCase(val, "One") == 0 || StringUtils.compareIgnoreCase(val, "1") == 0 ? true : false;
+        return "One".equalsIgnoreCase(val) || "1".equalsIgnoreCase(val) ? true : false;
     }
 
     /**
@@ -337,9 +337,9 @@ public class MysqlSchemaUtils {
                 getLog().debug(enumConfig);
                 List<String> pair = Arrays.stream(enumConfig.split("\\:"))
                         .map(c -> c.trim()
-                                .replace("\n","")
-                                .replace("\r","")
-                                .replace("\t",""))
+                                .replace("\n", "")
+                                .replace("\r", "")
+                                .replace("\t", ""))
                         .collect(Collectors.toList());
                 if (pair.size() == 0) {
                     continue;

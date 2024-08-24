@@ -61,6 +61,9 @@
                     <readonlyFields>db_created_at,db_updated_at</readonlyFields>
                     <ignoreFields></ignoreFields>
                     <entityBaseClass></entityBaseClass>
+                    <entityClassExtraImports>
+                        <!-- <import>your.package.ClassName</import>-->
+                    </entityClassExtraImports>
                     <entityMetaInfoClassOutputMode>ref</entityMetaInfoClassOutputMode>
                     <entityMetaInfoClassOutputPackage>domain._share.meta</entityMetaInfoClassOutputPackage>
                     <fetchMode>SUBSELECT</fetchMode>

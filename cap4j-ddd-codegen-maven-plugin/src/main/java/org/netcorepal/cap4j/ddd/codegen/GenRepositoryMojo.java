@@ -10,10 +10,13 @@ import org.codehaus.plexus.util.StringUtils;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.writeLine;
 
 /**
+ * 生成仓储
+ *
  * @author binking338
  * @date 2022-02-14
  */
@@ -23,11 +26,10 @@ public class GenRepositoryMojo extends MyAbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         getLog().info("当前默认编码：" + Charset.defaultCharset().name());
-        getLog().info("聚合根标注注解：" + aggregateRootAnnotation);
-        getLog().info("聚合根基类：" + aggregateRepositoryBaseClass);
+        getLog().info("聚合根标注注解：" + getAggregateRootAnnotation());
+        getLog().info("聚合根基类：" + getAggregateRepositoryBaseClass());
         getLog().info("跳过生成仓储的聚合根：" + ignoreAggregateRoots);
-        getLog().info("聚合仓储自定义代码：");
-        getLog().info(aggregateRepositoryCustomerCode);
+        getLog().info("聚合仓储自定义代码：" + getAggregateRepositoryCustomerCode());
         getLog().info("");
         this.getLog().info("开始生成仓储代码");
 
@@ -54,9 +56,9 @@ public class GenRepositoryMojo extends MyAbstractMojo {
             applicationModulePath = absoluteCurrentDir;
             adapterModulePath = absoluteCurrentDir;
         }
-        String basePackage = org.apache.commons.lang3.StringUtils.isNotBlank(this.basePackage)
+        String basePackage = StringUtils.isNotBlank(this.basePackage)
                 ? this.basePackage
-                : SourceFileUtils.resolveBasePackage(domainModulePath);
+                : SourceFileUtils.resolveDefaultBasePackage(domainModulePath);
         getLog().info(multiModule ? "多模块项目" : "单模块项目");
         getLog().info("项目目录：" + projectDir);
         getLog().info("适配层目录：" + adapterModulePath);
@@ -64,56 +66,74 @@ public class GenRepositoryMojo extends MyAbstractMojo {
         getLog().info("领域层目录：" + domainModulePath);
         getLog().info("基础包名：" + basePackage);
 
-        //
-
-        if (StringUtils.isBlank(aggregateRepositoryBaseClass)) {
-            // 默认聚合仓储基类
-            aggregateRepositoryBaseClass = "org.netcorepal.cap4j.ddd.domain.repo.AggregateRepository<${EntityType}, ${IdentityType}>";
-        }
-        if(StringUtils.isBlank(aggregateRepositoryCustomerCode)){
-            aggregateRepositoryCustomerCode =
-                    "@org.springframework.stereotype.Component\n" +
-                    "    public static class ${EntityType}JpaRepositoryAdapter extends org.netcorepal.cap4j.ddd.domain.repo.AbstractJpaRepository<${EntityType}, ${IdentityType}>\n" +
-                    "    {\n" +
-                    "        public ${EntityType}JpaRepositoryAdapter(org.springframework.data.jpa.repository.JpaSpecificationExecutor<${EntityType}> jpaSpecificationExecutor, org.springframework.data.jpa.repository.JpaRepository<${EntityType}, ${IdentityType}> jpaRepository) {\n" +
-                    "            super(jpaSpecificationExecutor, jpaRepository);\n" +
-                    "        }\n" +
-                    "    }" +
-                    "";
-        }
         try {
             //renameAggregateRepositorySourceFiles(basePackage, adapterModulePath);
             List<File> files = SourceFileUtils.loadFiles(domainModulePath);
-            files.forEach(file -> {
-                String content = "";
-                try {
-                    content = FileUtils.fileRead(file);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                boolean isAggregateRoot = Arrays.stream(content.replace("\r\n", "\n").split("\n"))
-                        .anyMatch(line -> line.matches("^\\s*(@(\\s*[A-Za-z_][A-Za-z0-9_]*\\s*\\.?)+)+$") && line.matches("^\\s*@([^.]*\\.)*AggregateRoot\\s*\\s*$")
-                                        || line.matches("^\\s*\\/\\*\\s*@AggregateRoot\\s*\\*\\/\\s*$"));
-                if (isAggregateRoot) {
-                    this.getLog().info("发现聚合根: " + SourceFileUtils.resolveClassName(file.getAbsolutePath()));
-
-                    String simpleClassName = SourceFileUtils.resolveSimpleClassName(file.getAbsolutePath());
-                    if (Arrays.stream(ignoreAggregateRoots.split("[\\,\\;]"))
-                            .anyMatch(i -> i.equalsIgnoreCase(simpleClassName))) {
-                        return;
-                    }
-                    try {
-                        writeAggregateRepositorySourceFile(file.getAbsolutePath(), basePackage, adapterModulePath);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
+            files = files.stream()
+                    .filter(file -> "java".equalsIgnoreCase(FileUtils.extension(file.getName())))
+                    .collect(Collectors.toList());
+            files.forEach(file->{
+                this.getLog().debug("发现Java文件: " + SourceFileUtils.resolveClassName(file.getAbsolutePath()));
             });
+            getLog().info("发现java文件数量：" + files.size());
+            files.forEach(file -> {
+                        this.getLog().debug("解析Java文件: " + SourceFileUtils.resolveClassName(file.getAbsolutePath()));
+                        String content = "";
+                        try {
+                            content = FileUtils.fileRead(file);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        boolean isAggregateRoot = isAggregateRoot(content);
+                        if (isAggregateRoot) {
+                            this.getLog().info("发现聚合根: " + SourceFileUtils.resolveClassName(file.getAbsolutePath()));
+
+                            String simpleClassName = SourceFileUtils.resolveSimpleClassName(file.getAbsolutePath());
+                            if (Arrays.stream(ignoreAggregateRoots.split("[\\,\\;]"))
+                                    .anyMatch(i -> i.equalsIgnoreCase(simpleClassName))) {
+                                return;
+                            }
+                            try {
+                                writeAggregateRepositorySourceFile(file.getAbsolutePath(), basePackage, adapterModulePath);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
         } catch (Exception e) {
             this.getLog().error("发生异常，", e);
         }
 
         this.getLog().info("结束生成仓储代码");
+    }
+
+    private boolean isAggregateRoot(String content) {
+        return Arrays.stream(content.split("(\r)|(\n)|(\r\n)"))
+                .filter(line -> line.trim().startsWith("@") || line.replace("\\s", "").equals("/*@AggregateRoot*/"))
+                .anyMatch(line -> {
+                            boolean hasAggregateRoot = false;
+                            if (StringUtils.isBlank(getAggregateRootAnnotation())) {
+                                boolean oldAggregateRoot1 = line.matches("@AggregateRoot(\\(.*\\))?");
+                                boolean oldAggregateRoot2 = line.matches("^\\s*\\/\\*\\s*@AggregateRoot\\s*\\*\\/\\s*$");
+                                hasAggregateRoot = oldAggregateRoot1 || oldAggregateRoot2;
+                            } else {
+                                boolean isAggregateRootAnnotation = line.matches("@AggregateRoot(\\(.*\\))?");
+                                boolean isAggregateRootAnnotationFullName = line.matches(getAggregateRootAnnotation() + "(\\(.*\\))?");
+                                hasAggregateRoot = (isAggregateRootAnnotationFullName || isAggregateRootAnnotation);
+                            }
+                            if(hasAggregateRoot){
+                                return hasAggregateRoot;
+                            }
+
+                            boolean hasAggregate = line.matches("@Aggregate\\s*\\(.*root\\s*=\\s*true.*\\)");
+                            boolean aggregateRoot = hasAggregate;
+
+                            getLog().debug("annotationline: " + line);
+                            getLog().debug("hasAggregateRoot=" + hasAggregateRoot);
+                            getLog().debug("hasAggregate=" + hasAggregate);
+                            return aggregateRoot;
+                        }
+                );
     }
 
     /**
@@ -228,7 +248,7 @@ public class GenRepositoryMojo extends MyAbstractMojo {
             writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
             writeLine(out, " */");
         }
-        writeLine(out, "public interface " + simpleClassName + "Repository extends " + aggregateRepositoryBaseClass.replace("${EntityType}", simpleClassName).replace("${IdentityType}", aggregateIdentityClass) + " {");
+        writeLine(out, "public interface " + simpleClassName + "Repository extends " + getAggregateRepositoryBaseClass().replace("${EntityType}", simpleClassName).replace("${IdentityType}", aggregateIdentityClass) + " {");
         if (customerLines.size() > 0) {
             for (String line : customerLines) {
                 writeLine(out, line);
@@ -236,7 +256,7 @@ public class GenRepositoryMojo extends MyAbstractMojo {
         } else {
             writeLine(out, "    // 【自定义代码开始】本段落之外代码由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
             writeLine(out, "");
-            writeLine(out, "    " + aggregateRepositoryCustomerCode.replace("${EntityType}", simpleClassName).replace("${IdentityType}", aggregateIdentityClass));
+            writeLine(out, "    " + getAggregateRepositoryCustomerCode().replace("${EntityType}", simpleClassName).replace("${IdentityType}", aggregateIdentityClass));
             writeLine(out, "");
             writeLine(out, "    // 【自定义代码结束】本段落之外代码由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
 

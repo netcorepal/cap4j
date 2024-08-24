@@ -1,18 +1,15 @@
 package org.netcorepal.cap4j.ddd.codegen;
 
 import org.codehaus.plexus.util.FileUtils;
+import org.codehaus.plexus.util.StringUtils;
 import org.netcorepal.cap4j.ddd.codegen.misc.Inflector;
 import org.netcorepal.cap4j.ddd.codegen.misc.MysqlSchemaUtils;
 import org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.*;
@@ -23,6 +20,8 @@ import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.toUpperCamelCase
 import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.writeLine;
 
 /**
+ * 生成实体
+ *
  * @author binking338
  * @date 2022-02-16
  */
@@ -46,7 +45,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("主键字段：" + idField);
         getLog().info("乐观锁字段：" + versionField);
         getLog().info("软删字段：" + deletedField);
-        getLog().info("只读字段：" +readonlyFields );
+        getLog().info("只读字段：" + readonlyFields);
         getLog().info("忽略字段：" + ignoreFields);
         getLog().info("");
         getLog().info("主键ID生成器：" + idGenerator);
@@ -89,7 +88,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
         String basePackage = StringUtils.isNotBlank(this.basePackage)
                 ? this.basePackage
-                : SourceFileUtils.resolveBasePackage(domainModulePath);
+                : SourceFileUtils.resolveDefaultBasePackage(domainModulePath);
         getLog().info(multiModule ? "多模块项目" : "单模块项目");
         getLog().info("项目目录：" + projectDir);
         getLog().info("适配层目录：" + adapterModulePath);
@@ -97,7 +96,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("领域层目录：" + domainModulePath);
         getLog().info("基础包名：" + basePackage);
         getLog().info("实体基类：" + entityBaseClass);
-        getLog().info("聚合根标注注解：" + aggregateRootAnnotation);
+        getLog().info("聚合根标注注解：" + getAggregateRootAnnotation());
 
         if (StringUtils.isBlank(entityMetaInfoClassOutputPackage)) {
             entityMetaInfoClassOutputPackage = "domain._share.meta";
@@ -639,10 +638,10 @@ public class GenEntityMojo extends MyAbstractMojo {
                     startClassLine = i;
                 } else if ((line.trim().startsWith("@") || annotationLines.size() > 0) && startClassLine == 0) {
                     annotationLines.add(line);
-                    getLog().debug("a " + line);
+                    getLog().debug("[annotation] " + line);
                 } else if ((annotationLines.size() == 0 && startClassLine == 0)) {
                     importLines.add(line);
-                    getLog().debug("i " + line);
+                    getLog().debug("[import] " + line);
                 } else if (startClassLine > 0 &&
                         (startMapperLine == 0 || endMapperLine > 0)
                 ) {
@@ -660,7 +659,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 }
                 customerLines.remove(i);
             }
-            customerLines.forEach(l -> getLog().debug("c " + l));
+            customerLines.forEach(l -> getLog().debug("[customer] " + l));
             if (startMapperLine == 0 || endMapperLine == 0) {
                 return false;
             }
@@ -669,32 +668,21 @@ public class GenEntityMojo extends MyAbstractMojo {
         return true;
     }
 
-    public void processImportLines(Map<String, Object> table, String basePackage, List<String> importLines) {
+    public void processImportLines(Map<String, Object> table, String basePackage, List<String> importLines, String content) {
         boolean importEmpty = importLines.size() == 0;
         if (importEmpty) {
             importLines.add("");
         }
-        List<String> importNamespaces = Arrays.asList(
-                "lombok.AllArgsConstructor",
-                "lombok.Builder",
-                "lombok.Getter",
-                "lombok.NoArgsConstructor",
-                "org.hibernate.annotations.GenericGenerator",
-                "org.hibernate.annotations.DynamicInsert",
-                "org.hibernate.annotations.DynamicUpdate",
-                "org.hibernate.annotations.Fetch",
-                "org.hibernate.annotations.FetchMode",
-                "org.hibernate.annotations.SQLDelete",
-                "org.hibernate.annotations.Where",
-                "javax.persistence.*"
-        );
 
+        List<String> entityClassExtraImports = getEntityClassExtraImports();
         if (importEmpty) {
-            for (String importNamespace : importNamespaces) {
-                if (importNamespace.equalsIgnoreCase("javax.persistence.*")) {
+            boolean breakLine = false;
+            for (String entityClassExtraImport : entityClassExtraImports) {
+                if (entityClassExtraImport.startsWith("javax") && !breakLine) {
+                    breakLine = true;
                     importLines.add("");
                 }
-                importLines.add("import " + importNamespace + ";");
+                importLines.add("import " + entityClassExtraImport + ";");
             }
             importLines.add("");
             importLines.add("/**");
@@ -710,35 +698,57 @@ public class GenEntityMojo extends MyAbstractMojo {
             importLines.add(" * 警告：请勿手工修改该文件的字段声明，重新生成会覆盖字段声明");
             importLines.add(" */");
         } else {
-            for (String importNamespace : importNamespaces) {
-                SourceFileUtils.addSortedIfNone(importLines,
-                        "\\s*import\\s+" + importNamespace
+            for (String entityClassExtraImport : entityClassExtraImports) {
+                SourceFileUtils.addIfNone(importLines,
+                        "\\s*import\\s+" + (entityClassExtraImport
                                 .replace(".", "\\.")
-                                .replace("*", "\\*") + "\\s*;",
-                        "import " + importNamespace + ";");
+                                .replace("*", "\\*")) + "\\s*;",
+                        "import " + entityClassExtraImport + ";",
+                        (list, line) -> {
+                            Optional<String> firstLargeLine = list.stream().filter(l -> !l.isEmpty() && l.compareTo(line) > 0).findFirst();
+                            if (firstLargeLine.isPresent()) {
+                                return list.indexOf(firstLargeLine.get());
+                            }
+                            List<String> imports = list.stream().filter(l -> !l.isEmpty() && !l.contains(" java") && l.startsWith("import")).collect(Collectors.toList());
+                            return list.indexOf(imports.get(imports.size() - 1)) + 1;
+                        });
+            }
+        }
+        for (int i = 0; i < importLines.size(); i++) {
+            String importLine = importLines.get(i);
+            if (importLine.contains(" org.hibernate.annotations.")
+                    && !importLine.contains("*")) {
+                String hibernateAnnotation = importLine.substring(importLine.lastIndexOf('.') + 1).replace(";", "").trim();
+                if (!content.contains(hibernateAnnotation)) {
+                    importLines.remove(importLine);
+                    i--;
+                }
             }
         }
     }
 
     public void processAnnotationLines(Map<String, Object> table, List<Map<String, Object>> columns, List<String> annotationLines) {
         String tableName = MysqlSchemaUtils.getTableName(table);
+        String simpleClassName = getEntityJavaType(tableName);
         boolean annotationEmpty = annotationLines.size() == 0;
-        SourceFileUtils.addIfNone(annotationLines, "@Entity(\\(.*\\))?", "@Entity");
-        if (StringUtils.isNotBlank(aggregateRootAnnotation)) {
-            String aggregateRootAnnotationSimpleClassName = aggregateRootAnnotation.substring(aggregateRootAnnotation.contains(".") ? aggregateRootAnnotation.lastIndexOf(".") + 1 : 0);
+        SourceFileUtils.removeText(annotationLines, "@Aggregate\\(.*\\)");
+        SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(entity = \"" + simpleClassName + "\", root = " + (MysqlSchemaUtils.isAggregateRoot(table) ? "true" : "false") + ", aggregate = \"" + simpleClassName + "\", description = \"" + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
+        if (StringUtils.isNotBlank(getAggregateRootAnnotation())) {
             if (MysqlSchemaUtils.isAggregateRoot(table)) {
-                SourceFileUtils.addIfNone(annotationLines, "@[\\w\\.]*" + aggregateRootAnnotationSimpleClassName + "(\\(.*\\))?", "@" + aggregateRootAnnotation);
+                SourceFileUtils.addIfNone(annotationLines, getAggregateRootAnnotation() + "(\\(.*\\))?", getAggregateRootAnnotation());
             } else {
-                SourceFileUtils.removeText(annotationLines, "@" + aggregateRootAnnotation + "(\\(.*\\))?");
-                SourceFileUtils.removeText(annotationLines, "@" + aggregateRootAnnotationSimpleClassName + "(\\(.*\\))?");
-            }
-        } else {
-            if (MysqlSchemaUtils.isAggregateRoot(table)) {
-                SourceFileUtils.addIfNone(annotationLines, "\\/\\* @AggregateRoot(\\(.*\\))? \\*\\/", "/* @AggregateRoot */");
-            } else {
-                SourceFileUtils.removeText(annotationLines, "\\/\\* @AggregateRoot(\\(.*\\))? \\*\\/");
+                SourceFileUtils.removeText(annotationLines, getAggregateRootAnnotation() + "(\\(.*\\))?");
+                SourceFileUtils.removeText(annotationLines, "@AggregateRoot(\\(.*\\))?");
             }
         }
+//        else {
+//            if (MysqlSchemaUtils.isAggregateRoot(table)) {
+//                SourceFileUtils.addIfNone(annotationLines, "\\/\\* @AggregateRoot(\\(.*\\))? \\*\\/", "/* @AggregateRoot */");
+//            } else {
+//                SourceFileUtils.removeText(annotationLines, "\\/\\* @AggregateRoot(\\(.*\\))? \\*\\/");
+//            }
+//        }
+        SourceFileUtils.addIfNone(annotationLines, "@Entity(\\(.*\\))?", "@Entity");
         SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(name = \"`" + tableName + "`\")");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicInsert(\\(.*\\))?", "@DynamicInsert");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicUpdate(\\(.*\\))?", "@DynamicUpdate");
@@ -807,13 +817,27 @@ public class GenEntityMojo extends MyAbstractMojo {
             getLog().warn("文件被改动，无法自动更新！" + filePath);
             return;
         }
-        processImportLines(table, basePackage, importLines);
-        processAnnotationLines(table, columns, annotationLines);
 
         getLog().info("开始生成实体文件：" + filePath);
+        processAnnotationLines(table, columns, annotationLines);
+        String mainSource = generateEntityClassMainSource(table, columns, tablePackageMap, relations, enums, annotationLines, customerLines);
+        processImportLines(table, basePackage, importLines, mainSource);
+
         BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
         writeLine(out, "package " + packageName + ";");
         importLines.forEach(line -> writeLine(out, line));
+        writeLine(out, mainSource);
+        out.close();
+        if (generateSchema) {
+            writeSchemaSourceFile(table, columns, tablePackageMap, relations, basePackage, baseDir.replace("-domain", "-application"));
+        }
+    }
+
+    private String generateEntityClassMainSource(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, List<String> enums, List<String> annotationLines, List<String> customerLines) throws IOException {
+        String tableName = MysqlSchemaUtils.getTableName(table);
+        String simpleClassName = getEntityJavaType(tableName);
+        StringWriter stringWriter = new StringWriter();
+        BufferedWriter out = new BufferedWriter(stringWriter);
         annotationLines.forEach(line -> writeLine(out, line));
         writeLine(out, "public class " + simpleClassName + (StringUtils.isNotBlank(entityBaseClass) ? " extends " + entityBaseClass : "") + " {");
         if (customerLines.size() > 0) {
@@ -866,10 +890,9 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, "    // 【字段映射结束】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
         writeLine(out, "}");
         writeLine(out, "");
+        out.flush();
         out.close();
-        if (generateSchema) {
-            writeSchemaSourceFile(table, columns, tablePackageMap, relations, basePackage, baseDir.replace("-domain", "-application"));
-        }
+        return stringWriter.toString();
     }
 
     public boolean needGenerateField(Map<String, Object> table, Map<String, Object> column, Map<String, Map<String, String>> relations) {
@@ -1040,6 +1063,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public void writeColumnComment(BufferedWriter out, Map<String, Object> column) {
+        String columnName = MysqlSchemaUtils.getColumnName(column);
         String columnJavaType = getColumnJavaType(column);
         writeLine(out, "    /**");
         for (String comment : MysqlSchemaUtils.getComment(column).split("[\\r\\n]")) {
@@ -1048,7 +1072,7 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
             writeLine(out, "     * " + comment);
             if (MysqlSchemaUtils.hasEnum(column)) {
-                getLog().info("获取枚举java类型=" + columnJavaType);
+                getLog().info("获取枚举java类型："+columnName + " -> " + columnJavaType);
                 Map<Integer, String[]> enumMap = EnumConfigMap.get(columnJavaType);
                 if (enumMap == null) {
                     enumMap = EnumConfigMap.get(MysqlSchemaUtils.getType(column));
@@ -1211,7 +1235,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, "public enum " + enumType + " {");
         writeLine(out, "");
         for (Map.Entry<Integer, String[]> entry : enumConfigs.entrySet()) {
-            getLog().info(entry.getValue()[0] + " = " + entry.getKey() + " : " + entry.getValue()[1]);
+            getLog().info("  " + entry.getValue()[1] + " : " + entry.getValue()[0] + " = " + entry.getKey());
             writeLine(out, "    /**");
             writeLine(out, "     * " + entry.getValue()[1]);
             writeLine(out, "     */");

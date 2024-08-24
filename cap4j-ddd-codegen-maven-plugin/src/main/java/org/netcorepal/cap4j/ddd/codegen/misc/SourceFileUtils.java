@@ -1,12 +1,13 @@
 package org.netcorepal.cap4j.ddd.codegen.misc;
 
 import com.sun.org.apache.xml.internal.serialize.LineSeparator;
-import org.apache.commons.lang3.StringUtils;
 import org.codehaus.plexus.util.FileUtils;
+import org.codehaus.plexus.util.StringUtils;
 
 import java.io.*;
 import java.net.URL;
 import java.util.*;
+import java.util.function.BiFunction;
 
 /**
  * @author binking338
@@ -15,7 +16,8 @@ import java.util.*;
 public class SourceFileUtils {
 
     private static Map<String, List<File>> Cache = new HashMap<>();
-    private final static String JAVA_SRC_DIRS = "src.main.java.";
+    private final static String SRC_MAIN_JAVA = "src.main.java.";
+    private final static String SRC_TEST_JAVA = "src.test.java.";
 
     public static List<File> loadFiles(String baseDir) {
         if (Cache.containsKey(baseDir)) {
@@ -91,7 +93,7 @@ public class SourceFileUtils {
     public static String resolveDirectory(String baseDir, String packageName) {
         String dir = null;
         try {
-            dir = new File(baseDir).getCanonicalPath() + File.separator + (JAVA_SRC_DIRS + packageName).replace(".", File.separator);
+            dir = new File(baseDir).getCanonicalPath() + File.separator + (SRC_MAIN_JAVA + packageName).replace(".", File.separator);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -101,7 +103,7 @@ public class SourceFileUtils {
     public static String resolveSourceFile(String baseDir, String packageName, String className){
         String file = null;
         try {
-            file = new File(baseDir).getCanonicalPath() + File.separator + (JAVA_SRC_DIRS + packageName).replace(".", File.separator) + File.separator + className + ".java";
+            file = new File(baseDir).getCanonicalPath() + File.separator + (SRC_MAIN_JAVA + packageName).replace(".", File.separator) + File.separator + className + ".java";
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -114,7 +116,16 @@ public class SourceFileUtils {
 
     public static String resolveClassName(String filePath) {
         String className = filePath.replace(File.separator, ".").replaceAll("\\.java$", "");
-        className = className.substring(className.lastIndexOf(JAVA_SRC_DIRS) + JAVA_SRC_DIRS.length());
+        int idx = -1;
+
+        if(className.lastIndexOf(SRC_MAIN_JAVA) >= 0) {
+            idx = className.lastIndexOf(SRC_MAIN_JAVA) + SRC_MAIN_JAVA.length();
+        } else if(className.lastIndexOf(SRC_TEST_JAVA) >= 0) {
+            idx = className.lastIndexOf(SRC_TEST_JAVA) + SRC_TEST_JAVA.length();
+        } else {
+            return "";
+        }
+        className = className.substring(idx);
         return className;
     }
 
@@ -130,9 +141,9 @@ public class SourceFileUtils {
         return simpleClassName;
     }
 
-    public static String resolveBasePackage(String baseDir) {
+    public static String resolveDefaultBasePackage(String baseDir) {
         try {
-            Optional<File> javaFile = loadFiles(new File(baseDir).getCanonicalPath() + File.separator + JAVA_SRC_DIRS.replace(".", File.separator))
+            Optional<File> javaFile = loadFiles(new File(baseDir).getCanonicalPath() + File.separator + SRC_MAIN_JAVA.replace(".", File.separator))
                     .stream().filter(file -> FileUtils.getExtension(file.getAbsolutePath()).contains("java")).findFirst();
             if (javaFile.isPresent()) {
                 String packageName = resolvePackage(javaFile.get().getCanonicalPath());
@@ -201,14 +212,9 @@ public class SourceFileUtils {
         }
     }
 
-    public static void addSortedIfNone(List<String> list, String regex, String line) {
+    public static void addIfNone(List<String> list, String regex, String line, BiFunction<List<String>, String, Integer> idx) {
         if (!hasLine(list, regex)) {
-            Optional<String> first = list.stream().filter(l -> l.compareToIgnoreCase(line) > 0).findFirst();
-            if (first.isPresent()) {
-                list.add(list.indexOf(first.get()), line);
-            } else {
-                list.add(0, line);
-            }
+            list.add(idx.apply(list, line).intValue(), line);
         }
     }
 

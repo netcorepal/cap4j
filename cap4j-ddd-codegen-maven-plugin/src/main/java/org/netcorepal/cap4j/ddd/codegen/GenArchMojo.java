@@ -237,6 +237,7 @@ public class GenArchMojo extends MyAbstractMojo {
         content = content.replace("${readonlyFields}", readonlyFields);
         content = content.replace("${ignoreFields}", ignoreFields);
         content = content.replace("${entityBaseClass}", entityBaseClass);
+        content = content.replace("${entityClassExtraImports}", stringfyEntityClassImportPackages());
         content = content.replace("${entityMetaInfoClassOutputPackage}", entityMetaInfoClassOutputPackage);
         content = content.replace("${entityMetaInfoClassOutputMode}", entityMetaInfoClassOutputMode);
         content = content.replace("${idGenerator}", idGenerator);
@@ -271,6 +272,18 @@ public class GenArchMojo extends MyAbstractMojo {
                 typeRemapping.entrySet()) {
             result += "<" + kv.getKey() + ">" + kv.getValue() + "</\"+kv.getKey()+\">";
         }
+        return result;
+    }
+
+    private String stringfyEntityClassImportPackages() {
+        if (entityClassExtraImports == null || entityClassExtraImports.isEmpty()) {
+            return "";
+        }
+        String result = "\n";
+        for (String entityClassExtraImport : entityClassExtraImports) {
+            result += "                        <item>" + entityClassExtraImport + "</item>\n";
+        }
+        result += "                    \n";
         return result;
     }
 }

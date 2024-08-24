@@ -2,9 +2,10 @@ package org.netcorepal.cap4j.ddd.codegen;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.codehaus.plexus.util.StringUtils;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 基Mojo
@@ -156,6 +157,36 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "entityBaseClass", defaultValue = "")
     String entityBaseClass = "";
+
+    /**
+     * 实体类附加导入包
+     *
+     * @parameter expression="${entityClassExtraImports}"
+     */
+    @Parameter(property = "entityClassExtraImports", defaultValue = "")
+    List<String> entityClassExtraImports = new ArrayList<>();
+
+    public List<String> getEntityClassExtraImports() {
+        List<String> importList = Arrays.asList(
+                "lombok.AllArgsConstructor",
+                "lombok.Builder",
+                "lombok.Getter",
+                "lombok.NoArgsConstructor",
+                "org.hibernate.annotations.GenericGenerator",
+                "org.hibernate.annotations.DynamicInsert",
+                "org.hibernate.annotations.DynamicUpdate",
+                "org.hibernate.annotations.Fetch",
+                "org.hibernate.annotations.FetchMode",
+                "org.hibernate.annotations.SQLDelete",
+                "org.hibernate.annotations.Where",
+                "org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate",
+                "javax.persistence.*"
+        );
+        List<String> imports = new ArrayList<>(importList);
+        imports.addAll(entityClassExtraImports);
+        return imports.stream().distinct().collect(Collectors.toList());
+    }
+
     /**
      * 实体辅助类输出模式，绝对路径或相对路径，abs|ref
      *
@@ -163,6 +194,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "entityMetaInfoClassOutputMode", defaultValue = "")
     String entityMetaInfoClassOutputMode = "abs";
+
     /**
      * 实体辅助类输出包
      *
@@ -185,6 +217,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "fetchMode", defaultValue = "SUBSELECT")
     String fetchMode = "SUBSELECT";
+
     /**
      * 主键生成器 默认自增策略
      *
@@ -275,6 +308,16 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     @Parameter(property = "aggregateRootAnnotation", defaultValue = "")
     String aggregateRootAnnotation = "";
 
+    public String getAggregateRootAnnotation() {
+        if (StringUtils.isNotEmpty(aggregateRootAnnotation)) {
+            aggregateRootAnnotation = aggregateRootAnnotation.trim();
+            if (!aggregateRootAnnotation.startsWith("@")) {
+                aggregateRootAnnotation = "@" + aggregateRootAnnotation;
+            }
+        }
+        return aggregateRootAnnotation;
+    }
+
     /**
      * 聚合仓储基类型
      *
@@ -283,6 +326,14 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     @Parameter(property = "aggregateRepositoryBaseClass", defaultValue = "")
     String aggregateRepositoryBaseClass = "";
 
+    public String getAggregateRepositoryBaseClass() {
+        if (StringUtils.isBlank(aggregateRepositoryBaseClass)) {
+            // 默认聚合仓储基类
+            aggregateRepositoryBaseClass = "org.netcorepal.cap4j.ddd.domain.repo.AggregateRepository<${EntityType}, ${IdentityType}>";
+        }
+        return aggregateRepositoryBaseClass;
+    }
+
     /**
      * 聚合仓储自定义代码
      *
@@ -290,6 +341,21 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "aggregateRepositoryCustomerCode", defaultValue = "")
     String aggregateRepositoryCustomerCode = "";
+
+    public String getAggregateRepositoryCustomerCode(){
+        if (StringUtils.isBlank(aggregateRepositoryCustomerCode)) {
+            aggregateRepositoryCustomerCode =
+                    "@org.springframework.stereotype.Component\n" +
+                            "    public static class ${EntityType}JpaRepositoryAdapter extends org.netcorepal.cap4j.ddd.domain.repo.AbstractJpaRepository<${EntityType}, ${IdentityType}>\n" +
+                            "    {\n" +
+                            "        public ${EntityType}JpaRepositoryAdapter(org.springframework.data.jpa.repository.JpaSpecificationExecutor<${EntityType}> jpaSpecificationExecutor, org.springframework.data.jpa.repository.JpaRepository<${EntityType}, ${IdentityType}> jpaRepository) {\n" +
+                            "            super(jpaSpecificationExecutor, jpaRepository);\n" +
+                            "        }\n" +
+                            "    }" +
+                            "";
+        }
+        return aggregateRepositoryCustomerCode;
+    }
 
     /**
      * 跳过生成仓储的聚合根
