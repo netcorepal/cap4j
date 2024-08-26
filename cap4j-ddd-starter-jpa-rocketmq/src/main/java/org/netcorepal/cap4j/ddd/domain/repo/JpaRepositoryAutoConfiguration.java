@@ -74,6 +74,7 @@ public class JpaRepositoryAutoConfiguration {
                 eventScheduleProperties.getCompenseIntervalSeconds());
         unitOfWork.init();
         UnitOfWorkConfiguration.configure(unitOfWork);
+        RepositorySupervisorConfiguration.configure(unitOfWork);
         return unitOfWork;
     }
 
