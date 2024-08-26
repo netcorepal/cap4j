@@ -24,7 +24,7 @@ public abstract class AbstractJpaPersistListener<Entity> implements PersistListe
     }
 
 
-    public Class<Entity> forEntityClass(){
+    Class<Entity> forEntityClass(){
         return ((Class<Entity>) ClassUtils.findMethod(
                 this.getClass(),
                 "onChange",

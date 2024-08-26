@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
-import org.netcorepal.cap4j.ddd.share.DomainException;
+import org.netcorepal.cap4j.ddd.share.*;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,7 +38,7 @@ import static org.netcorepal.cap4j.ddd.share.Constants.*;
 @RequiredArgsConstructor
 @Slf4j
 public class JpaUnitOfWork implements UnitOfWork {
-
+    private final List<AbstractJpaRepository> repositories;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final DomainEventSupervisor domainEventSupervisor;
     private final DomainEventPublisher domainEventPublisher;
@@ -48,6 +48,14 @@ public class JpaUnitOfWork implements UnitOfWork {
     private final JpaPersistListenerManager jpaPersistListenerManager;
     private final DomainEventMessageInterceptor domainEventMessageInterceptor;
 
+    @Getter
+    @PersistenceContext
+    protected EntityManager entityManager;
+    protected static JpaUnitOfWork instance;
+    public static void fixJpaAopWrapper(JpaUnitOfWork unitOfWork) {
+        instance = unitOfWork;
+    }
+
     private final String svcName;
     private final String entityGetIdMethod;
     private final int retrieveCountWarnThreshold;
@@ -56,6 +64,72 @@ public class JpaUnitOfWork implements UnitOfWork {
     private ThreadLocal<Set<Object>> persistedEntitiesThreadLocal = new ThreadLocal<>();
     private ThreadLocal<Set<Object>> removedEntitiesThreadLocal = new ThreadLocal<>();
     private ThreadLocal<EntityPersisttedEvent> entityPersisttedEventThreadLocal = ThreadLocal.withInitial(() -> new EntityPersisttedEvent(instance, new HashSet<>(), new HashSet<>(), new HashSet<>()));
+
+    protected Map<Class, AbstractJpaRepository> repositoryMap = null;
+    public void init(){
+        if(repositoryMap != null){
+            return;
+        }
+        synchronized (this){
+            if(repositoryMap != null){
+                return;
+            }
+        }
+        repositoryMap = new HashMap<>();
+        repositories.forEach(repository -> {
+            repositoryMap.put(repository.forEntityClass(), repository);
+        });
+    }
+
+    @Override
+    public <ENTITY> Repository<ENTITY> repo(Class<ENTITY> entityClass) {
+        init();
+        if(!repositoryMap.containsKey(entityClass)){
+            throw new DomainException("仓储不存在：" + entityClass.getTypeName());
+        }
+        return repositoryMap.get(entityClass);
+    }
+
+    @Override
+    public <ENTITY> List<ENTITY> find(Class<ENTITY> entityClass, Object condition, List<OrderInfo> orders) {
+        return repo(entityClass).find(condition, orders);
+    }
+
+    @Override
+    public <ENTITY> Optional<ENTITY> findOne(Class<ENTITY> entityClass, Object condition) {
+        return repo(entityClass).findOne(condition);
+    }
+
+    @Override
+    public <ENTITY> PageData<ENTITY> findPage(Class<ENTITY> entityClass, Object condition, PageParam pageParam) {
+        return repo(entityClass).findPage(condition, pageParam);
+    }
+
+    @Override
+    public <ENTITY> Optional<ENTITY> findById(Class<ENTITY> entityClass, Object id) {
+        return repo(entityClass).findById(id);
+    }
+
+    @Override
+    public <ENTITY> List<ENTITY> findByIds(Class<ENTITY> entityClass, Iterable<Object> ids) {
+        return repo(entityClass).findByIds(ids);
+    }
+
+    @Override
+    public <ENTITY> long count(Class<ENTITY> entityClass, Object condition) {
+        return repo(entityClass).count(condition);
+    }
+
+    @Override
+    public <ENTITY> boolean exists(Class<ENTITY> entityClass, Object condition) {
+        return repo(entityClass).exists(condition);
+    }
+
+    @Override
+    public <ENTITY> boolean existsById(Class<ENTITY> entityClass, Object id) {
+        return repo(entityClass).existsById(id);
+    }
+
 
     public void persist(Object entity) {
         if (persistedEntitiesThreadLocal.get() == null) {
@@ -165,11 +239,6 @@ public class JpaUnitOfWork implements UnitOfWork {
         removedEntitiesThreadLocal.remove();
         entityPersisttedEventThreadLocal.get().reset();
     }
-
-    @Getter
-    @PersistenceContext
-    protected EntityManager entityManager;
-    protected static JpaUnitOfWork instance;
 
     public interface QueryBuilder<R, F> {
         void build(CriteriaBuilder cb, CriteriaQuery<R> cq, Root<F> root);

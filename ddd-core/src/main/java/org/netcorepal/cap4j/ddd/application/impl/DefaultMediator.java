@@ -2,7 +2,7 @@ package org.netcorepal.cap4j.ddd.application.impl;
 
 import org.netcorepal.cap4j.ddd.application.Mediator;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisor;
+import org.netcorepal.cap4j.ddd.domain.event.EventSupervisor;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -31,31 +31,31 @@ public class DefaultMediator implements Mediator {
 
     @Override
     public <EVENT> void notify(EVENT eventPayload) {
-        DomainEventSupervisor.getInstance().attach(eventPayload);
+        EventSupervisor.getInstance().notify(eventPayload);
     }
 
     @Override
     public <EVENT> void notify(EVENT eventPayload, Duration delay) {
-        DomainEventSupervisor.getInstance().attach(eventPayload, delay);
+        EventSupervisor.getInstance().notify(eventPayload, delay);
     }
 
     @Override
     public <EVENT> void notify(EVENT eventPayload, LocalDateTime schedule) {
-        DomainEventSupervisor.getInstance().attach(eventPayload, schedule);
+        EventSupervisor.getInstance().notify(eventPayload, schedule);
     }
 
     @Override
     public <EVENT> void notify(EVENT eventPayload, Object entity) {
-        DomainEventSupervisor.getInstance().attach(eventPayload, entity);
+        EventSupervisor.getInstance().notify(eventPayload, entity);
     }
 
     @Override
     public <EVENT> void notify(EVENT eventPayload, Object entity, Duration delay) {
-        DomainEventSupervisor.getInstance().attach(eventPayload, entity, delay);
+        EventSupervisor.getInstance().notify(eventPayload, entity, delay);
     }
 
     @Override
     public <EVENT> void notify(EVENT eventPayload, Object entity, LocalDateTime schedule) {
-        DomainEventSupervisor.getInstance().attach(eventPayload, entity, schedule);
+        EventSupervisor.getInstance().notify(eventPayload, entity, schedule);
     }
 }

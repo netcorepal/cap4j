@@ -18,9 +18,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class JpaPersistListenerManager implements PersistListenerManager {
-    private final List<AbstractJpaPersistListener> persistListeners;
+    protected final List<AbstractJpaPersistListener> persistListeners;
 
-    private Map<Class, List<AbstractJpaPersistListener>> persistListenersMap;
+    Map<Class, List<AbstractJpaPersistListener>> persistListenersMap;
 
     public void init() {
         if (persistListenersMap != null) {

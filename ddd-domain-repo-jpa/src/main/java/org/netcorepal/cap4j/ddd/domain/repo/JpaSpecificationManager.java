@@ -17,8 +17,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class JpaSpecificationManager implements SpecificationManager {
-    private final List<AbstractJpaSpecification> specifications;
-    private Map<Class, List<AbstractJpaSpecification>> specificationMap;
+    protected final List<AbstractJpaSpecification> specifications;
+    protected Map<Class, List<AbstractJpaSpecification>> specificationMap;
 
     public void init(){
         if(specificationMap != null){

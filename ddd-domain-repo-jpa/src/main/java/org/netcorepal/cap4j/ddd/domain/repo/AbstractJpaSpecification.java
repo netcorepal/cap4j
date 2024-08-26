@@ -9,7 +9,7 @@ import org.netcorepal.cap4j.ddd.share.ClassUtils;
  * @date 2023/8/13
  */
 public abstract class AbstractJpaSpecification<Entity> implements Specification<Entity> {
-    public Class<Entity> forEntityClass(){
+    Class<Entity> forEntityClass(){
         return ((Class<Entity>) ClassUtils.findMethod(
                 this.getClass(),
                 "specify",

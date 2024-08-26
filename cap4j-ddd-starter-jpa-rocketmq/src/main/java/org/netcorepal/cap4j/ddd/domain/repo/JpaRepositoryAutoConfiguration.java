@@ -48,6 +48,7 @@ public class JpaRepositoryAutoConfiguration {
 
     @Bean
     public JpaUnitOfWork jpaUnitOfWork(
+            List<AbstractJpaRepository> abstractJpaRepository,
             JpaSpecificationManager jpaSpecificationManager,
             JpaPersistListenerManager jpaPersistListenerManager,
             @Autowired(required = false)
@@ -58,6 +59,7 @@ public class JpaRepositoryAutoConfiguration {
             String svcName
     ) {
         JpaUnitOfWork unitOfWork = new JpaUnitOfWork(
+                abstractJpaRepository,
                 applicationEventPublisher,
                 domainEventSupervisor,
                 domainEventPublisher,
@@ -70,13 +72,16 @@ public class JpaRepositoryAutoConfiguration {
                 jpaUnitOfWorkProperties.getEntityGetIdMethod(),
                 jpaUnitOfWorkProperties.getRetrieveCountWarnThreshold(),
                 eventScheduleProperties.getCompenseIntervalSeconds());
+        unitOfWork.init();
+        UnitOfWorkConfiguration.configure(unitOfWork);
         return unitOfWork;
     }
+
 
     @Configuration
     private static class JpaLoader {
         public JpaLoader(@Autowired(required = false) JpaUnitOfWork jpaUnitOfWork) {
-            JpaUnitOfWork.instance = jpaUnitOfWork;
+            JpaUnitOfWork.fixJpaAopWrapper(jpaUnitOfWork);
         }
     }
 }

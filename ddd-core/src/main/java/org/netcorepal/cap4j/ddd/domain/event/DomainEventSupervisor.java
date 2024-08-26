@@ -16,7 +16,7 @@ public interface DomainEventSupervisor {
      * @return 领域事件管理器
      */
      static DomainEventSupervisor getInstance() {
-        return DomainEventSupervisorConfiguration.instance;
+        return DomainEventSupervisorConfiguration.domainEventSupervisor;
      }
 
     /**

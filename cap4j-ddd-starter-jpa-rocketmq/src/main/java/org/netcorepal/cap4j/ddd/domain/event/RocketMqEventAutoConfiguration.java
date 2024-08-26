@@ -82,7 +82,10 @@ public class RocketMqEventAutoConfiguration {
 
     @Bean
     public DefaultDomainEventSupervisor defaultDomainEventSupervisor() {
-        return (DefaultDomainEventSupervisor) DomainEventSupervisor.getInstance();
+        DefaultDomainEventSupervisor defaultDomainEventSupervisor = new DefaultDomainEventSupervisor();
+        DomainEventSupervisorConfiguration.configure((DomainEventSupervisor)defaultDomainEventSupervisor);
+        DomainEventSupervisorConfiguration.configure((EventSupervisor)defaultDomainEventSupervisor);
+        return defaultDomainEventSupervisor;
     }
 
     @Bean

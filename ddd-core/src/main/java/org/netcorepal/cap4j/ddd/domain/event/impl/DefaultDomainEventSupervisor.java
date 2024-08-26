@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.event.impl;
 
 import org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisor;
+import org.netcorepal.cap4j.ddd.domain.event.EventSupervisor;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -12,7 +13,7 @@ import java.util.*;
  * @author binking338
  * @date 2023/8/13
  */
-public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
+public class DefaultDomainEventSupervisor implements DomainEventSupervisor, EventSupervisor {
     private static final ThreadLocal<Set<Object>> TL_EVENT_PAYLOADS = new ThreadLocal<Set<Object>>();
     private static final ThreadLocal<Map<Object, Set<Object>>> TL_ENTITY_EVENT_PAYLOADS = new ThreadLocal<Map<Object, Set<Object>>>();
     private static final ThreadLocal<Map<Object, LocalDateTime>> TL_EVENT_SCHEDULE_MAP = new ThreadLocal<Map<Object, LocalDateTime>>();
@@ -129,5 +130,36 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
         } else {
             return LocalDateTime.now();
         }
+    }
+
+
+    @Override
+    public <EVENT> void notify(EVENT eventPayload) {
+        attach(eventPayload);
+    }
+
+    @Override
+    public <EVENT> void notify(EVENT eventPayload, Duration delay) {
+        attach(eventPayload, delay);
+    }
+
+    @Override
+    public <EVENT> void notify(EVENT eventPayload, LocalDateTime schedule) {
+        attach(eventPayload, schedule);
+    }
+
+    @Override
+    public <EVENT> void notify(EVENT eventPayload, Object entity) {
+        attach(eventPayload, entity);
+    }
+
+    @Override
+    public <EVENT> void notify(EVENT eventPayload, Object entity, Duration delay) {
+        attach(eventPayload, entity, delay);
+    }
+
+    @Override
+    public <EVENT> void notify(EVENT eventPayload, Object entity, LocalDateTime schedule) {
+        attach(eventPayload, entity, schedule);
     }
 }

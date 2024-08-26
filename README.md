@@ -3,7 +3,7 @@
 [![Maven Central Version](https://img.shields.io/maven-central/v/io.github.netcorepal/cap4j)](https://central.sonatype.com/artifact/io.github.netcorepal/cap4j)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/netcorepal/cap4j/blob/main/LICENSE)
 
-本项目是 [CAP](https://github.com/dotnetcore/CAP) 项目的 Java 实现，基于[整洁架构](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)、`领域模型`、`Outbox`模式、`CQS`模式以及`UoW`模式等理念，cap4j期望解决如何`实现领域驱动设计`的问题。
+本项目是 [CAP](https://github.com/dotnetcore/CAP) 项目的 Java 实现，基于[整洁架构](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)、[Outbox](https://www.kamilgrzybek.com/blog/posts/the-outbox-pattern)模式、[CQS](https://martinfowler.com/bliki/CommandQuerySeparation.html)模式以及[UoW](https://learn.microsoft.com/en-us/archive/msdn-magazine/2009/june/the-unit-of-work-pattern-and-persistence-ignorance)模式等理念，cap4j期望解决基于`领域模型`如何`实现领域驱动设计`的问题。
 
 如果对以上架构理念有充分了解，那么cap4j的使用将会非常顺手。另一方面，通过cap4j来构建你的服务，你将学会一种实现领域驱动设计的完整落地方法。
 
