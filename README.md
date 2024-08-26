@@ -30,7 +30,7 @@
         <dependency>
             <groupId>io.github.netcorepal</groupId>
             <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
-            <version>1.0.0-alpha-1</version>
+            <version>1.0.0-alpha-2</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -39,7 +39,7 @@
             <plugin>
                 <groupId>io.github.netcorepal</groupId>
                 <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
-                <version>1.0.0-alpha-1</version>
+                <version>1.0.0-alpha-2</version>
                 <configuration>
                     <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/main/cap4j-ddd-codegen-template.json</archTemplate>
                     <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>
@@ -340,7 +340,7 @@ CREATE TABLE `order_item` (
 > 
 > 如果想要对这套语法有个详细完整的了解，可以通过如下maven指令获取语法帮助。
 > ```shell
-> mvn io.github.netcorepal:cap4j-ddd-codegen-maven-plugin:1.0.0-alpha-1:help
+> mvn io.github.netcorepal:cap4j-ddd-codegen-maven-plugin:1.0.0-alpha-2:help
 > # or
 > mvn cap4j-ddd-codegen:help
 > ```
