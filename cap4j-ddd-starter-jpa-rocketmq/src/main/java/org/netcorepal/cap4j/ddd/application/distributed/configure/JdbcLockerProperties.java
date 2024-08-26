@@ -17,21 +17,21 @@ public class JdbcLockerProperties {
     /**
      * 锁表名
      */
-    String table = "__locker";
+    String table = "`__locker`";
     /**
      * 锁名称字段名
      */
-    String fieldName = "name";
+    String fieldName = "`name`";
     /**
      * 锁密码字段名
      */
-    String fieldPwd = "pwd";
+    String fieldPwd = "`pwd`";
     /**
      * 锁获取时间字段名
      */
-    String fieldLockAt = "lock_at";
+    String fieldLockAt = "`lock_at`";
     /**
      * 锁释放时间字段名
      */
-    String fieldUnlockAt = "unlock_at";
+    String fieldUnlockAt = "`unlock_at`";
 }

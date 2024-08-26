@@ -45,7 +45,7 @@ public class JdbcLocker implements Locker {
                     }
                 }
             }
-            String sql = String.format("select count(*) from `%s` where `%s` = ? ", table, fieldName);
+            String sql = String.format("select count(*) from %s where %s = ? ", table, fieldName);
             if (showSql) {
                 log.debug(sql);
                 log.debug(String.format("binding parameters: [%s]", key));
@@ -53,7 +53,7 @@ public class JdbcLocker implements Locker {
             Integer exists = jdbcTemplate.queryForObject(sql, Integer.class, key);
             if (exists == null || exists == 0) {
                 try {
-                    sql = String.format("insert into `%s`(`%s`, `%s`, `%s`, `%s`) values(?, ?, ?, ?)", table, fieldName, fieldPwd, fieldLockAt, fieldUnlockAt);
+                    sql = String.format("insert into %s(%s, %s, %s, %s) values(?, ?, ?, ?)", table, fieldName, fieldPwd, fieldLockAt, fieldUnlockAt);
                     if (showSql) {
                         log.debug(sql);
                         log.debug(String.format("binding parameters: [%s, %s, %s, %s]", key, pwd, now, now.plusSeconds(expireDuration.getSeconds())));
@@ -67,7 +67,7 @@ public class JdbcLocker implements Locker {
                 }
             } else {
                 try {
-                    sql = String.format("update `%s` set `%s` = ?, `%s` = ?, `%s` = ? where `%s` = ? and (`%s` < ? or `%s` = ?)", table, fieldPwd, fieldLockAt, fieldUnlockAt, fieldName, fieldUnlockAt, fieldPwd);
+                    sql = String.format("update %s set %s = ?, %s = ?, %s = ? where %s = ? and (%s < ? or %s = ?)", table, fieldPwd, fieldLockAt, fieldUnlockAt, fieldName, fieldUnlockAt, fieldPwd);
                     if (showSql) {
                         log.debug(sql);
                         log.debug(String.format("binding parameters: [%s, %s, %s, %s, %s, %s]", pwd, now, now.plusSeconds(expireDuration.getSeconds()), key, now, pwd));
@@ -92,7 +92,7 @@ public class JdbcLocker implements Locker {
                 return false;
             }
         }
-        String sql = String.format("select count(*) from `%s` where `%s` = ? and `%s` = ?", table, fieldName, fieldPwd);
+        String sql = String.format("select count(*) from %s where %s = ? and %s = ?", table, fieldName, fieldPwd);
         if (showSql) {
             log.debug(sql);
             log.debug(String.format("binding parameters: [%s, %s]", key, pwd));
@@ -101,7 +101,7 @@ public class JdbcLocker implements Locker {
         if (count == null || count == 0) {
             return false;
         }
-        sql = String.format("update `%s` set `%s` = ? where `%s` = ? and `%s` = ? and `%s` > ?", table, fieldUnlockAt, fieldName, fieldPwd, fieldUnlockAt);
+        sql = String.format("update %s set %s = ? where %s = ? and %s = ? and %s > ?", table, fieldUnlockAt, fieldName, fieldPwd, fieldUnlockAt);
         if (showSql) {
             log.debug(sql);
             log.debug(String.format("binding parameters: [%s, %s, %s, %s]", now, key, pwd, now));
