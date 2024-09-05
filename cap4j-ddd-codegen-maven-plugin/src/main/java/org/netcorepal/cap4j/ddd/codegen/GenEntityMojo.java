@@ -6,18 +6,18 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 import org.netcorepal.cap4j.ddd.codegen.misc.Inflector;
-import org.netcorepal.cap4j.ddd.codegen.misc.MysqlSchemaUtils;
 import org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils;
+import org.netcorepal.cap4j.ddd.codegen.misc.SqlSchemaUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.toLowerCamelCase;
 import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.toUpperCamelCase;
 import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.writeLine;
+import static org.netcorepal.cap4j.ddd.codegen.misc.SqlSchemaUtils.*;
 
 /**
  * 生成实体
@@ -28,11 +28,21 @@ import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.writeLine;
 @Mojo(name = "gen-entity")
 public class GenEntityMojo extends MyAbstractMojo {
 
-    private Map<String, Map<String, Object>> TableMap = new HashMap<>();
-    private Map<String, List<Map<String, Object>>> ColumnsMap = new HashMap<>();
-    private Map<String, Map<Integer, String[]>> EnumConfigMap = new HashMap<>();
-    private Map<String, String> EnumPackageMap = new HashMap<>();
-    private Map<String, String> EnumTableNameMap = new HashMap<>();
+    public Map<String, Map<String, Object>> TableMap = new HashMap<>();
+    public Map<String, List<Map<String, Object>>> ColumnsMap = new HashMap<>();
+    public Map<String, Map<Integer, String[]>> EnumConfigMap = new HashMap<>();
+    public Map<String, String> EnumPackageMap = new HashMap<>();
+    public Map<String, String> EnumTableNameMap = new HashMap<>();
+    public Map<String, String> EntityJavaTypeMap = new HashMap<>();
+    /**
+     * 注解缓存，注释为Key
+     */
+    public Map<String, Map<String, String>> AnnotaionsCache = new HashMap<>();
+
+    public String dbType = "mysql";
+
+    public final String PATTERN_SPLITTER = "[\\,\\;]";
+
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -62,7 +72,9 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
         getLog().info("");
         this.getLog().info("开始生成实体代码");
-        MysqlSchemaUtils.mojo = this;
+        SqlSchemaUtils.mojo = this;
+        this.dbType = recognizeDbType(connectionString);
+        processSqlDialet(this.dbType);
 
         // 项目结构解析
         String absoluteCurrentDir, projectDir, domainModulePath, applicationModulePath, adapterModulePath;
@@ -104,35 +116,31 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
 
         // 数据库解析
-        String tableSql = "select * from `information_schema`.`tables` where table_schema= '" + schema + "'";
-        String columnSql = "select * from `information_schema`.`columns` where table_schema= '" + schema + "'";
-        if (StringUtils.isNotBlank(table)) {
-            String whereClause = String.join(" or ", Arrays.stream(table.split("[\\,\\;]")).map(t -> "table_name like '" + t + "'").collect(Collectors.toList()));
-            tableSql += " and (" + whereClause + ")";
-            columnSql += " and (" + whereClause + ")";
-        }
-        if (StringUtils.isNotBlank(ignoreTable)) {
-            String whereClause = String.join(" or ", Arrays.stream(ignoreTable.split("[\\,\\;]")).map(t -> "table_name like '" + t + "'").collect(Collectors.toList()));
-            tableSql += " and not (" + whereClause + ")";
-            columnSql += " and not (" + whereClause + ")";
-        }
-        List<Map<String, Object>> tables = executeQuery(tableSql, connectionString, user, pwd);
-        List<Map<String, Object>> columns = executeQuery(columnSql, connectionString, user, pwd);
+        List<Map<String, Object>> tables = resolveTables(connectionString, user, pwd);
+        List<Map<String, Object>> columns = resolveColumns(connectionString, user, pwd);
         Map<String, Map<String, String>> relations = new HashMap<>();
         Map<String, String> tablePackageMap = new HashMap<>();
         getLog().info("");
         getLog().info("待解析数据库表：");
         for (Map<String, Object> table :
                 tables) {
-            List<Map<String, Object>> tableColumns = columns.stream().filter(col -> col.get("TABLE_NAME").equals(table.get("TABLE_NAME")))
-                    .sorted((a, b) -> (Integer.parseInt(a.get("ORDINAL_POSITION").toString())) - Integer.parseInt(b.get("ORDINAL_POSITION").toString()))
+            List<Map<String, Object>> tableColumns = columns.stream().filter(column -> isColumnInTable(column, table))
+                    .sorted(Comparator.comparingInt(SqlSchemaUtils::getOridinalPosition))
                     .collect(Collectors.toList());
-            TableMap.put(MysqlSchemaUtils.getTableName(table), table);
-            ColumnsMap.put(MysqlSchemaUtils.getTableName(table), tableColumns);
+            TableMap.put(getTableName(table), table);
+            ColumnsMap.put(getTableName(table), tableColumns);
 
             getLog().info(String.format("%20s : (%s)",
-                    MysqlSchemaUtils.getTableName(table),
-                    String.join(", ", tableColumns.stream().map(c -> String.format("%s %s", c.get("DATA_TYPE"), MysqlSchemaUtils.getColumnName(c))).collect(Collectors.toList()))));
+                    getTableName(table),
+                    String.join(", ", tableColumns.stream()
+                            .map(column ->
+                                    String.format(
+                                            "%s %s",
+                                            getColumnDbDataType(column),
+                                            getColumnName(column)
+                                    )).collect(Collectors.toList())
+                    )
+            ));
         }
         getLog().info("");
         getLog().info("");
@@ -141,9 +149,9 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("");
         for (Map<String, Object> table :
                 TableMap.values()) {
-            List<Map<String, Object>> tableColumns = ColumnsMap.get(MysqlSchemaUtils.getTableName(table));
+            List<Map<String, Object>> tableColumns = ColumnsMap.get(getTableName(table));
             // 解析表关系
-            getLog().info("开始解析表关系:" + MysqlSchemaUtils.getTableName(table));
+            getLog().info("开始解析表关系:" + getTableName(table));
             Map<String, Map<String, String>> relationTable = resolveRelationTable(table, tableColumns);
             for (Map.Entry<String, Map<String, String>> entry :
                     relationTable.entrySet()) {
@@ -153,8 +161,8 @@ public class GenEntityMojo extends MyAbstractMojo {
                     relations.get(entry.getKey()).putAll(entry.getValue());
                 }
             }
-            tablePackageMap.put(MysqlSchemaUtils.getTableName(table), resolvePackage(table, basePackage, domainModulePath));
-            getLog().info("结束解析表关系:" + MysqlSchemaUtils.getTableName(table));
+            tablePackageMap.put(getTableName(table), resolvePackage(table, basePackage, domainModulePath));
+            getLog().info("结束解析表关系:" + getTableName(table));
             getLog().info("");
         }
 
@@ -163,15 +171,15 @@ public class GenEntityMojo extends MyAbstractMojo {
             if (isIgnoreTable(table)) {
                 continue;
             }
-            List<Map<String, Object>> tableColumns = ColumnsMap.get(MysqlSchemaUtils.getTableName(table));
+            List<Map<String, Object>> tableColumns = ColumnsMap.get(getTableName(table));
             for (Map<String, Object> column :
                     tableColumns) {
-                if (MysqlSchemaUtils.hasEnum(column)) {
-                    Map<Integer, String[]> enumConfig = MysqlSchemaUtils.getEnum(column);
+                if (hasEnum(column)) {
+                    Map<Integer, String[]> enumConfig = getEnum(column);
                     if (enumConfig.size() > 0) {
-                        EnumConfigMap.put(MysqlSchemaUtils.getType(column), enumConfig);
-                        EnumPackageMap.put(MysqlSchemaUtils.getType(column), basePackage + "." + getEntityPackage(MysqlSchemaUtils.getTableName(table)) + ".enums");
-                        EnumTableNameMap.put(MysqlSchemaUtils.getType(column), MysqlSchemaUtils.getTableName(table));
+                        EnumConfigMap.put(getType(column), enumConfig);
+                        EnumPackageMap.put(getType(column), basePackage + "." + getEntityPackage(getTableName(table)) + ".enums");
+                        EnumTableNameMap.put(getType(column), getTableName(table));
                     }
                 }
             }
@@ -208,7 +216,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
         for (Map<String, Object> table :
                 TableMap.values()) {
-            List<Map<String, Object>> tableColumns = ColumnsMap.get(MysqlSchemaUtils.getTableName(table));
+            List<Map<String, Object>> tableColumns = ColumnsMap.get(getTableName(table));
             try {
                 writeEntitySourceFile(table, tableColumns, tablePackageMap, relations, basePackage, domainModulePath);
             } catch (IOException e) {
@@ -228,42 +236,6 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("");
     }
 
-    public List<Map<String, Object>> executeQuery(String sql, String connectionString, String user, String pwd) {
-        String URL = connectionString;
-        String USER = user;
-        String PASSWORD = pwd;
-        List<Map<String, Object>> result = new ArrayList<>();
-        try {
-            //1.加载驱动程序
-            Class.forName("com.mysql.jdbc.Driver");
-            //2.获得数据库链接
-            Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-            //3.通过数据库的连接操作数据库，实现增删改查（使用Statement类）
-            Statement st = conn.createStatement();
-            ResultSet rs = st.executeQuery(sql);
-            //4.处理数据库的返回结果(使用ResultSet类)
-            while (rs.next()) {
-                HashMap<String, Object> map = new HashMap<>();
-                ResultSetMetaData metaData = rs.getMetaData();
-                for (int i = 1; i <= metaData.getColumnCount(); i++) {
-                    map.put(metaData.getColumnName(i), rs.getObject(i));
-                    if (rs.getObject(i) != null && rs.getObject(i) instanceof byte[]) {
-                        map.put(metaData.getColumnName(i), new String((byte[]) rs.getObject(i)));
-                    }
-                }
-                result.add(map);
-            }
-            //关闭资源
-            rs.close();
-            st.close();
-            conn.close();
-        } catch (Throwable e) {
-            this.getLog().error(e);
-        }
-
-        return result;
-    }
-
 
     /**
      * 获取模块
@@ -273,14 +245,14 @@ public class GenEntityMojo extends MyAbstractMojo {
      */
     public String getModule(String tableName) {
         Map<String, Object> table = TableMap.get(tableName);
-        String module = MysqlSchemaUtils.getModule(table);
-        getLog().info("尝试解析模块:" + MysqlSchemaUtils.getTableName(table) + " " + module);
-        while (!MysqlSchemaUtils.isAggregateRoot(table) && StringUtils.isBlank(module)) {
-            table = TableMap.get(MysqlSchemaUtils.getParent(table));
-            module = MysqlSchemaUtils.getModule(table);
-            getLog().info("尝试父表模块:" + MysqlSchemaUtils.getTableName(table) + " " + module);
+        String module = SqlSchemaUtils.getModule(table);
+        getLog().info("尝试解析模块:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[缺失]" : module));
+        while (!isAggregateRoot(table) && StringUtils.isBlank(module)) {
+            table = TableMap.get(getParent(table));
+            module = SqlSchemaUtils.getModule(table);
+            getLog().info("尝试父表模块:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[缺失]" : module));
         }
-        getLog().info("模块解析结果:" + MysqlSchemaUtils.getTableName(table) + " " + module);
+        getLog().info("模块解析结果:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[无]" : module));
         return module;
     }
 
@@ -292,25 +264,23 @@ public class GenEntityMojo extends MyAbstractMojo {
      */
     public String getAggregate(String tableName) {
         Map<String, Object> table = TableMap.get(tableName);
-        String aggregate = MysqlSchemaUtils.getAggregate(table);
-        getLog().info("尝试解析聚合:" + MysqlSchemaUtils.getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
-        while (!MysqlSchemaUtils.isAggregateRoot(table) && StringUtils.isBlank(aggregate)) {
-            String parent = MysqlSchemaUtils.getParent(table);
+        String aggregate = SqlSchemaUtils.getAggregate(table);
+        getLog().info("尝试解析聚合:" + getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
+        while (!isAggregateRoot(table) && StringUtils.isBlank(aggregate)) {
+            String parent = getParent(table);
             if (StringUtils.isBlank(parent)) {
                 break;
             }
             table = TableMap.get(parent);
-            aggregate = MysqlSchemaUtils.getAggregate(table);
-            getLog().info("尝试父表聚合:" + MysqlSchemaUtils.getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
+            aggregate = SqlSchemaUtils.getAggregate(table);
+            getLog().info("尝试父表聚合:" + getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
         }
         if (StringUtils.isBlank(aggregate)) {
-            aggregate = getEntityJavaType(MysqlSchemaUtils.getTableName(table));
+            aggregate = getEntityJavaType(getTableName(table));
         }
         getLog().info("聚合解析结果:" + tableName + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
         return aggregate;
     }
-
-    private Map<String, String> EntityJavaTypeMap = new HashMap<>();
 
     /**
      * 获取实体类 Class.SimpleName
@@ -323,12 +293,12 @@ public class GenEntityMojo extends MyAbstractMojo {
             return EntityJavaTypeMap.get(tableName);
         }
         Map<String, Object> table = TableMap.get(tableName);
-        String type = MysqlSchemaUtils.getType(table);
+        String type = getType(table);
         if (StringUtils.isBlank(type)) {
             type = toUpperCamelCase(tableName);
         }
         if (StringUtils.isNotBlank(type)) {
-            getLog().info("解析实体类名:" + MysqlSchemaUtils.getTableName(table) + " --> " + type);
+            getLog().info("解析实体类名:" + getTableName(table) + " --> " + type);
             EntityJavaTypeMap.put(tableName, type);
             return type;
         }
@@ -353,7 +323,7 @@ public class GenEntityMojo extends MyAbstractMojo {
 
 
     public boolean isReservedColumn(Map<String, Object> column) {
-        String columnName = MysqlSchemaUtils.getColumnName(column).toLowerCase();
+        String columnName = getColumnName(column).toLowerCase();
         boolean isReserved = idField.equalsIgnoreCase(columnName)
                 || versionField.equalsIgnoreCase(columnName)
                 || columnName.startsWith("db_");
@@ -361,12 +331,12 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public boolean isReadOnlyColumn(Map<String, Object> column) {
-        if (MysqlSchemaUtils.hasReadOnly(column)) {
+        if (hasReadOnly(column)) {
             return true;
         }
-        String columnName = MysqlSchemaUtils.getColumnName(column).toLowerCase();
+        String columnName = getColumnName(column).toLowerCase();
         if (StringUtils.isNotBlank(readonlyFields)
-                && Arrays.stream(readonlyFields.toLowerCase().split("[\\,\\;]")).anyMatch(
+                && Arrays.stream(readonlyFields.toLowerCase().split(PATTERN_SPLITTER)).anyMatch(
                 c -> columnName.matches(c.replace("%", ".*")))) {
             return true;
         }
@@ -375,106 +345,23 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public boolean isIgnoreTable(Map<String, Object> table) {
-        if (MysqlSchemaUtils.isIgnore(table)) {
+        if (isIgnore(table)) {
             return true;
         }
         return false;
     }
 
     public boolean isIgnoreColumn(Map<String, Object> column) {
-        if (MysqlSchemaUtils.isIgnore(column)) {
+        if (isIgnore(column)) {
             return true;
         }
-        String columnName = MysqlSchemaUtils.getColumnName(column).toLowerCase();
+        String columnName = getColumnName(column).toLowerCase();
         if (StringUtils.isNotBlank(ignoreFields)
-                && Arrays.stream(ignoreFields.toLowerCase().split("[\\,\\;]")).anyMatch(
+                && Arrays.stream(ignoreFields.toLowerCase().split(PATTERN_SPLITTER)).anyMatch(
                 c -> columnName.matches(c.replace("%", ".*")))) {
             return true;
         }
         return false;
-    }
-
-    /**
-     * 获取列的Java映射类型
-     *
-     * @param column
-     * @return
-     */
-    public String getColumnJavaType(Map<String, Object> column) {
-        if (MysqlSchemaUtils.hasType(column)) {
-            String customerType = MysqlSchemaUtils.getType(column);
-            if (MysqlSchemaUtils.hasEnum(column) && EnumPackageMap.containsKey(customerType)) {
-                return EnumPackageMap.get(customerType) + "." + customerType;
-            } else {
-                return customerType;
-            }
-        }
-        String dataType = column.get("DATA_TYPE").toString().toLowerCase();
-        String columnType = column.get("COLUMN_TYPE").toString().toLowerCase();
-        String comment = MysqlSchemaUtils.getComment(column);
-        String columnName = MysqlSchemaUtils.getColumnName(column).toLowerCase();
-        if (typeRemapping != null && typeRemapping.containsKey(dataType)) {
-            // 类型重映射
-            return typeRemapping.get(dataType);
-        }
-        switch (dataType) {
-            case "varchar":
-            case "text":
-            case "mediumtext":
-            case "longtext":
-            case "char":
-                return "String";
-            case "timestamp":
-            case "datetime":
-                if ("java.time".equalsIgnoreCase(datePackage4Java)) {
-                    return "java.time.LocalDateTime";
-                } else {
-                    return "java.util.Date";
-                }
-            case "date":
-                if ("java.time".equalsIgnoreCase(datePackage4Java)) {
-                    return "java.time.LocalDate";
-                } else {
-                    return "java.util.Date";
-                }
-            case "time":
-                if ("java.time".equalsIgnoreCase(datePackage4Java)) {
-                    return "java.time.LocalTime";
-                } else {
-                    return "java.util.Date";
-                }
-            case "int":
-                return "Integer";
-            case "bigint":
-                return "Long";
-            case "smallint":
-                return "Short";
-            case "bit":
-                return "Boolean";
-            case "tinyint":
-                if (".deleted.".contains("." + columnName + ".")) {
-                    return "Boolean";
-                }
-                if (deletedField.equalsIgnoreCase(columnName)) {
-                    return "Boolean";
-                }
-                if (columnType.equalsIgnoreCase("tinyint(1)")) {
-                    return "Boolean";
-                }
-                if (comment.contains("是否")) {
-                    return "Boolean";
-                }
-                return "Byte";
-            case "float":
-                return "Float";
-            case "double":
-                return "Double";
-            case "decimal":
-                return "java.math.BigDecimal";
-            default:
-                break;
-        }
-        throw new RuntimeException("包含未支持字段类型！" + dataType);
     }
 
     /**
@@ -490,36 +377,36 @@ public class GenEntityMojo extends MyAbstractMojo {
      */
     public Map<String, Map<String, String>> resolveRelationTable(Map<String, Object> table, List<Map<String, Object>> columns) {
         Map<String, Map<String, String>> result = new HashMap<>();
-        String tableName = MysqlSchemaUtils.getTableName(table);
+        String tableName = getTableName(table);
 
         if (isIgnoreTable(table)) {
             return result;
         }
         // 聚合内部关系 OneToMany
-        if (!MysqlSchemaUtils.isAggregateRoot(table)) {
-            String parent = MysqlSchemaUtils.getParent(table);
+        if (!isAggregateRoot(table)) {
+            String parent = getParent(table);
             result.putIfAbsent(parent, new HashMap<>());
             boolean rewrited = false;
             for (Map<String, Object> column : columns) {
-                if (MysqlSchemaUtils.hasReference(column)) {
-                    if (parent.equalsIgnoreCase(MysqlSchemaUtils.getReference(column))) {
-                        boolean lazy = MysqlSchemaUtils.isLazy(column, "LAZY".equalsIgnoreCase(this.fetchType));
-                        result.get(parent).putIfAbsent(tableName, "OneToMany;" + MysqlSchemaUtils.getColumnName(column) + (lazy ? ";LAZY" : ""));
+                if (hasReference(column)) {
+                    if (parent.equalsIgnoreCase(getReference(column))) {
+                        boolean lazy = isLazy(column, "LAZY".equalsIgnoreCase(this.fetchType));
+                        result.get(parent).putIfAbsent(tableName, "OneToMany;" + getColumnName(column) + (lazy ? ";LAZY" : ""));
                         rewrited = true;
                     }
                 }
             }
             if (!rewrited) {
-                Map<String, Object> column = columns.stream().filter(c -> MysqlSchemaUtils.getColumnName(c).equals(parent + "_id")).findFirst().orElseGet(() -> null);
+                Map<String, Object> column = columns.stream().filter(c -> getColumnName(c).equals(parent + "_id")).findFirst().orElseGet(() -> null);
                 if (column != null) {
-                    boolean lazy = MysqlSchemaUtils.isLazy(column, "LAZY".equalsIgnoreCase(this.fetchType));
+                    boolean lazy = isLazy(column, "LAZY".equalsIgnoreCase(this.fetchType));
                     result.get(parent).putIfAbsent(tableName, "OneToMany;" + parent + "_id" + (lazy ? ";LAZY" : ""));
                 }
             }
         }
 
         // 聚合之间关系
-        if (MysqlSchemaUtils.hasRelation(table)) {
+        if (hasRelation(table)) {
             // ManyToMany
             String owner = "";
             String beowned = "";
@@ -527,17 +414,17 @@ public class GenEntityMojo extends MyAbstractMojo {
             String inverseJoinColumn = "";
             boolean ownerLazy = false;
             for (Map<String, Object> column : columns) {
-                if (MysqlSchemaUtils.hasReference(column)) {
-                    String refTableName = MysqlSchemaUtils.getReference(column);
+                if (hasReference(column)) {
+                    String refTableName = getReference(column);
                     result.putIfAbsent(refTableName, new HashMap<>());
-                    boolean lazy = MysqlSchemaUtils.isLazy(column, "LAZY".equalsIgnoreCase(this.fetchType));
+                    boolean lazy = isLazy(column, "LAZY".equalsIgnoreCase(this.fetchType));
                     if (StringUtils.isBlank(owner)) {
                         ownerLazy = lazy;
                         owner = refTableName;
-                        joinCol = MysqlSchemaUtils.getColumnName(column);
+                        joinCol = getColumnName(column);
                     } else {
                         beowned = refTableName;
-                        inverseJoinColumn = MysqlSchemaUtils.getColumnName(column);
+                        inverseJoinColumn = getColumnName(column);
                         result.get(beowned).putIfAbsent(owner, "*ManyToMany;" + inverseJoinColumn + (lazy ? ";LAZY" : ""));
                     }
                 }
@@ -546,14 +433,14 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
 
         for (Map<String, Object> column : columns) {
-            String colRel = MysqlSchemaUtils.getRelation(column);
-            String colName = MysqlSchemaUtils.getColumnName(column);
+            String colRel = getRelation(column);
+            String colName = getColumnName(column);
             String refTableName = null;
-            if (StringUtils.isNotBlank(colRel) || MysqlSchemaUtils.hasRelation(column)) {
+            if (StringUtils.isNotBlank(colRel) || hasRelation(column)) {
                 switch (colRel) {
                     case "OneToOne":
                     case "1:1":
-                        refTableName = MysqlSchemaUtils.getReference(column);
+                        refTableName = getReference(column);
                         result.putIfAbsent(tableName, new HashMap<>());
                         result.get(tableName).putIfAbsent(refTableName, "OneToOne;" + colName);
                         result.putIfAbsent(refTableName, new HashMap<>());
@@ -562,7 +449,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                     case "ManyToOne":
                     case "*:1":
                     default:
-                        refTableName = MysqlSchemaUtils.getReference(column);
+                        refTableName = getReference(column);
                         result.putIfAbsent(tableName, new HashMap<>());
                         result.get(tableName).putIfAbsent(refTableName, "ManyToOne;" + colName);
                         result.putIfAbsent(refTableName, new HashMap<>());
@@ -572,60 +459,6 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
         }
         return result;
-    }
-
-    public String getColumnDefaultJavaLiteral(Map<String, Object> column) {
-        String columnDefault = column.get("COLUMN_DEFAULT") == null ? null : column.get("COLUMN_DEFAULT").toString();
-        switch (getColumnJavaType(column)) {
-            case "String":
-                if (StringUtils.isNotEmpty(columnDefault)) {
-                    return "\"" + columnDefault.replace("\"", "\\\"") + "\"";
-                } else {
-                    return "\"\"";
-                }
-            case "Integer":
-            case "Short":
-            case "Byte":
-                if (StringUtils.isNotEmpty(columnDefault)) {
-                    return "" + columnDefault;
-                } else {
-                    return "0";
-                }
-            case "Long":
-                if (StringUtils.isNotEmpty(columnDefault)) {
-                    return "" + columnDefault + "L";
-                } else {
-                    return "0L";
-                }
-            case "Boolean":
-                if (StringUtils.isNotEmpty(columnDefault)) {
-                    if (columnDefault.trim().equalsIgnoreCase("b'1'")) {
-                        return "false";
-                    } else if (columnDefault.trim().equalsIgnoreCase("b'0'")) {
-                        return "true";
-                    }
-                    return "" + (columnDefault.trim().equalsIgnoreCase("0") ? "false" : "true");
-                } else {
-                    return "false";
-                }
-            case "Float":
-            case "Double":
-                if (StringUtils.isNotEmpty(columnDefault)) {
-                    return "" + columnDefault;
-                } else {
-                    return "0";
-                }
-            case "java.math.BigDecimal":
-                if (StringUtils.isNotEmpty(columnDefault)) {
-                    return "java.math.BigDecimal.valueOf(" + columnDefault + ")";
-                } else {
-                    return "java.math.BigDecimal.ZERO";
-                }
-            case "java.util.Date":
-            default:
-                break;
-        }
-        return ""; // = ""
     }
 
     public boolean readCustomerSourceFile(String filePath, List<String> importLines, List<String> annotationLines, List<String> customerLines) throws IOException {
@@ -695,14 +528,14 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
             importLines.add("");
             importLines.add("/**");
-            for (String comment : MysqlSchemaUtils.getComment(table).split("[\\r\\n]")) {
+            for (String comment : getComment(table).split("[\\r\\n]")) {
                 if (StringUtils.isEmpty(comment)) {
                     continue;
                 }
                 importLines.add(" * " + comment);
             }
             importLines.add(" *");
-            // importLines.add(" * " + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", " "));
+            // importLines.add(" * " + getComment(table).replaceAll("[\\r\\n]", " "));
             importLines.add(" * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
             importLines.add(" * 警告：请勿手工修改该文件的字段声明，重新生成会覆盖字段声明");
             importLines.add(" */");
@@ -727,7 +560,7 @@ public class GenEntityMojo extends MyAbstractMojo {
             String importLine = importLines.get(i);
             if (importLine.contains(" org.hibernate.annotations.")
                     && !importLine.contains("*")) {
-                String hibernateAnnotation = importLine.substring(importLine.lastIndexOf('.') + 1).replace(";", "").trim();
+                String hibernateAnnotation = importLine.substring(importLine.lastIndexOf(".") + 1).replace(";", "").trim();
                 if (!content.contains(hibernateAnnotation)) {
                     importLines.remove(importLine);
                     i--;
@@ -737,16 +570,16 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public void processAnnotationLines(Map<String, Object> table, List<Map<String, Object>> columns, List<String> annotationLines) {
-        String tableName = MysqlSchemaUtils.getTableName(table);
+        String tableName = getTableName(table);
         boolean annotationEmpty = annotationLines.size() == 0;
         SourceFileUtils.removeText(annotationLines, "@Aggregate\\(.*\\)");
-        if (MysqlSchemaUtils.isAggregateRoot(table)) {
-            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregate(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = \"root\", description = \"" + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
+        if (isAggregateRoot(table)) {
+            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregate(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = \"root\", description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
         } else {
-            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregate(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = \"entity\", relevant = { \"" + getEntityJavaType(MysqlSchemaUtils.getParent(table)) + "\" }, description = \"" + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
+            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregate(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = \"entity\", relevant = { \"" + getEntityJavaType(getParent(table)) + "\" }, description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
         }
         if (StringUtils.isNotBlank(getAggregateRootAnnotation())) {
-            if (MysqlSchemaUtils.isAggregateRoot(table)) {
+            if (isAggregateRoot(table)) {
                 SourceFileUtils.addIfNone(annotationLines, getAggregateRootAnnotation() + "(\\(.*\\))?", getAggregateRootAnnotation());
             } else {
                 SourceFileUtils.removeText(annotationLines, getAggregateRootAnnotation() + "(\\(.*\\))?");
@@ -754,26 +587,26 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
         }
 //        else {
-//            if (MysqlSchemaUtils.isAggregateRoot(table)) {
+//            if (isAggregateRoot(table)) {
 //                SourceFileUtils.addIfNone(annotationLines, "\\/\\* @AggregateRoot(\\(.*\\))? \\*\\/", "/* @AggregateRoot */");
 //            } else {
 //                SourceFileUtils.removeText(annotationLines, "\\/\\* @AggregateRoot(\\(.*\\))? \\*\\/");
 //            }
 //        }
         SourceFileUtils.addIfNone(annotationLines, "@Entity(\\(.*\\))?", "@Entity");
-        SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(name = \"`" + tableName + "`\")");
+        SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(name = \"" + LEFT_QUOTES_4_ID_ALIAS + tableName + RIGHT_QUOTES_4_ID_ALIAS + "\")");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicInsert(\\(.*\\))?", "@DynamicInsert");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicUpdate(\\(.*\\))?", "@DynamicUpdate");
-        if (StringUtils.isNotBlank(deletedField) && MysqlSchemaUtils.hasColumn(deletedField, columns)) {
-            if (MysqlSchemaUtils.hasColumn(versionField, columns)) {
-                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update `" + tableName + "` set `" + deletedField + "` = 1 where " + idField + " = ? and `" + versionField + "` = ? \")");
+        if (StringUtils.isNotBlank(deletedField) && hasColumn(deletedField, columns)) {
+            if (hasColumn(versionField, columns)) {
+                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS + tableName + RIGHT_QUOTES_4_ID_ALIAS + " set " + LEFT_QUOTES_4_ID_ALIAS + deletedField + RIGHT_QUOTES_4_ID_ALIAS + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + " = ? and " + LEFT_QUOTES_4_ID_ALIAS + versionField + RIGHT_QUOTES_4_ID_ALIAS + " = ? \")");
             } else {
-                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update `" + tableName + "` set `" + deletedField + "` = 1 where " + idField + " = ? \")");
+                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS + tableName + RIGHT_QUOTES_4_ID_ALIAS + " set " + LEFT_QUOTES_4_ID_ALIAS + deletedField + RIGHT_QUOTES_4_ID_ALIAS + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + " = ? \")");
             }
-            if (MysqlSchemaUtils.hasColumn(versionField, columns) && !SourceFileUtils.hasLine(annotationLines, "@SQLDelete(\\(.*" + versionField + ".*\\))")) {
-                SourceFileUtils.replaceText(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update `" + tableName + "` set `" + deletedField + "` = 1 where " + idField + " = ? and `" + versionField + "` = ? \")");
+            if (hasColumn(versionField, columns) && !SourceFileUtils.hasLine(annotationLines, "@SQLDelete(\\(.*" + versionField + ".*\\))")) {
+                SourceFileUtils.replaceText(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS + tableName + RIGHT_QUOTES_4_ID_ALIAS + " set " + LEFT_QUOTES_4_ID_ALIAS + deletedField + RIGHT_QUOTES_4_ID_ALIAS + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + " = ? and " + LEFT_QUOTES_4_ID_ALIAS + versionField + RIGHT_QUOTES_4_ID_ALIAS + " = ? \")");
             }
-            SourceFileUtils.addIfNone(annotationLines, "@Where(\\(.*\\))?", "@Where(clause = \"`" + deletedField + "` = 0\")");
+            SourceFileUtils.addIfNone(annotationLines, "@Where(\\(.*\\))?", "@Where(clause = \"" + LEFT_QUOTES_4_ID_ALIAS + deletedField + RIGHT_QUOTES_4_ID_ALIAS + " = 0\")");
         }
         if (annotationEmpty) {
             annotationLines.add("");
@@ -791,7 +624,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public String resolvePackage(Map<String, Object> table, String basePackage, String baseDir) {
-        String tableName = MysqlSchemaUtils.getTableName(table);
+        String tableName = getTableName(table);
         String simpleClassName = getEntityJavaType(tableName);
         String packageName = (basePackage + "." + getEntityPackage(tableName));
 
@@ -803,13 +636,13 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public void writeEntitySourceFile(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, String basePackage, String baseDir) throws IOException {
-        String tableName = MysqlSchemaUtils.getTableName(table);
+        String tableName = getTableName(table);
         if (isIgnoreTable(table)) {
             getLog().info("跳过忽略表：" + tableName);
             return;
         }
-        if (MysqlSchemaUtils.hasRelation(table)
-            // &&"ManyToMany".equalsIgnoreCase(MysqlSchemaUtils.getRelation(table))
+        if (hasRelation(table)
+            // &&"ManyToMany".equalsIgnoreCase(getRelation(table))
         ) {
             getLog().info("跳过关系表：" + tableName);
             return;
@@ -819,7 +652,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         String packageName = tablePackageMap.get(tableName);
 
         new File(SourceFileUtils.resolveDirectory(baseDir, packageName)).mkdirs();
-        if(MysqlSchemaUtils.isAggregateRoot(table)) {
+        if (isAggregateRoot(table)) {
             new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".enums")).mkdirs();
             new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".events")).mkdirs();
             new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".schemas")).mkdirs();
@@ -852,7 +685,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     private String generateEntityClassMainSource(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, List<String> enums, List<String> annotationLines, List<String> customerLines) throws IOException {
-        String tableName = MysqlSchemaUtils.getTableName(table);
+        String tableName = getTableName(table);
         String simpleClassName = getEntityJavaType(tableName);
         StringWriter stringWriter = new StringWriter();
         BufferedWriter out = new BufferedWriter(stringWriter);
@@ -874,29 +707,29 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, "    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
         writeLine(out, "");
         writeLine(out, "    @Id");
-        if (MysqlSchemaUtils.hasIdGenerator(table)) {
-            writeLine(out, "    @GeneratedValue(generator = \"" + MysqlSchemaUtils.getIdGenerator(table) + "\")");
-            writeLine(out, "    @GenericGenerator(name = \"" + MysqlSchemaUtils.getIdGenerator(table) + "\", strategy = \"" + MysqlSchemaUtils.getIdGenerator(table) + "\")");
+        if (hasIdGenerator(table)) {
+            writeLine(out, "    @GeneratedValue(generator = \"" + getIdGenerator(table) + "\")");
+            writeLine(out, "    @GenericGenerator(name = \"" + getIdGenerator(table) + "\", strategy = \"" + getIdGenerator(table) + "\")");
         } else if (StringUtils.isNotBlank(idGenerator)) {
             writeLine(out, "    @GeneratedValue(generator = \"" + idGenerator + "\")");
             writeLine(out, "    @GenericGenerator(name = \"" + idGenerator + "\", strategy = \"" + idGenerator + "\")");
         } else {
             writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
         }
-        writeLine(out, "    @Column(name = \"`" + idField + "`\")");
+        writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + "\")");
         writeLine(out, "    Long " + idField + ";");
         writeLine(out, "");
         for (Map<String, Object> column : columns) {
             writeColumnProperty(out, table, column, relations, enums);
         }
         writeRelationProperty(out, table, relations, tablePackageMap);
-        if (MysqlSchemaUtils.hasColumn(versionField, columns)) {
+        if (hasColumn(versionField, columns)) {
             writeLine(out, "");
             writeLine(out, "    /**");
             writeLine(out, "     * 数据版本（支持乐观锁）");
             writeLine(out, "     */");
             writeLine(out, "    @Version");
-            writeLine(out, "    @Column(name = \"`" + versionField + "`\")");
+            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + versionField + RIGHT_QUOTES_4_ID_ALIAS + "\")");
             if (generateDefault) {
                 writeLine(out, "    @Builder.Default");
                 writeLine(out, "    Integer " + toLowerCamelCase(versionField) + " = 0;");
@@ -915,8 +748,8 @@ public class GenEntityMojo extends MyAbstractMojo {
 
     public boolean needGenerateField(Map<String, Object> table, Map<String, Object> column, Map<String, Map<String, String>> relations) {
 
-        String tableName = MysqlSchemaUtils.getTableName(table);
-        String columnName = MysqlSchemaUtils.getColumnName(column);
+        String tableName = getTableName(table);
+        String columnName = getColumnName(column);
         if (isIgnoreColumn(column)) {
             return false;
         }
@@ -924,8 +757,8 @@ public class GenEntityMojo extends MyAbstractMojo {
             return false;
         }
 
-        if (!MysqlSchemaUtils.isAggregateRoot(table)) {
-            if (columnName.equalsIgnoreCase(MysqlSchemaUtils.getParent(table) + "_id")) {
+        if (!isAggregateRoot(table)) {
+            if (columnName.equalsIgnoreCase(getParent(table) + "_id")) {
                 return false;
             }
         }
@@ -959,10 +792,10 @@ public class GenEntityMojo extends MyAbstractMojo {
             if (isIgnoreTable(table)) {
                 continue;
             }
-            if (MysqlSchemaUtils.hasRelation(table)) {
+            if (hasRelation(table)) {
                 continue;
             }
-            String tableName = MysqlSchemaUtils.getTableName(table);
+            String tableName = getTableName(table);
             String simpleClassName = getEntityJavaType(tableName);
             writeLine(out, "import " + tablePackageMap.get(tableName) + "." + simpleClassName + ";");
         }
@@ -977,7 +810,7 @@ public class GenEntityMojo extends MyAbstractMojo {
             if (isIgnoreTable(table)) {
                 continue;
             }
-            if (MysqlSchemaUtils.hasRelation(table)) {
+            if (hasRelation(table)) {
                 continue;
             }
             writeBuildEntityMethod(out, table, ColumnsMap.get(tableEntry.getKey()), relations);
@@ -990,11 +823,11 @@ public class GenEntityMojo extends MyAbstractMojo {
 
     public void writeBuildEntityMethod(BufferedWriter out, Map<String, Object> table, List<Map<String, Object>> columns, Map<String, Map<String, String>> relations) {
 
-        String tableName = MysqlSchemaUtils.getTableName(table);
+        String tableName = getTableName(table);
         String simpleClassName = getEntityJavaType(tableName);
         writeLine(out, "");
         writeLine(out, "    /**");
-        for (String comment : MysqlSchemaUtils.getComment(table).split("[\\r\\n]")) {
+        for (String comment : getComment(table).split("[\\r\\n]")) {
             if (StringUtils.isEmpty(comment)) {
                 continue;
             }
@@ -1017,10 +850,10 @@ public class GenEntityMojo extends MyAbstractMojo {
             if ("Byte".equalsIgnoreCase(getColumnJavaType(column))) {
                 defaultJavaLiteral = "(byte)" + defaultJavaLiteral;
             }
-            writeLine(out, "                ." + toLowerCamelCase(MysqlSchemaUtils.getColumnName(column)) + "(fieldFillNull ? null : " + defaultJavaLiteral + ")");
+            writeLine(out, "                ." + toLowerCamelCase(getColumnName(column)) + "(fieldFillNull ? null : " + defaultJavaLiteral + ")");
 
         }
-        if (MysqlSchemaUtils.hasColumn(versionField, columns)) {
+        if (hasColumn(versionField, columns)) {
             writeLine(out, "                ." + toLowerCamelCase(versionField) + "(fieldFillNull ? null : 0)");
         }
         writeLine(out, "                ;");
@@ -1028,7 +861,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public void writeColumnProperty(BufferedWriter out, Map<String, Object> table, Map<String, Object> column, Map<String, Map<String, String>> relations, List<String> enums) {
-        String columnName = MysqlSchemaUtils.getColumnName(column);
+        String columnName = getColumnName(column);
         String columnJavaType = getColumnJavaType(column);
 
         if (!needGenerateField(table, column, relations)) {
@@ -1038,36 +871,30 @@ public class GenEntityMojo extends MyAbstractMojo {
         boolean updatable = true;
         boolean insertable = true;
         if (getColumnJavaType(column).contains("Date")) {
-            String extra = column.get("EXTRA") == null ? "" : column.get("EXTRA").toString();
-            if ("on update CURRENT_TIMESTAMP".equalsIgnoreCase(extra)) {
-                updatable = false;
-            }
-            String defaultData = column.get("COLUMN_DEFAULT") == null ? "" : column.get("COLUMN_DEFAULT").toString();
-            if ("CURRENT_TIMESTAMP".equalsIgnoreCase(defaultData)) {
-                insertable = true;
-            }
+            updatable = !isAutoUpdateDateColumn(column);
+            insertable = !isAutoInsertDateColumn(column);
         }
         if (isReadOnlyColumn(column)) {
             insertable = false;
             updatable = false;
         }
-        if (MysqlSchemaUtils.hasIgnoreInsert(column)) {
+        if (hasIgnoreInsert(column)) {
             insertable = false;
         }
-        if (MysqlSchemaUtils.hasIgnoreUpdate(column)) {
+        if (hasIgnoreUpdate(column)) {
             updatable = false;
         }
 
         writeLine(out, "");
         writeColumnComment(out, column);
-        if (MysqlSchemaUtils.hasEnum(column)) {
+        if (hasEnum(column)) {
             enums.add(columnJavaType);
             writeLine(out, "    @Convert(converter = " + columnJavaType + ".Converter.class)");
         }
         if (!updatable || !insertable) {
-            writeLine(out, "    @Column(name = \"`" + columnName + "`\", insertable = " + (insertable ? "true" : "false") + ", updatable = " + (updatable ? "true" : "false") + ")");
+            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + columnName + RIGHT_QUOTES_4_ID_ALIAS + "\", insertable = " + (insertable ? "true" : "false") + ", updatable = " + (updatable ? "true" : "false") + ")");
         } else {
-            writeLine(out, "    @Column(name = \"`" + columnName + "`\")");
+            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + columnName + RIGHT_QUOTES_4_ID_ALIAS + "\")");
         }
         if (generateDefault) {
             String defaultJavaLiteral = getColumnDefaultJavaLiteral(column);
@@ -1081,19 +908,19 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public void writeColumnComment(BufferedWriter out, Map<String, Object> column) {
-        String columnName = MysqlSchemaUtils.getColumnName(column);
+        String columnName = getColumnName(column);
         String columnJavaType = getColumnJavaType(column);
         writeLine(out, "    /**");
-        for (String comment : MysqlSchemaUtils.getComment(column).split("[\\r\\n]")) {
+        for (String comment : getComment(column).split("[\\r\\n]")) {
             if (StringUtils.isEmpty(comment)) {
                 continue;
             }
             writeLine(out, "     * " + comment);
-            if (MysqlSchemaUtils.hasEnum(column)) {
+            if (hasEnum(column)) {
                 getLog().info("获取枚举java类型：" + columnName + " -> " + columnJavaType);
                 Map<Integer, String[]> enumMap = EnumConfigMap.get(columnJavaType);
                 if (enumMap == null) {
-                    enumMap = EnumConfigMap.get(MysqlSchemaUtils.getType(column));
+                    enumMap = EnumConfigMap.get(getType(column));
                 }
                 if (enumMap != null) {
                     writeLine(out, "     * " + String.join(";", enumMap.entrySet().stream()
@@ -1102,13 +929,13 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
         }
         if (generateDbType) {
-            writeLine(out, "     * " + MysqlSchemaUtils.getColumnDbType(column));
+            writeLine(out, "     * " + getColumnDbType(column));
         }
         writeLine(out, "     */");
     }
 
     public void writeRelationProperty(BufferedWriter out, Map<String, Object> table, Map<String, Map<String, String>> relations, Map<String, String> tablePackageMap) {
-        String tableName = MysqlSchemaUtils.getTableName(table);
+        String tableName = getTableName(table);
         if (relations.containsKey(tableName)) {
             for (Map.Entry<String, String> entry : relations.get(tableName).entrySet()) {
                 String[] refInfos = entry.getValue().split(";");
@@ -1119,8 +946,8 @@ public class GenEntityMojo extends MyAbstractMojo {
                 } else {
                     fetchType = "EAGER";
                 }
-                if (MysqlSchemaUtils.hasLazy(navTable)) {
-                    fetchType = MysqlSchemaUtils.isLazy(navTable) ? "LAZY" : "EAGER";
+                if (hasLazy(navTable)) {
+                    fetchType = isLazy(navTable) ? "LAZY" : "EAGER";
                     getLog().warn(tableName + ":" + entry.getKey() + ":" + fetchType);
                 }
                 if ("ManyToOne".equals(refInfos[0])) {
@@ -1131,8 +958,8 @@ public class GenEntityMojo extends MyAbstractMojo {
                     switch (refInfos[0]) {
                         case "OneToMany":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY, orphanRemoval = true)");
-                            writeLine(out, "    @JoinColumn(name = \"`" + refInfos[1] + "`\", nullable = false)");
-                            boolean countIsOne = MysqlSchemaUtils.countIsOne(navTable);
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\", nullable = false)");
+                            boolean countIsOne = countIsOne(navTable);
                             if (countIsOne) {
                                 writeLine(out, "    @Getter(lombok.AccessLevel.PROTECTED)");
                             }
@@ -1147,12 +974,12 @@ public class GenEntityMojo extends MyAbstractMojo {
                             break;
                         case "ManyToOne":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    @JoinColumn(name = \"`" + refInfos[1] + "`\")");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")");
                             writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                             break;
                         case "OneToOne":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    @JoinColumn(name = \"`" + refInfos[1] + "`\")");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")");
                             writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                             break;
                         case "*OneToMany":
@@ -1165,7 +992,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                             break;
                         case "ManyToMany":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    @JoinTable(name = \"`" + refInfos[3] + "`\", joinColumns = {@JoinColumn(name = \"`" + refInfos[1] + "`\")}, inverseJoinColumns = {@JoinColumn(name = \"`" + refInfos[2] + "`\")})");
+                            writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS + "\", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")}, inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS + "\")})");
                             writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                             break;
                         case "*ManyToMany":
@@ -1181,8 +1008,8 @@ public class GenEntityMojo extends MyAbstractMojo {
                     switch (refInfos[0]) {
                         case "OneToMany":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER, orphanRemoval = true) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinColumn(name = \"`" + refInfos[1] + "`\", nullable = false)");
-                            boolean countIsOne = MysqlSchemaUtils.countIsOne(navTable);
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\", nullable = false)");
+                            boolean countIsOne = countIsOne(navTable);
                             if (countIsOne) {
                                 writeLine(out, "    @Getter(lombok.AccessLevel.PROTECTED)");
                             }
@@ -1197,12 +1024,12 @@ public class GenEntityMojo extends MyAbstractMojo {
                             break;
                         case "ManyToOne":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinColumn(name = \"`" + refInfos[1] + "`\")");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")");
                             writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                             break;
                         case "OneToOne":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinColumn(name = \"`" + refInfos[1] + "`\")");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")");
                             writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                             break;
                         case "*OneToMany":
@@ -1215,7 +1042,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                             break;
                         case "ManyToMany":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinTable(name = \"`" + refInfos[3] + "`\", joinColumns = {@JoinColumn(name = \"`" + refInfos[1] + "`\")}, inverseJoinColumns = {@JoinColumn(name = \"`" + refInfos[2] + "`\")})");
+                            writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS + "\", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")}, inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS + "\")})");
                             writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                             break;
                         case "*ManyToMany":
@@ -1311,7 +1138,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public void writeSchemaSourceFile(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, String basePackage, String baseDir) throws IOException {
-        String tableName = MysqlSchemaUtils.getTableName(table);
+        String tableName = getTableName(table);
         String packageName = null;
         if ("abs".equalsIgnoreCase(entityMetaInfoClassOutputMode)) {
             packageName = basePackage + "." + entityMetaInfoClassOutputPackage + ".schemas";
@@ -1341,7 +1168,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "import java.util.stream.Collectors;");
         writeLine(out, "");
         writeLine(out, "/**");
-        writeLine(out, " * " + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", " "));
+        writeLine(out, " * " + getComment(table).replaceAll("[\\r\\n]", " "));
         writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
         writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
         writeLine(out, " */");
@@ -1363,8 +1190,8 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
             writeLine(out, "");
             writeColumnComment(out, column);
-            writeLine(out, "    public Schema.Field<" + getColumnJavaType(column) + "> " + toLowerCamelCase(MysqlSchemaUtils.getColumnName(column)) + "() {\n" +
-                    "        return root == null ? new Schema.Field<>(\"" + toLowerCamelCase(MysqlSchemaUtils.getColumnName(column)) + "\") : new Schema.Field<>(root.get(\"" + toLowerCamelCase(MysqlSchemaUtils.getColumnName(column)) + "\"));\n" +
+            writeLine(out, "    public Schema.Field<" + getColumnJavaType(column) + "> " + toLowerCamelCase(getColumnName(column)) + "() {\n" +
+                    "        return root == null ? new Schema.Field<>(\"" + toLowerCamelCase(getColumnName(column)) + "\") : new Schema.Field<>(root.get(\"" + toLowerCamelCase(getColumnName(column)) + "\"));\n" +
                     "    }");
         }
         writeLine(out, "");
@@ -1456,7 +1283,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     public void writeJoinEntities(BufferedWriter out, Map<String, Object> table, Map<String, Map<String, String>> relations, Map<String, String> tablePackageMap) {
-        String tableName = MysqlSchemaUtils.getTableName(table);
+        String tableName = getTableName(table);
         int count = 0;
         if (relations.containsKey(tableName)) {
             for (Map.Entry<String, String> entry : relations.get(tableName).entrySet()) {

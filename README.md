@@ -90,7 +90,7 @@
 </project>
 ```
 通常，`cap4j-ddd-codegen`插件只需要我们根据团队或项目的实际情况调整以下配置项即可使用。
-> - `basePackage`: 项目基础包名，一般为com.yourcompany.project
+> - `basePackage`: 项目基础包名，一般为 _com.yourcompany.project_
 > - `connectionString`: 数据库连接串
 > - `user`: 数据库账号
 > - `pwd`: 数据库密码
