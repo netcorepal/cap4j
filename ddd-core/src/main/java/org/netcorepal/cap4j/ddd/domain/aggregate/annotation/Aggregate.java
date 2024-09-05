@@ -9,47 +9,53 @@ import java.lang.annotation.Target;
 
 /**
  * 聚合信息
+ *
  * @author binking338
  * @date 2024/8/23
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Aggregate {
-    /**
-     * 实体名称
-     * @return
-     */
-    @AliasFor("entity")
-    String value() default "";
-
-    /**
-     * 实体名称
-     * @return
-     */
-    @AliasFor("value")
-    String entity() default "";
-
-    /**
-     * 是否聚合根
-     * @return
-     */
-    boolean root() default false;
-
-    /**
-     * 实体描述
-     * @return
-     */
-    String description() default "";
+    public static final String TYPE_ROOT = "root";
+    public static final String TYPE_ENTITY = "entity";
+    public static final String TYPE_ENUM = "enum";
+    public static final String TYPE_REPOSITORY = "repository";
+    public static final String TYPE_DOMAIN_EVENT = "domain-event";
+    public static final String TYPE_SPECIFICATION = "specification";
 
     /**
      * 所属聚合
+     *
      * @return
      */
     String aggregate() default "";
 
     /**
-     * 归属实体名称
+     * 元素名称
+     *
      * @return
      */
-    String parentEntity() default "";
+    String name() default "";
+
+    /**
+     * 元素类型
+     * root、entity、domain-event、specification、repository
+     *
+     * @return
+     */
+    String type() default "";
+
+    /**
+     * 实体描述
+     *
+     * @return
+     */
+    String description() default "";
+
+    /**
+     * 关联元素名称
+     *
+     * @return
+     */
+    String[] relevant() default {};
 }

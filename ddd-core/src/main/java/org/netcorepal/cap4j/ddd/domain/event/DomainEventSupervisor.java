@@ -16,85 +16,67 @@ public interface DomainEventSupervisor {
      * @return 领域事件管理器
      */
      static DomainEventSupervisor getInstance() {
-        return DomainEventSupervisorConfiguration.domainEventSupervisor;
+        return DomainEventSupervisorSupport.instance;
      }
 
     /**
-     * 附加事件
-     * @param eventPayload 事件对象
+     * 附加领域事件
+     * @param domainEventPayload 领域事件消息体
      */
-    void attach(Object eventPayload);
+    <DOMAIN_EVENT> void attach(DOMAIN_EVENT domainEventPayload);
 
     /**
-     * 附加事件
-     * @param eventPayload 事件对象
+     * 附加领域事件
+     * @param domainEventPayload 领域事件消息体
      * @param delay 延迟发送
      */
-    void attach(Object eventPayload, Duration delay);
+    <DOMAIN_EVENT> void attach(DOMAIN_EVENT domainEventPayload, Duration delay);
 
     /**
-     * 附加事件
-     * @param eventPayload 事件对象
+     * 附加领域事件
+     * @param domainEventPayload 领域事件消息体
      * @param schedule 指定时间发送
      */
-    void attach(Object eventPayload, LocalDateTime schedule);
+    <DOMAIN_EVENT> void attach(DOMAIN_EVENT domainEventPayload, LocalDateTime schedule);
 
     /**
-     * 附加事件
-     * @param eventPayload 事件对象
-     * @param entity 绑定实体，该实体对象进入持久化上下文才会触发事件分发
+     * 附加领域事件
+     * @param domainEventPayload 领域事件消息体
+     * @param entity 绑定实体，该实体对象进入持久化上下文且事务提交时才会触发领域事件分发
      */
-    void attach(Object eventPayload, Object entity);
+    <DOMAIN_EVENT, ENTITY> void attach(DOMAIN_EVENT domainEventPayload, ENTITY entity);
 
     /**
-     * 附加事件
-     * @param eventPayload 事件对象
-     * @param entity 绑定实体，该实体对象进入持久化上下文才会触发事件分发
+     * 附加领域事件
+     * @param domainEventPayload 领域事件消息体
+     * @param entity 绑定实体，该实体对象进入持久化上下文且事务提交时才会触发领域事件分发
      * @param delay 延迟发送
      */
-    void attach(Object eventPayload, Object entity, Duration delay);
+    <DOMAIN_EVENT, ENTITY> void attach(DOMAIN_EVENT domainEventPayload, ENTITY entity, Duration delay);
 
     /**
-     * 附加事件
-     * @param eventPayload 事件对象
-     * @param entity 绑定实体，该实体对象进入持久化上下文才会触发事件分发
+     * 附加领域事件
+     * @param domainEventPayload 领域事件消息体
+     * @param entity 绑定实体，该实体对象进入持久化上下文且事务提交时才会触发领域事件分发
      * @param schedule 指定时间发送
      */
-    void attach(Object eventPayload, Object entity, LocalDateTime schedule);
+    <DOMAIN_EVENT, ENTITY> void attach(DOMAIN_EVENT domainEventPayload, ENTITY entity, LocalDateTime schedule);
 
     /**
-     * 剥离事件
-     * @param eventPayload 事件对象
+     * 剥离领域事件
+     * @param domainEventPayload 领域事件消息体
      */
-    void detach(Object eventPayload);
+    <DOMAIN_EVENT> void detach(DOMAIN_EVENT domainEventPayload);
     /**
-     * 剥离事件
-     * @param eventPayload 事件对象
+     * 剥离领域事件
+     * @param domainEventPayload 领域事件消息体
      * @param entity 关联实体
      */
-    void detach(Object eventPayload, Object entity);
-    /**
-     * 重置事件
-     */
-    void reset();
+    <DOMAIN_EVENT, ENTITY> void detach(DOMAIN_EVENT domainEventPayload, ENTITY entity);
 
     /**
-     * 弹出事件列表
-     * @return 事件列表
+     * 发布附加到指定实体以及所有未附加到实体的领域事件
+     * @param entities 指定实体集合
      */
-    Set<Object> popEvents();
-
-    /**
-     * 弹出实体绑定的事件列表
-     * @param entity 关联实体
-     * @return 事件列表
-     */
-    public Set<Object> popEvents(Object entity);
-
-    /**
-     * 获取发送事件
-     * @param eventPayload 事件对象
-     * @return 发送时间
-     */
-    LocalDateTime getDeliverTime(Object eventPayload);
+    void release(Set<Object> entities);
 }

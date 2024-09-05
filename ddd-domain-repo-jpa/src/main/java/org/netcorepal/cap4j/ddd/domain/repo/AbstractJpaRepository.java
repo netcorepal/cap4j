@@ -1,11 +1,9 @@
 package org.netcorepal.cap4j.ddd.domain.repo;
 
 import lombok.RequiredArgsConstructor;
-import org.netcorepal.cap4j.ddd.share.ClassUtils;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
-import org.springframework.core.ResolvableType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,8 +11,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,13 +27,6 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
     private final JpaSpecificationExecutor<Entity> jpaSpecificationExecutor;
     private final JpaRepository<Entity, ID> jpaRepository;
 
-    Class<Entity> forEntityClass(){
-        return (Class<Entity>) ResolvableType.forType(
-            ((ParameterizedType) this.getClass().getGenericSuperclass())
-                    .getActualTypeArguments()[0]
-        ).toClass();
-    }
-
     public Optional<Entity> findById(Object id) {
         List<ID> ids = new ArrayList<>(1);
         ids.add((ID) id);
@@ -45,7 +34,7 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
         return entity;
     }
 
-    public List<Entity> findByIds(Iterable<Object> ids){
+    public List<Entity> findByIds(Iterable<Object> ids) {
         List<Entity> entities = jpaRepository.findAllById((Iterable<ID>) ids);
         return entities;
     }

@@ -342,10 +342,11 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     @Parameter(property = "aggregateRepositoryCustomerCode", defaultValue = "")
     String aggregateRepositoryCustomerCode = "";
 
-    public String getAggregateRepositoryCustomerCode(){
+    public String getAggregateRepositoryCustomerCode() {
         if (StringUtils.isBlank(aggregateRepositoryCustomerCode)) {
             aggregateRepositoryCustomerCode =
                     "@org.springframework.stereotype.Component\n" +
+                            "    @org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate(aggregate = \"${Aggregate}\", name = \"${EntityType}\", type = \"repository\", description = \"\")\n" +
                             "    public static class ${EntityType}JpaRepositoryAdapter extends org.netcorepal.cap4j.ddd.domain.repo.AbstractJpaRepository<${EntityType}, ${IdentityType}>\n" +
                             "    {\n" +
                             "        public ${EntityType}JpaRepositoryAdapter(org.springframework.data.jpa.repository.JpaSpecificationExecutor<${EntityType}> jpaSpecificationExecutor, org.springframework.data.jpa.repository.JpaRepository<${EntityType}, ${IdentityType}> jpaRepository) {\n" +

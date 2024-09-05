@@ -281,9 +281,9 @@ public class GenArchMojo extends MyAbstractMojo {
         }
         String result = "\n";
         for (String entityClassExtraImport : entityClassExtraImports) {
-            result += "                        <item>" + entityClassExtraImport + "</item>\n";
+            result += "                        <import>" + entityClassExtraImport + "</import>\n";
         }
-        result += "                    \n";
+        result += "                    ";
         return result;
     }
 }

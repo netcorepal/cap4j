@@ -9,24 +9,19 @@ import org.netcorepal.cap4j.ddd.application.distributed.Locker;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEvent;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEventJpaRepository;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.Event;
-import org.netcorepal.cap4j.ddd.domain.event.persistence.EventRepository;
+import org.netcorepal.cap4j.ddd.domain.event.persistence.EventJpaRepository;
+import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.support.GenericMessage;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
 /**
  * 事件调度服务
@@ -38,19 +33,17 @@ import static org.netcorepal.cap4j.ddd.share.Constants.*;
 @RequiredArgsConstructor
 @Slf4j
 public class JpaEventScheduleService {
-
-    private final Locker locker;
-    private final DomainEventPublisher domainEventPublisher;
-    private final DomainEventMessageInterceptor domainEventMessageInterceptor;
+    private final EventPublisher eventPublisher;
     private final EventRecordRepository eventRecordRepository;
-    private final EventRepository eventRepository;
+    private final EventJpaRepository eventJpaRepository;
     private final ArchivedEventJpaRepository archivedEventJpaRepository;
+    private final Locker locker;
     private final String svcName;
     private final String compensationLockerKey;
     private final String archiveLockerKey;
     private final boolean enableAddPartition;
+    private final JdbcTemplate jdbcTemplate;
 
-    @PostConstruct
     public void init() {
         addPartition();
     }
@@ -83,7 +76,7 @@ public class JpaEventScheduleService {
                     if (!locker.acquire(lockerKey, pwd, maxLockDuration)) {
                         return;
                     }
-                    Page<Event> events = eventRepository.findAll((root, cq, cb) -> {
+                    Page<Event> events = eventJpaRepository.findAll((root, cq, cb) -> {
                         cq.where(cb.or(
                                 cb.and(
                                         // 【初始状态】
@@ -124,24 +117,14 @@ public class JpaEventScheduleService {
                         ) {
                             eventRecordImpl.beginDelivery(eventRecordImpl.getNextTryTime());
                             if (maxTry-- <= 0) {
-                                throw new RuntimeException("疑似死循环");
+                                throw new DomainException("疑似死循环");
                             }
                         }
 
                         eventRecordRepository.save(eventRecordImpl);
                         if (delivering) {
-                            Message message = new GenericMessage(
-                                    eventRecordImpl.getPayload(),
-                                    new DomainEventMessageInterceptor.ModifiableMessageHeaders(null, UUID.fromString(eventRecordImpl.getId()), null)
-                            );
-                            if(deliverTime.isAfter(now)){
-                                message.getHeaders().put(HEADER_KEY_CAP4J_SCHEDULE, deliverTime);
-                            }
-                            if (domainEventMessageInterceptor != null) {
-                                message = domainEventMessageInterceptor.beforePublish(message);
-                            }
-                            final Message finalMessage = message;
-                            domainEventPublisher.publish(finalMessage, eventRecordImpl);
+                            eventRecordImpl.markPersist(true);
+                            eventPublisher.publish(eventRecordImpl);
                         }
                     }
                 } catch (Exception ex) {
@@ -176,7 +159,7 @@ public class JpaEventScheduleService {
         int failCount = 0;
         while (true) {
             try {
-                Page<Event> events = eventRepository.findAll((root, cq, cb) -> {
+                Page<Event> events = eventJpaRepository.findAll((root, cq, cb) -> {
                     cq.where(
                             cb.and(
                                     // 【状态】
@@ -216,7 +199,7 @@ public class JpaEventScheduleService {
     @Transactional
     public void migrate(List<Event> events, List<ArchivedEvent> archivedEvents) {
         archivedEventJpaRepository.saveAll(archivedEvents);
-        eventRepository.deleteInBatch(events);
+        eventJpaRepository.deleteInBatch(events);
     }
 
     public void addPartition() {
@@ -228,8 +211,6 @@ public class JpaEventScheduleService {
         addPartition("__archived_event", DateUtils.addMonths(now, 1));
     }
 
-    private final JdbcTemplate jdbcTemplate;
-
     /**
      * 创建date日期所在月下个月的分区
      *
@@ -237,7 +218,7 @@ public class JpaEventScheduleService {
      * @param date
      */
     private void addPartition(String table, Date date) {
-        String sql = "alter table `" + table + "` add partition (partition p" + DateFormatUtils.format(date, "yyyyMM") + " values less than (to_days('" + DateFormatUtils.format(DateUtils.addMonths(date, 1), "yyyy-MM") + "-01')) ENGINE=InnoDB)";
+        String sql = "alter table " + table + " add partition (partition p" + DateFormatUtils.format(date, "yyyyMM") + " values less than (to_days('" + DateFormatUtils.format(DateUtils.addMonths(date, 1), "yyyy-MM") + "-01')) ENGINE=InnoDB)";
         try {
             jdbcTemplate.execute(sql);
         } catch (Exception ex) {

@@ -1,13 +1,13 @@
 package org.netcorepal.cap4j.ddd.codegen;
 
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 import org.netcorepal.cap4j.ddd.codegen.misc.Inflector;
 import org.netcorepal.cap4j.ddd.codegen.misc.MysqlSchemaUtils;
 import org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Mojo;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -32,6 +32,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     private Map<String, List<Map<String, Object>>> ColumnsMap = new HashMap<>();
     private Map<String, Map<Integer, String[]>> EnumConfigMap = new HashMap<>();
     private Map<String, String> EnumPackageMap = new HashMap<>();
+    private Map<String, String> EnumTableNameMap = new HashMap<>();
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -170,6 +171,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                     if (enumConfig.size() > 0) {
                         EnumConfigMap.put(MysqlSchemaUtils.getType(column), enumConfig);
                         EnumPackageMap.put(MysqlSchemaUtils.getType(column), basePackage + "." + getEntityPackage(MysqlSchemaUtils.getTableName(table)) + ".enums");
+                        EnumTableNameMap.put(MysqlSchemaUtils.getType(column), MysqlSchemaUtils.getTableName(table));
                     }
                 }
             }
@@ -183,7 +185,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("");
         for (Map.Entry<String, Map<Integer, String[]>> entry : EnumConfigMap.entrySet()) {
             try {
-                writeEnumSourceFile(entry.getValue(), entry.getKey(), EnumPackageMap.get(entry.getKey()), domainModulePath, enumValueField, enumNameField);
+                writeEnumSourceFile(entry.getValue(), entry.getKey(), EnumPackageMap.get(entry.getKey()), getAggregate(EnumTableNameMap.get(entry.getKey())), domainModulePath, enumValueField, enumNameField);
             } catch (IOException e) {
                 e.printStackTrace();
                 getLog().error(e);
@@ -291,13 +293,20 @@ public class GenEntityMojo extends MyAbstractMojo {
     public String getAggregate(String tableName) {
         Map<String, Object> table = TableMap.get(tableName);
         String aggregate = MysqlSchemaUtils.getAggregate(table);
-        getLog().info("尝试解析聚合:" + MysqlSchemaUtils.getTableName(table) + " " + aggregate);
+        getLog().info("尝试解析聚合:" + MysqlSchemaUtils.getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
         while (!MysqlSchemaUtils.isAggregateRoot(table) && StringUtils.isBlank(aggregate)) {
-            table = TableMap.get(MysqlSchemaUtils.getParent(table));
+            String parent = MysqlSchemaUtils.getParent(table);
+            if (StringUtils.isBlank(parent)) {
+                break;
+            }
+            table = TableMap.get(parent);
             aggregate = MysqlSchemaUtils.getAggregate(table);
-            getLog().info("尝试父表聚合:" + MysqlSchemaUtils.getTableName(table) + " " + aggregate);
+            getLog().info("尝试父表聚合:" + MysqlSchemaUtils.getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
         }
-        getLog().info("聚合解析结果:" + tableName + " " + aggregate);
+        if (StringUtils.isBlank(aggregate)) {
+            aggregate = getEntityJavaType(MysqlSchemaUtils.getTableName(table));
+        }
+        getLog().info("聚合解析结果:" + tableName + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
         return aggregate;
     }
 
@@ -337,7 +346,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         String aggregate = getAggregate(tableName);
         String packageName = ("domain.aggregates"
                 + (StringUtils.isNotBlank(module) ? "." + module : "")
-                + (StringUtils.isNotBlank(aggregate) ? "." + aggregate : "")
+                + (StringUtils.isNotBlank(aggregate) ? "." + aggregate.toLowerCase() : "")
         );
         return packageName;
     }
@@ -729,10 +738,13 @@ public class GenEntityMojo extends MyAbstractMojo {
 
     public void processAnnotationLines(Map<String, Object> table, List<Map<String, Object>> columns, List<String> annotationLines) {
         String tableName = MysqlSchemaUtils.getTableName(table);
-        String simpleClassName = getEntityJavaType(tableName);
         boolean annotationEmpty = annotationLines.size() == 0;
         SourceFileUtils.removeText(annotationLines, "@Aggregate\\(.*\\)");
-        SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(entity = \"" + simpleClassName + "\", root = " + (MysqlSchemaUtils.isAggregateRoot(table) ? "true" : "false") + ", aggregate = \"" + simpleClassName + "\", description = \"" + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
+        if (MysqlSchemaUtils.isAggregateRoot(table)) {
+            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregate(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = \"root\", description = \"" + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
+        } else {
+            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregate(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = \"entity\", relevant = { \"" + getEntityJavaType(MysqlSchemaUtils.getParent(table)) + "\" }, description = \"" + MysqlSchemaUtils.getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
+        }
         if (StringUtils.isNotBlank(getAggregateRootAnnotation())) {
             if (MysqlSchemaUtils.isAggregateRoot(table)) {
                 SourceFileUtils.addIfNone(annotationLines, getAggregateRootAnnotation() + "(\\(.*\\))?", getAggregateRootAnnotation());
@@ -807,6 +819,12 @@ public class GenEntityMojo extends MyAbstractMojo {
         String packageName = tablePackageMap.get(tableName);
 
         new File(SourceFileUtils.resolveDirectory(baseDir, packageName)).mkdirs();
+        if(MysqlSchemaUtils.isAggregateRoot(table)) {
+            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".enums")).mkdirs();
+            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".events")).mkdirs();
+            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".schemas")).mkdirs();
+            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".specs")).mkdirs();
+        }
         String filePath = SourceFileUtils.resolveSourceFile(baseDir, packageName, simpleClassName);
 
         List<String> enums = new ArrayList<>();
@@ -1072,7 +1090,7 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
             writeLine(out, "     * " + comment);
             if (MysqlSchemaUtils.hasEnum(column)) {
-                getLog().info("获取枚举java类型："+columnName + " -> " + columnJavaType);
+                getLog().info("获取枚举java类型：" + columnName + " -> " + columnJavaType);
                 Map<Integer, String[]> enumMap = EnumConfigMap.get(columnJavaType);
                 if (enumMap == null) {
                     enumMap = EnumConfigMap.get(MysqlSchemaUtils.getType(column));
@@ -1213,7 +1231,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
     }
 
-    public void writeEnumSourceFile(Map<Integer, String[]> enumConfigs, String enumType, String enumPackage, String baseDir, String enumValueField, String enumNameField) throws IOException {
+    public void writeEnumSourceFile(Map<Integer, String[]> enumConfigs, String enumType, String enumPackage, String belongAggregate, String baseDir, String enumValueField, String enumNameField) throws IOException {
         new File(SourceFileUtils.resolveDirectory(baseDir, enumPackage)).mkdirs();
         String filePath = SourceFileUtils.resolveSourceFile(baseDir, enumPackage, enumType);
 
@@ -1223,6 +1241,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, "package " + enumPackage + ";");
         writeLine(out, "");
         writeLine(out, "import lombok.Getter;");
+        writeLine(out, "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;");
         writeLine(out, "");
         writeLine(out, "import javax.persistence.*;");
         writeLine(out, "import java.util.HashMap;");
@@ -1232,6 +1251,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
         writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
         writeLine(out, " */");
+        writeLine(out, "@Aggregate(aggregate = \"" + belongAggregate + "\", name = \"" + enumType + "\", type = \"enum\", description = \"\")");
         writeLine(out, "public enum " + enumType + " {");
         writeLine(out, "");
         for (Map.Entry<Integer, String[]> entry : enumConfigs.entrySet()) {

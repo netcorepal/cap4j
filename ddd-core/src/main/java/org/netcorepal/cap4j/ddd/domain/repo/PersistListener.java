@@ -11,25 +11,8 @@ public interface PersistListener<Entity> {
     /**
      * 持久化变更
      * @param entity
+     * @param type
      */
-    void onChange(Entity entity);
-
-    /**
-     * 新增实体时
-     * @param entity
-     */
-    void onCreate(Entity entity);
-
-    /**
-     * 更新实体时
-     * @param entity
-     */
-    void onUpdate(Entity entity);
-
-    /**
-     * 删除实体时
-     * @param entity
-     */
-    void onDelete(Entity entity);
+    void onChange(Entity entity, PersistType type);
 
 }

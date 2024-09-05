@@ -6,7 +6,7 @@ package org.netcorepal.cap4j.ddd.application.command;
  * @author binking338
  * @date
  */
-public abstract class CommandNoneParamAndResult implements Command<Void, Void>{
+public abstract class CommandNoneParamAndResult implements Command<Void, Void> {
     @Override
     public Void exec(Void param) {
         exec();

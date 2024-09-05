@@ -2,12 +2,16 @@ package org.netcorepal.cap4j.ddd.application.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.RequestHandler;
+import org.netcorepal.cap4j.ddd.application.RequestInterceptor;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
-import org.netcorepal.cap4j.ddd.share.ClassUtils;
+import org.netcorepal.cap4j.ddd.application.command.Command;
+import org.netcorepal.cap4j.ddd.application.command.CommandNoneParam;
+import org.netcorepal.cap4j.ddd.application.command.CommandNoneParamAndResult;
+import org.netcorepal.cap4j.ddd.application.command.CommandNoneResult;
+import org.netcorepal.cap4j.ddd.application.query.*;
+import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 默认请求管理器
@@ -17,41 +21,58 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 public class DefaultRequestSupervisor implements RequestSupervisor {
-    private final List<RequestHandler> requestHandlers;
+    private final List<RequestHandler<?, ?>> requestHandlers;
+    private final List<RequestInterceptor<?, ?>> requestInterceptors;
 
-    private Map<Class<?>, RequestHandler> requestHandlerMap = null;
+    private Map<Class<?>, RequestHandler<?, ?>> requestHandlerMap = null;
+    private Map<Class<?>, List<RequestInterceptor<?, ?>>> requestInterceptorMap = null;
 
     public void init() {
-        if(requestHandlerMap != null){
+        if (null != requestHandlerMap) {
             return;
         }
-        synchronized (DefaultRequestSupervisor.class){
-            if(requestHandlerMap != null){
+        synchronized (DefaultRequestSupervisor.class) {
+            if (null != requestHandlerMap) {
                 return;
             }
         }
         requestHandlerMap = new HashMap<>();
-        for (RequestHandler requestHandler : requestHandlers) {
-            Class requestPayloadClass = ClassUtils.findMethod(
-                    requestHandler.getClass(),
-                    "exec",
-                    m -> m.getParameterCount() == 1
-            ).getParameters()[0].getType();
+        requestInterceptorMap = new HashMap<>();
+        for (RequestHandler<?, ?> requestHandler : requestHandlers) {
+            Class<?> requestPayloadClass = ClassUtils.resolveGenericTypeClass(
+                    requestHandler.getClass(), 0,
+                    RequestHandler.class,
+                    Command.class, CommandNoneParam.class, CommandNoneResult.class, CommandNoneParamAndResult.class,
+                    Query.class, QueryNoArgs.class, ListQuery.class, ListQueryNoArgs.class, PageQuery.class);
             requestHandlerMap.put(requestPayloadClass, requestHandler);
         }
-    }
-    @Override
-    public <PARAM> Object request(PARAM param){
-        return request(param, (Class<PARAM>)param.getClass(), Object.class);
-    }
-    @Override
-    public <PARAM, RESULT> RESULT request(PARAM param, Class<RESULT> resultClass) {
-        return request(param, (Class<PARAM>)param.getClass(), resultClass);
+        for (RequestInterceptor<?, ?> requestInterceptor : requestInterceptors) {
+            Class<?> requestPayloadClass = ClassUtils.resolveGenericTypeClass(
+                    requestInterceptor.getClass(), 0,
+                    RequestInterceptor.class);
+            List<RequestInterceptor<?, ?>> interceptors = requestInterceptorMap.computeIfAbsent(requestPayloadClass, cls -> new ArrayList<>());
+            interceptors.add(requestInterceptor);
+        }
     }
 
     @Override
-    public <PARAM, RESULT> RESULT request(PARAM param, Class<PARAM> paramClass, Class<RESULT> resultClass) {
+    public <REQUEST> Object send(REQUEST request) {
+        return send(request, (Class<REQUEST>) request.getClass(), Object.class);
+    }
+
+    @Override
+    public <REQUEST, RESPONSE> RESPONSE send(REQUEST request, Class<RESPONSE> responseClass) {
+        return send(request, (Class<REQUEST>) request.getClass(), responseClass);
+    }
+
+    @Override
+    public <REQUEST, RESPONSE> RESPONSE send(REQUEST request, Class<REQUEST> requestClass, Class<RESPONSE> responseClass) {
         init();
-        return (RESULT) requestHandlerMap.get(paramClass).exec(param);
+        requestInterceptorMap.getOrDefault(requestClass, Collections.emptyList())
+                .forEach(interceptor -> ((RequestInterceptor<REQUEST, RESPONSE>) interceptor).preRequest(request));
+        RESPONSE response = ((RequestHandler<REQUEST, RESPONSE>) requestHandlerMap.get(requestClass)).exec(request);
+        requestInterceptorMap.getOrDefault(requestClass, Collections.emptyList())
+                .forEach(interceptor -> ((RequestInterceptor<REQUEST, RESPONSE>) interceptor).postRequest(request, response));
+        return response;
     }
 }

@@ -19,11 +19,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class JdbcLockerAutoConfiguration {
     private final JdbcTemplate jdbcTemplate;
 
+    private static final String CONFIG_KEY_4_JPA_SHOW_SQL = "${spring.jpa.show-sql:${spring.jpa.showSql:false}}";
+
     @Bean
     @ConditionalOnMissingBean(value = Locker.class)
     public JdbcLocker jdbcLocker(
             JdbcLockerProperties properties,
-            @Value("${spring.jpa.show-sql:${spring.jpa.showSql:false}}")
+            @Value(CONFIG_KEY_4_JPA_SHOW_SQL)
             boolean showSql
     ) {
         JdbcLocker jdbcLocker = new JdbcLocker(

@@ -1,6 +1,5 @@
 package org.netcorepal.cap4j.ddd.domain.event.persistence;
 
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.Feature;
 import lombok.AllArgsConstructor;
@@ -9,11 +8,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
-import org.netcorepal.cap4j.ddd.share.DomainException;
-import org.netcorepal.cap4j.ddd.share.annotation.Retry;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
+import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
+import org.netcorepal.cap4j.ddd.share.DomainException;
+import org.netcorepal.cap4j.ddd.share.annotation.Retry;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import javax.persistence.*;
 import java.io.PrintWriter;
@@ -143,12 +143,12 @@ public class Event {
     }
 
     public void occuredException(LocalDateTime now, Throwable ex) {
-        if(isDelivered()) {
+        if (isDelivered()) {
             return;
         }
         this.eventState = EventState.EXCEPTION;
         StringWriter sw = new StringWriter();
-        ex.printStackTrace(new PrintWriter(sw,true));
+        ex.printStackTrace(new PrintWriter(sw, true));
         this.exception = sw.toString();
     }
 
@@ -159,11 +159,11 @@ public class Event {
         this.payload = payload;
         this.data = JSON.toJSONString(payload);
         this.dataType = payload.getClass().getName();
-        DomainEvent domainEvent = payload == null
+        IntegrationEvent integrationEvent = payload == null
                 ? null
-                : payload.getClass().getAnnotation(DomainEvent.class);
-        if (domainEvent != null) {
-            this.eventType = domainEvent.intergration();
+                : payload.getClass().getAnnotation(IntegrationEvent.class);
+        if (integrationEvent != null) {
+            this.eventType = integrationEvent.value();
         }
         Retry retry = payload == null
                 ? null

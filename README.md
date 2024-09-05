@@ -48,7 +48,7 @@
                     <moduleNameSuffix4Domain>-domain</moduleNameSuffix4Domain>
                     <moduleNameSuffix4Application>-application</moduleNameSuffix4Application>
                     <connectionString>
-                        <![CDATA[jdbc:mysql://127.0.0.1:3306/test?serverTimezone=Asia/Shanghai&useSSL=false&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull]]>
+                        <![CDATA[jdbc:mysql://127.0.0.1:3306/test?serverTimezone=Asia%2FShanghai&useSSL=false&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull]]>
                     </connectionString>
                     <user>root</user>
                     <pwd>123456</pwd>
@@ -62,13 +62,13 @@
                     <ignoreFields></ignoreFields>
                     <entityBaseClass></entityBaseClass>
                     <entityClassExtraImports>
-                        <!-- <import>your.package.ClassName</import>-->
+                        <import>static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events</import>
                     </entityClassExtraImports>
                     <entityMetaInfoClassOutputMode>ref</entityMetaInfoClassOutputMode>
                     <entityMetaInfoClassOutputPackage>domain._share.meta</entityMetaInfoClassOutputPackage>
                     <fetchMode>SUBSELECT</fetchMode>
                     <fetchType>EAGER</fetchType>
-                    <idGenerator>org.netcorepal.cap4j.ddd.application.distributed.SnowflakeIdentifierGenerator</idGenerator>
+                    <idGenerator>org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator</idGenerator>
                     <enumValueField>code</enumValueField>
                     <enumNameField>name</enumNameField>
                     <enumUnmatchedThrowException>true</enumUnmatchedThrowException>
@@ -162,7 +162,7 @@ mvn cap4j-ddd-codegen:gen-arch
         ├── domain (领域层接口实现)
         │   ├── _share
         │   │   └── configure
-        │   │       └── MyDomainEventMessageInterceptor.java (集成事件消息拦截器)
+        │   │       └── MyEventMessageInterceptor.java (集成事件消息拦截器)
         │   └── repositories (实现聚合仓储接口)
         ├── infra (基础设施适配接口实现）
         │   ├── _share
@@ -232,7 +232,7 @@ mvn cap4j-ddd-codegen:gen-arch
     │   │                       │   ├── domain
     │   │                       │   │   ├── _share
     │   │                       │   │   │   └── configure
-    │   │                       │   │   │       └── MyDomainEventMessageInterceptor.java
+    │   │                       │   │   │       └── MyEventMessageInterceptor.java
     │   │                       │   │   └── repositories
     │   │                       │   ├── infra
     │   │                       │   │   ├── _share
@@ -400,8 +400,8 @@ public class Order {
     // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
 
     @Id
-    @GeneratedValue(generator = "org.netcorepal.cap4j.ddd.application.distributed.SnowflakeIdentifierGenerator")
-    @GenericGenerator(name = "org.netcorepal.cap4j.ddd.application.distributed.SnowflakeIdentifierGenerator", strategy = "org.netcorepal.cap4j.ddd.application.distributed.SnowflakeIdentifierGenerator")
+    @GeneratedValue(generator = "org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator")
+    @GenericGenerator(name = "org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator", strategy = "org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator")
     @Column(name = "`id`")
     Long id;
 
@@ -493,8 +493,8 @@ public class OrderItem {
     // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
 
     @Id
-    @GeneratedValue(generator = "org.netcorepal.cap4j.ddd.application.distributed.SnowflakeIdentifierGenerator")
-    @GenericGenerator(name = "org.netcorepal.cap4j.ddd.application.distributed.SnowflakeIdentifierGenerator", strategy = "org.netcorepal.cap4j.ddd.application.distributed.SnowflakeIdentifierGenerator")
+    @GeneratedValue(generator = "org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator")
+    @GenericGenerator(name = "org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator", strategy = "org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator")
     @Column(name = "`id`")
     Long id;
 
@@ -674,7 +674,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.netcorepal.cap4j.ddd.application.command.Command;
 import org.netcorepal.cap4j.ddd.domain.repo.AggregateRepository;
-import org.netcorepal.cap4j.ddd.domain.repo.UnitOfWork;
+import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.example.domain.aggregates.Order;
 import org.netcorepal.cap4j.ddd.example.domain.aggregates.OrderItem;
 import org.springframework.stereotype.Service;
@@ -746,91 +746,7 @@ public class PlaceOrderCmd {
 ##### 事件定义、订阅、发布
 **创建发件箱表**
 
-为了实现`Outbox`模式，cap4j需要在业务库中创建发件箱表。脚手架初始化后，项目内`resources/ddl.sql`包含完整的发件箱表建表语句
-```sql
--- Create syntax for TABLE '__event'
-CREATE TABLE `__event` (
-                           `id` bigint(20) NOT NULL AUTO_INCREMENT,
-                           `event_uuid` varchar(64) NOT NULL DEFAULT '' COMMENT '事件uuid',
-                           `svc_name` varchar(255) NOT NULL DEFAULT '' COMMENT '服务',
-                           `event_type` varchar(255) NOT NULL DEFAULT '' COMMENT '事件类型',
-                           `data` text COMMENT '事件数据',
-                           `data_type` varchar(255) NOT NULL DEFAULT '' COMMENT '事件数据类型',
-                           `exception` text COMMENT '事件发送异常',
-                           `expire_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '过期时间',
-                           `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                           `event_state` int(11) NOT NULL DEFAULT '0' COMMENT '分发状态',
-                           `last_try_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上次尝试时间',
-                           `next_try_time` datetime NOT NULL DEFAULT '0001-01-01 00:00:00' COMMENT '下次尝试时间',
-                           `tried_times` int(11) NOT NULL DEFAULT '0' COMMENT '已尝试次数',
-                           `try_times` int(11) NOT NULL DEFAULT '0' COMMENT '尝试次数',
-                           `version` int(11) NOT NULL DEFAULT '0',
-                           `db_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                           `db_updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-                           PRIMARY KEY (`id`
-#   , `db_created_at`
-                               ),
-                           KEY `idx_db_created_at` (`db_created_at`),
-                           KEY `idx_db_updated_at` (`db_updated_at`),
-                           KEY `idx_event_uuid` (`event_uuid`),
-                           KEY `idx_event_type` (`event_type`,`svc_name`),
-                           KEY `idx_create_at` (`create_at`),
-                           KEY `idx_expire_at` (`expire_at`),
-                           KEY `idx_next_try_time` (`next_try_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='事件发件箱 support by cap4j\n@I;'
-# partition by range(to_days(db_created_at))
-# (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)
-;
--- Create syntax for TABLE '__achrived_event'
-CREATE TABLE `__achrived_event` (
-                           `id` bigint(20) NOT NULL AUTO_INCREMENT,
-                           `event_uuid` varchar(64) NOT NULL DEFAULT '' COMMENT '事件uuid',
-                           `svc_name` varchar(255) NOT NULL DEFAULT '' COMMENT '服务',
-                           `event_type` varchar(255) NOT NULL DEFAULT '' COMMENT '事件类型',
-                           `data` text COMMENT '事件数据',
-                           `data_type` varchar(255) NOT NULL DEFAULT '' COMMENT '事件数据类型',
-                           `exception` text COMMENT '事件发送异常',
-                           `expire_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '过期时间',
-                           `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                           `event_state` int(11) NOT NULL DEFAULT '0' COMMENT '分发状态',
-                           `last_try_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上次尝试时间',
-                           `next_try_time` datetime NOT NULL DEFAULT '0001-01-01 00:00:00' COMMENT '下次尝试时间',
-                           `tried_times` int(11) NOT NULL DEFAULT '0' COMMENT '已尝试次数',
-                           `try_times` int(11) NOT NULL DEFAULT '0' COMMENT '尝试次数',
-                           `version` int(11) NOT NULL DEFAULT '0',
-                           `db_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                           `db_updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-                           PRIMARY KEY (`id`
-#   , `db_created_at`
-                               ),
-                           KEY `idx_db_created_at` (`db_created_at`),
-                           KEY `idx_db_updated_at` (`db_updated_at`),
-                           KEY `idx_event_uuid` (`event_uuid`),
-                           KEY `idx_event_type` (`event_type`,`svc_name`),
-                           KEY `idx_create_at` (`create_at`),
-                           KEY `idx_expire_at` (`expire_at`),
-                           KEY `idx_next_try_time` (`next_try_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='事件发件箱存档 support by cap4j\n@I;'
-# partition by range(to_days(db_created_at))
-# (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)
-;
-
-CREATE TABLE `__locker` (
-                            `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-                            `name` varchar(100) NOT NULL DEFAULT '' COMMENT '锁名称',
-                            `pwd` varchar(100) NOT NULL DEFAULT '' COMMENT '锁密码',
-                            `lock_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '锁获取时间',
-                            `unlock_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '锁释放时间',
-                            `version` bigint(20) unsigned NOT NULL DEFAULT '0',
-                            `db_created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                            `db_updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP  COMMENT '更新时间',
-                            PRIMARY KEY (`id`),
-                            KEY `idx_db_created_at` (`db_created_at`),
-                            KEY `idx_db_updated_at` (`db_updated_at`),
-                            UNIQUE `uniq_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='锁 support by cap4j\n@I;';
-
-```
+为了实现`Outbox`模式，cap4j需要在业务库中创建发件箱表。脚手架初始化后，使用项目内`resources/ddl.sql`包含的完整的发件箱表建表语句初始化数据库。
 
 **领域事件定义**
 
@@ -838,7 +754,7 @@ CREATE TABLE `__locker` (
 
 通过[`DomainEvent`](ddd-core/src/main/java/org/netcorepal/cap4j/ddd/domain/event/annotation/DomainEvent.java)注解的类，cap4j将会识别成领域事件。
 后续即可通过[`DefaultDomainEventSupervisor`](ddd-core/src/main/java/org/netcorepal/cap4j/ddd/domain/event/impl/DefaultDomainEventSupervisor.java).`instance`.`attach`方法来向当前线程上线文附加领域事件。
-一旦 [`UnitOfWork`](ddd-core/src/main/java/org/netcorepal/cap4j/ddd/domain/repo/UnitOfWork.java).save() 顺利提交事务。则cap4j将会保障事件被提交到具体适配好的消息队列（比如当前cap4j实现的RocketMQ）中。
+一旦 [`UnitOfWork`](ddd-core/src/main/java/org/netcorepal/cap4j/ddd/application/UnitOfWork.java).save() 顺利提交事务。则cap4j将会保障事件被提交到具体适配好的消息队列（比如当前cap4j实现的RocketMQ）中。
 
 ```java
 package org.netcorepal.cap4j.ddd.example.domain.aggregates.events;
@@ -881,12 +797,12 @@ public class OrderPlacedDomainEvent {
 
 ```
 > 注解属性详解
-> - `intergration()` intergration 字段非空，则事件会被识别为集成事件，意味着该事件将通过消息队列适配，通知到分布式系统中的其他服务进程。
+> - `integration()` integration 字段非空，则事件会被识别为集成事件，意味着该事件将通过消息队列适配，通知到分布式系统中的其他服务进程。
 > - `subscriber()` 集成事件订阅场景，必须定义该字段，通常该字段的值将会被适配的消息队列应用到消费分组配置中。
 > - `persist()` 控制事件发布记录持久化。集成事件发布场景，该字段无意义。非集成事件发布场景（仅在本服务进程内部有订阅需求），可以通过`persist=true`控制事件进入发件箱表，并脱离事件发布上下文事务中。以避免订阅逻辑异常影响发布事务的完成。
 > 
 > 应用场景例子说明
-> - `基于MQ发送方` @DomainEvent(intergration="event-name-used-for-mq-topic")
+> - `基于MQ发送方` @DomainEvent(integration="event-name-used-for-mq-topic")
 > - `基于MQ订阅方` @DomainEvent(subscriber="subscriber-name-used-for-mq-consumer-group")
 > - `消费方与订阅方事务隔离` @DomainEvent(persist=true)
 > - `消费方与订阅方同一事务` @DomainEvent

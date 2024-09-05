@@ -15,7 +15,7 @@ import java.util.Optional;
  */
 public interface RepositorySupervisor {
     static RepositorySupervisor getInstance(){
-        return RepositorySupervisorConfiguration.instance;
+        return RepositorySupervisorSupport.instance;
     }
 
     /**
@@ -70,6 +70,35 @@ public interface RepositorySupervisor {
      * @param <ENTITY>
      */
     <ENTITY> List<ENTITY> findByIds(Class<ENTITY> entityClass, Iterable<Object> ids);
+
+    /**
+     * 根据条件删除实体
+     *
+     * @param entityClass
+     * @param condition
+     * @param limit
+     * @return
+     * @param <ENTITY>
+     */
+    <ENTITY> List<ENTITY> remove(Class<ENTITY> entityClass, Object condition, int limit);
+
+    /**
+     * 根据ID删除实体
+     * @param entityClass
+     * @param id
+     * @return
+     * @param <ENTITY>
+     */
+    <ENTITY> Optional<ENTITY> removeById(Class<ENTITY> entityClass, Object id);
+
+    /**
+     * 根据ID批量删除实体
+     * @param entityClass
+     * @param ids
+     * @return
+     * @param <ENTITY>
+     */
+    <ENTITY> List<ENTITY> removeByIds(Class<ENTITY> entityClass, Iterable<Object> ids);
 
     /**
      * 根据条件获取实体计数

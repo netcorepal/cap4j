@@ -15,12 +15,14 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties("cap4j.ddd.domain.event")
 public class EventProperties {
     /**
-     * 订阅器扫描包范围
+     * 事件扫描包范围
+     * 领域事件 & 集成事件
      */
-    String subscriberScanPackage = "";
+    String eventScanPackage = "";
 
     /**
      * 发布器线程池大小
+     * 用于实现延迟发送
      */
     int publisherThreadPoolSize = 4;
 }

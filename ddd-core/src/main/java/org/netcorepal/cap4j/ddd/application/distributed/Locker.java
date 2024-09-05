@@ -11,6 +11,7 @@ import java.time.Duration;
 public interface Locker {
     /**
      * 获取锁
+     *
      * @param key
      * @param pwd
      * @param expireDuration
@@ -20,6 +21,7 @@ public interface Locker {
 
     /**
      * 释放锁
+     *
      * @param key
      * @param pwd
      * @return

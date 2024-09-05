@@ -1,10 +1,14 @@
 package org.netcorepal.cap4j.ddd.application;
 
 import lombok.RequiredArgsConstructor;
-import org.netcorepal.cap4j.ddd.application.impl.DefaultMediator;
+import org.netcorepal.cap4j.ddd.Mediator;
+import org.netcorepal.cap4j.ddd.MediatorSupport;
+import org.netcorepal.cap4j.ddd.impl.DefaultMediator;
 import org.netcorepal.cap4j.ddd.application.impl.DefaultRequestSupervisor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import java.util.List;
 
@@ -18,17 +22,22 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MediatorAutoConfiguration {
     @Bean
-    public DefaultRequestSupervisor defaultRequestSupervisor(List<RequestHandler> requestHandlers){
-        DefaultRequestSupervisor defaultRequestSupervisor = new DefaultRequestSupervisor(requestHandlers);
+    @Primary
+    public RequestSupervisor defaultRequestSupervisor(
+            List<RequestHandler<?,?>> requestHandlers,
+            List<RequestInterceptor<?,?>> requestInterceptors
+    ){
+        DefaultRequestSupervisor defaultRequestSupervisor = new DefaultRequestSupervisor(requestHandlers, requestInterceptors);
         defaultRequestSupervisor.init();
-        RequestSupervisorConfiguration.configure(defaultRequestSupervisor);
+        RequestSupervisorSupport.configure(defaultRequestSupervisor);
         return defaultRequestSupervisor;
     }
 
     @Bean
+    @ConditionalOnMissingBean(Mediator.class)
     public DefaultMediator defaultMediator(){
         DefaultMediator defaultMediator = new DefaultMediator();
-        MediatorConfiguration.configure(defaultMediator);
+        MediatorSupport.configure(defaultMediator);
         return defaultMediator;
     }
 }
