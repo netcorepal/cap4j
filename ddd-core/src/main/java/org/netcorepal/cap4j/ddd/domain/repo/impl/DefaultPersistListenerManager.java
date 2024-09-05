@@ -107,5 +107,18 @@ public class DefaultPersistListenerManager implements PersistListenerManager {
                 }
             }
         }
+        if(!Object.class.equals(entity)){
+            listeners = persistListenersMap.get(Object.class);
+            if (listeners != null) {
+                for (PersistListener<?> listener :
+                        listeners) {
+                    try {
+                        ((PersistListener<Object>)listener).onChange(entity, type);
+                    } catch (Exception ex){
+                        throw ex;
+                    }
+                }
+            }
+        }
     }
 }
