@@ -69,6 +69,18 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     public String moduleNameSuffix4Application = "-application";
 
     /**
+     * 添加应用层设计元素（命令cmd、查询qry、集成事件event、防腐客户端cli...）
+     *
+     * cmd:PlaceOrderCommand:Long, qry:GetOrderQuery, event:OrderPlacedIntegrationEvent, cli:GenerateBillClient
+     *
+     * @parameter expression="${design}"
+     */
+    @Parameter(property = "design", defaultValue = "")
+    public String design = "";
+
+
+
+    /**
      * 数据库连接地址
      *
      * @parameter expression="${connectionString}"
