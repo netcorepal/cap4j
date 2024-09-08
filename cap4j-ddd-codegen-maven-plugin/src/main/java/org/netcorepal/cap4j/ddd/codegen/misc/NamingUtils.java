@@ -53,4 +53,34 @@ public class NamingUtils {
         String camel = toLowerCamelCase(underlineStr);
         return camel.substring(0, 1).toUpperCase() + camel.substring(1);
     }
+
+    /**
+     * 获取末位包名
+     *
+     * @param packageName
+     * @return
+     */
+    public static String getLastPackageName(String packageName){
+        if(null == packageName || packageName.isEmpty()){
+            return "";
+        }
+        if(!packageName.contains(".")){
+            return packageName;
+        }
+        return packageName.substring(packageName.lastIndexOf(".") + 1);
+    }
+
+    /**
+     * 获取父包名
+     *
+     * @param packageName
+     * @return
+     */
+    public static String parentPackageName(String packageName){
+        String lastPackageName = getLastPackageName(packageName);
+        if(packageName.length() == lastPackageName.length()){
+            return "";
+        }
+        return packageName.substring(0, packageName.length() - lastPackageName.length() - 1);
+    }
 }

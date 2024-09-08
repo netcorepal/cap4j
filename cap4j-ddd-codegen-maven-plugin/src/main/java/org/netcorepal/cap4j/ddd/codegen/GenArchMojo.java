@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -267,6 +268,20 @@ public class GenArchMojo extends MyAbstractMojo {
             case "i_e_h":
             case "ieh":
                 return "integration_event_handler";
+            case "repositories":
+            case "repository":
+            case "repos":
+            case "repo":
+                return "repository";
+            case "factories":
+            case "factory":
+            case "fac":
+                return "factory";
+            case "specifications":
+            case "specification":
+            case "specs":
+            case "spec":
+                return "specification";
             case "domain_events":
             case "domain_event":
             case "d_e":
@@ -374,26 +389,20 @@ public class GenArchMojo extends MyAbstractMojo {
      */
     public void renderAppLayerCommand(String literalCommandDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析命令设计：" + literalCommandDeclaration);
-        String[] segments = TextUtils.splitWithTrim(literalCommandDeclaration, ":");
-        Map<String, String> context = new HashMap<>(getEscapeContext());
-        for (int i = 0; i < segments.length; i++) {
-            context.put("Val" + i, segments[i]);
-            context.put("val" + i, segments[i].toLowerCase());
-        }
-        String name = NamingUtils.toUpperCamelCase(segments[0]);
-        if (!name.endsWith("Cmd") && !name.endsWith("Command")) {
-            name += "Cmd";
-        }
-        context.put("Name", name);
-        context.put("name", segments[0].toLowerCase());
-        context.put("ReturnType", segments.length > 1 ? segments[1] : "Boolean");
-        context.put("Command", context.get("Name"));
-        context.put("Request", context.get("Name"));
-        context.put("command", context.get("name"));
-        context.put("request", context.get("name"));
-        context.put("Response", context.get("ReturnType"));
-        PathNode pathNode = templateNode.clone().resolve(context);
-        String path = render(pathNode, parentPath);
+        String path = internalRenderGenericDesign(literalCommandDeclaration, parentPath, templateNode, context -> {
+            String name = context.get("Name");
+            if (!name.endsWith("Cmd") && !name.endsWith("Command")) {
+                name += "Cmd";
+            }
+            context.put("Name", name);
+            context.put("ReturnType", NamingUtils.toUpperCamelCase(context.containsKey("Val1") ? context.get("Val1") : "Boolean"));
+            context.put("Command", context.get("Name"));
+            context.put("Request", context.get("Name"));
+            context.put("command", context.get("name"));
+            context.put("request", context.get("name"));
+            context.put("Response", context.get("ReturnType"));
+            return context;
+        });
         getLog().info("生成命令代码：" + path);
     }
 
@@ -403,26 +412,20 @@ public class GenArchMojo extends MyAbstractMojo {
      */
     public void renderAppLayerQuery(String literalQueryDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析查询设计：" + literalQueryDeclaration);
-        String[] segments = TextUtils.splitWithTrim(literalQueryDeclaration, ":");
-        Map<String, String> context = new HashMap<>(getEscapeContext());
-        for (int i = 0; i < segments.length; i++) {
-            context.put("Val" + i, segments[i]);
-            context.put("val" + i, segments[i].toLowerCase());
-        }
-        String name = NamingUtils.toUpperCamelCase(segments[0]);
-        if (!name.endsWith("Qry") && !name.endsWith("Query")) {
-            name += "Qry";
-        }
-        context.put("Name", name);
-        context.put("name", segments[0].toLowerCase());
-        context.put("ReturnType", segments.length > 1 ? segments[1] : (segments[0] + "Response"));
-        context.put("Query", context.get("Name"));
-        context.put("Request", context.get("Name"));
-        context.put("query", context.get("name"));
-        context.put("request", context.get("name"));
-        context.put("Response", context.get("ReturnType"));
-        PathNode pathNode = templateNode.clone().resolve(context);
-        String path = render(pathNode, parentPath);
+        String path = internalRenderGenericDesign(literalQueryDeclaration, parentPath, templateNode, context -> {
+            String name = context.get("Name");
+            if (!name.endsWith("Qry") && !name.endsWith("Query")) {
+                name += "Qry";
+            }
+            context.put("Name", name);
+            context.put("ReturnType", NamingUtils.toUpperCamelCase(context.containsKey("Val1") ? context.get("Val1") : (context.get("Val0") + "Response")));
+            context.put("Query", context.get("Name"));
+            context.put("Request", context.get("Name"));
+            context.put("query", context.get("name"));
+            context.put("request", context.get("name"));
+            context.put("Response", context.get("ReturnType"));
+            return context;
+        });
         getLog().info("生成查询代码：" + path);
     }
 
@@ -432,26 +435,20 @@ public class GenArchMojo extends MyAbstractMojo {
      */
     public void renderAppLayerClient(String literalClientDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析防腐端设计：" + literalClientDeclaration);
-        String[] segments = TextUtils.splitWithTrim(literalClientDeclaration, ":");
-        Map<String, String> context = new HashMap<>(getEscapeContext());
-        for (int i = 0; i < segments.length; i++) {
-            context.put("Val" + i, segments[i]);
-            context.put("val" + i, segments[i].toLowerCase());
-        }
-        String name = NamingUtils.toUpperCamelCase(segments[0]);
-        if (!name.endsWith("Cli") && !name.endsWith("Client")) {
-            name += "Client";
-        }
-        context.put("Name", name);
-        context.put("name", segments[0].toLowerCase());
-        context.put("ReturnType", NamingUtils.toUpperCamelCase(segments.length > 1 ? segments[1] : (segments[0] + "Response")));
-        context.put("Client", context.get("Name"));
-        context.put("Request", context.get("Name"));
-        context.put("client", context.get("name"));
-        context.put("request", context.get("name"));
-        context.put("Response", context.get("ReturnType"));
-        PathNode pathNode = templateNode.clone().resolve(context);
-        String path = render(pathNode, parentPath);
+        String path = internalRenderGenericDesign(literalClientDeclaration, parentPath, templateNode, context -> {
+            String name = context.get("Name");
+            if (!name.endsWith("Cli") && !name.endsWith("Client")) {
+                name += "Client";
+            }
+            context.put("Name", name);
+            context.put("ReturnType", NamingUtils.toUpperCamelCase(context.containsKey("Val1") ? context.get("Val1") : (context.get("Val0") + "Response")));
+            context.put("Client", context.get("Name"));
+            context.put("Request", context.get("Name"));
+            context.put("client", context.get("name"));
+            context.put("request", context.get("name"));
+            context.put("Response", context.get("ReturnType"));
+            return context;
+        });
         getLog().info("生成防腐端代码：" + path);
     }
 
@@ -461,30 +458,24 @@ public class GenArchMojo extends MyAbstractMojo {
      */
     public void renderAppLayerIntegrationEvent(String literalIntegrationEventDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析集成事件设计：" + literalIntegrationEventDeclaration);
-        String[] segments = TextUtils.splitWithTrim(literalIntegrationEventDeclaration, ":");
-        Map<String, String> context = new HashMap<>(getEscapeContext());
-        for (int i = 0; i < segments.length; i++) {
-            context.put("Val" + i, segments[i]);
-            context.put("val" + i, segments[i].toLowerCase());
-        }
-        String name = NamingUtils.toUpperCamelCase(segments[0]);
-        if (!name.endsWith("Evt") && !name.endsWith("Event")) {
-            name += "IntegrationEvent";
-        }
-        context.put("Name", name);
-        context.put("name", segments[0].toLowerCase());
-        context.put("MQ_TOPIC", segments.length > 1 ? segments[1] : segments[0]);
-        if (Objects.equals("event_handler", templateNode.tag)) {
-            context.put("MQ_CONSUMER", segments.length > 2 ? segments[2] : "${spring.application.name}");
-        } else {
-            context.put("MQ_CONSUMER", "[none]");
-        }
-        context.put("IntegrationEvent", context.get("Name"));
-        context.put("Event", context.get("Name"));
-        context.put("integration_event", context.get("name"));
-        context.put("event", context.get("name"));
-        PathNode pathNode = templateNode.clone().resolve(context);
-        String path = render(pathNode, parentPath);
+        String path = internalRenderGenericDesign(literalIntegrationEventDeclaration, parentPath, templateNode, context -> {
+            String name = context.get("Name");
+            if (!name.endsWith("Evt") && !name.endsWith("Event")) {
+                name += "IntegrationEvent";
+            }
+            context.put("Name", name);
+            context.put("MQ_TOPIC", context.containsKey("Val1") ? context.get("Val1") : context.get("Val0"));
+            if (Objects.equals("event_handler", templateNode.tag)) {
+                context.put("MQ_CONSUMER", context.containsKey("Val2") ? context.get("Val2") : "${spring.application.name}");
+            } else {
+                context.put("MQ_CONSUMER", "[none]");
+            }
+            context.put("IntegrationEvent", context.get("Name"));
+            context.put("Event", context.get("Name"));
+            context.put("integration_event", context.get("name"));
+            context.put("event", context.get("name"));
+            return context;
+        });
         getLog().info("生成集成事件代码：" + path);
     }
 
@@ -494,27 +485,62 @@ public class GenArchMojo extends MyAbstractMojo {
      */
     public void renderDomainLayerDomainEvent(String literalDomainEventDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析领域事件设计：" + literalDomainEventDeclaration);
-        String[] segments = TextUtils.splitWithTrim(literalDomainEventDeclaration, ":");
-        Map<String, String> context = new HashMap<>(getEscapeContext());
-        for (int i = 0; i < segments.length; i++) {
-            context.put("Val" + i, segments[i]);
-            context.put("val" + i, segments[i].toLowerCase());
-        }
-        String name = NamingUtils.toUpperCamelCase(segments[0]);
-        if (!name.endsWith("Evt") && !name.endsWith("Event")) {
-            name += "DomainEvent";
-        }
-        context.put("Name", name);
-        context.put("name", segments[0].toLowerCase());
-        context.put("DomainEvent", context.get("Name"));
-        context.put("Event", context.get("Name"));
-        context.put("domain_event", context.get("name"));
-        context.put("event", context.get("name"));
-        PathNode pathNode = templateNode.clone().resolve(context);
-        String path = render(pathNode, parentPath);
+        String path = internalRenderGenericDesign(literalDomainEventDeclaration, parentPath, templateNode, context -> {
+            String name = context.get("Name");
+            if (!name.endsWith("Evt") && !name.endsWith("Event")) {
+                name += "DomainEvent";
+            }
+            context.put("Name", name);
+            context.put("DomainEvent", context.get("Name"));
+            context.put("Event", context.get("Name"));
+            context.put("domain_event", context.get("name"));
+            context.put("event", context.get("name"));
+            return context;
+        });
         getLog().info("生成领域事件代码：" + path);
     }
 
+    /**
+     * @param literalAggregateFactoryDeclaration 文本化聚合工厂声明 AggregateFactoryName
+     * @param templateNode                       模板配置
+     */
+    public void renderDomainLayerAggregateFactory(String literalAggregateFactoryDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
+        getLog().info("解析聚合工厂设计：" + literalAggregateFactoryDeclaration);
+        String path = internalRenderGenericDesign(literalAggregateFactoryDeclaration, parentPath, templateNode, context -> {
+            String name = context.get("Name");
+            if (!name.endsWith("Fac") && !name.endsWith("Factory")) {
+                name += "Factory";
+            }
+            context.put("Name", name);
+            context.put("Factory", context.get("Name"));
+            context.put("Fac", context.get("Name"));
+            context.put("factory", context.get("name"));
+            context.put("fac", context.get("name"));
+            return context;
+        });
+        getLog().info("生成聚合工厂代码：" + path);
+    }
+
+    /**
+     * @param literalSpecificationDeclaration 文本化聚合工厂声明 SpecificationName
+     * @param templateNode                    模板配置
+     */
+    public void renderDomainLayerSpecificaton(String literalSpecificationDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
+        getLog().info("解析实体规约设计：" + literalSpecificationDeclaration);
+        String path = internalRenderGenericDesign(literalSpecificationDeclaration, parentPath, templateNode, context -> {
+            String name = context.get("Name");
+            if (!name.endsWith("Spec") && !name.endsWith("Specification")) {
+                name += "Specification";
+            }
+            context.put("Name", name);
+            context.put("Spec", context.get("Name"));
+            context.put("Specification", context.get("Name"));
+            context.put("spec", context.get("name"));
+            context.put("specification", context.get("name"));
+            return context;
+        });
+        getLog().info("生成实体规约代码：" + path);
+    }
 
     /**
      * @param literalDomainServiceDeclaration 文本化领域服务声明 DomainServiceName
@@ -522,22 +548,17 @@ public class GenArchMojo extends MyAbstractMojo {
      */
     public void renderDomainLayerDomainService(String literalDomainServiceDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析领域服务设计：" + literalDomainServiceDeclaration);
-        String[] segments = TextUtils.splitWithTrim(literalDomainServiceDeclaration, ":");
-        Map<String, String> context = new HashMap<>(getEscapeContext());
-        for (int i = 0; i < segments.length; i++) {
-            context.put("Val" + i, segments[i]);
-            context.put("val" + i, segments[i].toLowerCase());
-        }
-        String name = NamingUtils.toUpperCamelCase(segments[0]);
-        if (!name.endsWith("Svc") && !name.endsWith("Service")) {
-            name += "DomainService";
-        }
-        context.put("Name", name);
-        context.put("name", segments[0].toLowerCase());
-        context.put("DomainService", context.get("Name"));
-        context.put("domain_service", context.get("name"));
-        PathNode pathNode = templateNode.clone().resolve(context);
-        String path = render(pathNode, parentPath);
+        String path = internalRenderGenericDesign(literalDomainServiceDeclaration, parentPath, templateNode, context -> {
+            String name = context.get("Name");
+            if (!name.endsWith("Svc") && !name.endsWith("Service")) {
+                name += "DomainService";
+            }
+
+            context.put("Name", name);
+            context.put("DomainService", context.get("Name"));
+            context.put("domain_service", context.get("name"));
+            return context;
+        });
         getLog().info("生成领域服务代码：" + path);
     }
 
@@ -547,18 +568,32 @@ public class GenArchMojo extends MyAbstractMojo {
      */
     public void renderGenericDesign(String literalGenericDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析自定义元素设计：" + literalGenericDeclaration);
+        String path = internalRenderGenericDesign(literalGenericDeclaration, parentPath, templateNode, null);
+        getLog().info("生成自定义元素代码：" + path);
+    }
+
+    public String internalRenderGenericDesign(String literalGenericDeclaration, String parentPath, TemplateNode templateNode, Function<Map<String, String>, Map<String, String>> contextBuilder) throws IOException {
         String[] segments = TextUtils.splitWithTrim(literalGenericDeclaration, ":");
         Map<String, String> context = new HashMap<>(getEscapeContext());
         for (int i = 0; i < segments.length; i++) {
             context.put("Val" + i, segments[i]);
             context.put("val" + i, segments[i].toLowerCase());
         }
-        String name = NamingUtils.toUpperCamelCase(segments[0]);
+
+        String name = NamingUtils.toUpperCamelCase(NamingUtils.getLastPackageName(segments[0]));
+        String reletivePath = NamingUtils.parentPackageName(segments[0])
+                .replace(".", File.pathSeparator);
+
         context.put("Name", name);
         context.put("name", segments[0].toLowerCase());
+        context.put("path", reletivePath);
+        context.put("package", reletivePath.replace(File.separator, "."));
+        if (null != contextBuilder) {
+            context = contextBuilder.apply(context);
+        }
         PathNode pathNode = templateNode.clone().resolve(context);
         String path = render(pathNode, parentPath);
-        getLog().info("生成自定义元素代码：" + path);
+        return path;
     }
 
     /**
