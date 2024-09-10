@@ -12,6 +12,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -135,7 +137,10 @@ public class GenRepositoryMojo extends MyAbstractMojo {
                                 return hasAggregateRoot;
                             }
 
-                            boolean hasAggregate = line.matches("@Aggregate\\s*\\(.*type\\s*=\\s*\\\"root\\\".*\\)");
+                            boolean hasAggregate =
+                                    line.matches("@Aggregate\\s*\\(.*type\\s*=\\s*\\\"root\\\".*\\)")
+                                            || line.matches("@Aggregate\\s*\\(.*type\\s*=\\s*Aggregate.TYPE_ROOT.*\\)")
+                                            || line.matches("@Aggregate\\s*\\(.*type\\s*=\\s*TYPE_ROOT.*\\)");
                             if (hasAggregate) {
                                 Matcher matcher = AGGREGATE_PATTERN.matcher(line);
                                 if (matcher.find() && matcher.groupCount() > 1) {
@@ -263,6 +268,8 @@ public class GenRepositoryMojo extends MyAbstractMojo {
             writeLine(out, "");
             writeLine(out, "/**");
             writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
+            writeLine(out, " * @author cap4j-ddd-codegen");
+            writeLine(out, " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
             writeLine(out, " */");
         }
         writeLine(out, "public interface " + simpleClassName + "Repository extends " + replacePlaceholder(getAggregateRepositoryBaseClass(), simpleClassName, aggregateIdentityClass, aggregate) + " {");

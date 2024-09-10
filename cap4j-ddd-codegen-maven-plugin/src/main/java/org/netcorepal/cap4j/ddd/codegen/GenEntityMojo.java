@@ -5,12 +5,12 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
-import org.netcorepal.cap4j.ddd.codegen.misc.Inflector;
-import org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils;
-import org.netcorepal.cap4j.ddd.codegen.misc.SqlSchemaUtils;
+import org.netcorepal.cap4j.ddd.codegen.misc.*;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,6 +29,8 @@ import static org.netcorepal.cap4j.ddd.codegen.misc.SqlSchemaUtils.*;
 public class GenEntityMojo extends MyAbstractMojo {
 
     public Map<String, Map<String, Object>> TableMap = new HashMap<>();
+    public Map<String, String> TableModuleMap = new HashMap<>();
+    public Map<String, String> TableAggregateMap = new HashMap<>();
     public Map<String, List<Map<String, Object>>> ColumnsMap = new HashMap<>();
     public Map<String, Map<Integer, String[]>> EnumConfigMap = new HashMap<>();
     public Map<String, String> EnumPackageMap = new HashMap<>();
@@ -193,7 +195,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("");
         for (Map.Entry<String, Map<Integer, String[]>> entry : EnumConfigMap.entrySet()) {
             try {
-                writeEnumSourceFile(entry.getValue(), entry.getKey(), EnumPackageMap.get(entry.getKey()), getAggregate(EnumTableNameMap.get(entry.getKey())), domainModulePath, enumValueField, enumNameField);
+                writeEnumSourceFile(entry.getValue(), entry.getKey(), EnumPackageMap.get(entry.getKey()), domainModulePath, enumValueField, enumNameField);
             } catch (IOException e) {
                 e.printStackTrace();
                 getLog().error(e);
@@ -244,16 +246,18 @@ public class GenEntityMojo extends MyAbstractMojo {
      * @return
      */
     public String getModule(String tableName) {
-        Map<String, Object> table = TableMap.get(tableName);
-        String module = SqlSchemaUtils.getModule(table);
-        getLog().info("尝试解析模块:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[缺失]" : module));
-        while (!isAggregateRoot(table) && StringUtils.isBlank(module)) {
-            table = TableMap.get(getParent(table));
-            module = SqlSchemaUtils.getModule(table);
-            getLog().info("尝试父表模块:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[缺失]" : module));
-        }
-        getLog().info("模块解析结果:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[无]" : module));
-        return module;
+        return TableModuleMap.computeIfAbsent(tableName, tn -> {
+            Map<String, Object> table = TableMap.get(tableName);
+            String module = SqlSchemaUtils.getModule(table);
+            getLog().info("尝试解析模块:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[缺失]" : module));
+            while (!isAggregateRoot(table) && StringUtils.isBlank(module)) {
+                table = TableMap.get(getParent(table));
+                module = SqlSchemaUtils.getModule(table);
+                getLog().info("尝试父表模块:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[缺失]" : module));
+            }
+            getLog().info("模块解析结果:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[无]" : module));
+            return module;
+        });
     }
 
     /**
@@ -263,23 +267,41 @@ public class GenEntityMojo extends MyAbstractMojo {
      * @return
      */
     public String getAggregate(String tableName) {
-        Map<String, Object> table = TableMap.get(tableName);
-        String aggregate = SqlSchemaUtils.getAggregate(table);
-        getLog().info("尝试解析聚合:" + getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
-        while (!isAggregateRoot(table) && StringUtils.isBlank(aggregate)) {
-            String parent = getParent(table);
-            if (StringUtils.isBlank(parent)) {
-                break;
+        return TableAggregateMap.computeIfAbsent(tableName, tn -> {
+            Map<String, Object> table = TableMap.get(tableName);
+            String aggregate = SqlSchemaUtils.getAggregate(table);
+            getLog().info("尝试解析聚合:" + getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
+            while (!isAggregateRoot(table) && StringUtils.isBlank(aggregate)) {
+                String parent = getParent(table);
+                if (StringUtils.isBlank(parent)) {
+                    break;
+                }
+                table = TableMap.get(parent);
+                aggregate = SqlSchemaUtils.getAggregate(table);
+                getLog().info("尝试父表聚合:" + getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
             }
-            table = TableMap.get(parent);
-            aggregate = SqlSchemaUtils.getAggregate(table);
-            getLog().info("尝试父表聚合:" + getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
+            if (StringUtils.isBlank(aggregate)) {
+                aggregate = getEntityJavaType(getTableName(table));
+            }
+            getLog().info("聚合解析结果:" + tableName + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
+            return aggregate;
+        });
+    }
+
+    /**
+     * 获取聚合名称
+     * 格式: 模块.聚合
+     *
+     * @param tableName
+     * @return
+     */
+    public String getAggregateWithModule(String tableName) {
+        String module = getModule(tableName);
+        if (StringUtils.isNotBlank(module)) {
+            return module + "." + getAggregate(tableName);
+        } else {
+            return getAggregate(tableName);
         }
-        if (StringUtils.isBlank(aggregate)) {
-            aggregate = getEntityJavaType(getTableName(table));
-        }
-        getLog().info("聚合解析结果:" + tableName + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
-        return aggregate;
     }
 
     /**
@@ -538,6 +560,8 @@ public class GenEntityMojo extends MyAbstractMojo {
             // importLines.add(" * " + getComment(table).replaceAll("[\\r\\n]", " "));
             importLines.add(" * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
             importLines.add(" * 警告：请勿手工修改该文件的字段声明，重新生成会覆盖字段声明");
+            importLines.add(" * @author cap4j-ddd-codegen");
+            importLines.add(" * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
             importLines.add(" */");
         } else {
             for (String entityClassExtraImport : entityClassExtraImports) {
@@ -574,9 +598,9 @@ public class GenEntityMojo extends MyAbstractMojo {
         boolean annotationEmpty = annotationLines.size() == 0;
         SourceFileUtils.removeText(annotationLines, "@Aggregate\\(.*\\)");
         if (isAggregateRoot(table)) {
-            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregate(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = \"root\", description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
+            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = Aggregate.TYPE_ROOT, description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
         } else {
-            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregate(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = \"entity\", relevant = { \"" + getEntityJavaType(getParent(table)) + "\" }, description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
+            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = Aggregate.TYPE_ENTITY, relevant = { \"" + getEntityJavaType(getParent(table)) + "\" }, description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
         }
         if (StringUtils.isNotBlank(getAggregateRootAnnotation())) {
             if (isAggregateRoot(table)) {
@@ -626,7 +650,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     public String resolvePackage(Map<String, Object> table, String basePackage, String baseDir) {
         String tableName = getTableName(table);
         String simpleClassName = getEntityJavaType(tableName);
-        String packageName = (basePackage + "." + getEntityPackage(tableName));
+        String packageName = basePackage + "." + getEntityPackage(tableName);
 
         Optional<File> existFilePath = SourceFileUtils.findJavaFileBySimpleClassName(baseDir, simpleClassName);
         if (existFilePath.isPresent()) {
@@ -657,6 +681,33 @@ public class GenEntityMojo extends MyAbstractMojo {
             new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".events")).mkdirs();
             new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".schemas")).mkdirs();
             new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".specs")).mkdirs();
+            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".factory")).mkdirs();
+            if (hasFactory(table)) {
+                writeFactorySourceFile(table, baseDir);
+            }
+            if (hasSpecification(table)) {
+                writeSpecificationSourceFile(table, baseDir);
+            }
+            if (hasDomainEvent(table)) {
+                List<String> domainEvents = getDomainEvent(table);
+                for (String domainEvent : domainEvents) {
+                    if (StringUtils.isBlank(domainEvent)) {
+                        continue;
+                    }
+                    String[] segments = TextUtils.splitWithTrim(domainEvent, ":");
+                    String domainEventClassName = NamingUtils.toUpperCamelCase(segments[0]);
+                    if (!domainEventClassName.endsWith("Event") && !domainEventClassName.endsWith("Evt")) {
+                        domainEventClassName += "DomainEvent";
+                    }
+                    String domainEventDescription = segments.length > 1 ? segments[1] : "todo: 领域事件说明";
+                    try {
+                        writeDomainEventSourceFile(table, domainEventClassName, domainEventDescription, baseDir);
+                    } catch (IOException ex) {
+                        getLog().error("领域事件" + domainEventClassName + "代码生成异常");
+                        throw ex;
+                    }
+                }
+            }
         }
         String filePath = SourceFileUtils.resolveSourceFile(baseDir, packageName, simpleClassName);
 
@@ -803,6 +854,8 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, "/**");
         writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
         writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
+        writeLine(out, " * @author cap4j-ddd-codegen");
+        writeLine(out, " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
         writeLine(out, " */");
         writeLine(out, "public class EntityBuilder {");
         for (Map.Entry<String, Map<String, Object>> tableEntry : TableMap.entrySet()) {
@@ -1058,7 +1111,192 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
     }
 
-    public void writeEnumSourceFile(Map<Integer, String[]> enumConfigs, String enumType, String enumPackage, String belongAggregate, String baseDir, String enumValueField, String enumNameField) throws IOException {
+    public void writeFactorySourceFile(Map<String, Object> table, String baseDir) throws IOException {
+        String tableName = getTableName(table);
+        String entityPackage = basePackage + "." + getEntityPackage(tableName);
+        String simpleClassName = getEntityJavaType(tableName);
+        String filePath = SourceFileUtils.resolveSourceFile(baseDir, entityPackage + ".factory", simpleClassName + "Payload");
+        if (!FileUtils.fileExists(filePath)) {
+            getLog().info("开始生成工厂负载：" + filePath);
+            BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
+            writeLine(out,
+                    "package " + entityPackage + ".factory;\n" +
+                            "\n" +
+                            "import " + entityPackage + "." + simpleClassName + ";\n" +
+                            "import lombok.Builder;\n" +
+                            "import lombok.Data;\n" +
+                            "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
+                            "import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n" +
+                            "\n" +
+                            "/**\n" +
+                            " * " + simpleClassName + "工厂负载\n" +
+                            " * todo: 工厂负载描述\n" +
+                            " *\n" +
+                            " * @author cap4j-ddd-codegen\n" +
+                            " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) + "\n" +
+                            " */\n" +
+                            "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + simpleClassName + "Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n" +
+                            "@Data\n" +
+                            "@Builder\n" +
+                            "public class " + simpleClassName + "Payload implements AggregatePayload<" + simpleClassName + "> {\n" +
+                            "    private Long id;\n" +
+                            "}"
+            );
+            out.flush();
+            out.close();
+        }
+
+        filePath = SourceFileUtils.resolveSourceFile(baseDir, entityPackage + ".factory", simpleClassName + "Factory");
+        if (!FileUtils.fileExists(filePath)) {
+            getLog().info("开始生成聚合工厂：" + filePath);
+            BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
+            writeLine(out,
+                    "package " + entityPackage + ".factory;\n" +
+                            "\n" +
+                            "import " + entityPackage + "." + simpleClassName + ";\n" +
+                            "import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;\n" +
+                            "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
+                            "import org.springframework.stereotype.Service;\n" +
+                            "\n" +
+                            "/**\n" +
+                            " * " + simpleClassName + "聚合工厂\n" +
+                            " * todo: 聚合工厂描述\n" +
+                            " *\n" +
+                            " * @author cap4j-ddd-codegen\n" +
+                            " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) + "\n" +
+                            " */\n" +
+                            "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + simpleClassName + "Factory\", type = Aggregate.TYPE_FACTORY, description = \"\")\n" +
+                            "@Service\n" +
+                            "public class " + simpleClassName + "Factory implements AggregateFactory<" + simpleClassName + "Payload, " + simpleClassName + "> {\n" +
+                            "\n" +
+                            "    @Override\n" +
+                            "    public " + simpleClassName + " create(" + simpleClassName + "Payload payload) {\n" +
+                            "\n" +
+                            "        return " + simpleClassName + ".builder()\n" +
+                            "\n" +
+                            "                .build();\n" +
+                            "    }\n" +
+                            "}"
+            );
+            out.flush();
+            out.close();
+        }
+    }
+
+    public void writeSpecificationSourceFile(Map<String, Object> table, String baseDir) throws IOException {
+        String tableName = getTableName(table);
+        String entityPackage = basePackage + "." + getEntityPackage(tableName);
+        String simpleClassName = getEntityJavaType(tableName);
+        String filePath = SourceFileUtils.resolveSourceFile(baseDir, entityPackage + ".specs", simpleClassName + "Specification");
+        if (FileUtils.fileExists(filePath)) {
+            return;
+        }
+        getLog().info("开始生成实体规约：" + filePath);
+        BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
+        writeLine(out,
+                "package " + entityPackage + ".specs;\n" +
+                        "\n" +
+                        "import " + entityPackage + "." + simpleClassName + ";\n" +
+                        "import org.netcorepal.cap4j.ddd.domain.aggregate.Specification;\n" +
+                        "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
+                        "import org.springframework.stereotype.Service;\n" +
+                        "\n" +
+                        "/**\n" +
+                        " * " + simpleClassName + "的规格约束\n" +
+                        " * todo: 规格约束描述\n" +
+                        " *\n" +
+                        " * @author cap4j-ddd-codegen\n" +
+                        " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) + "\n" +
+                        " */\n" +
+                        "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + simpleClassName + "Specification\", type = Aggregate.TYPE_SPECIFICATION, description = \"\")\n" +
+                        "@Service\n" +
+                        "public class " + simpleClassName + "Specification implements Specification<" + simpleClassName + "> {\n" +
+                        "    @Override\n" +
+                        "    public Result specify(" + simpleClassName + " entity) {\n" +
+                        "        return Result.fail(\"未实现\");\n" +
+                        "    }\n" +
+                        "}"
+        );
+
+        out.flush();
+        out.close();
+    }
+
+    public void writeDomainEventSourceFile(Map<String, Object> table, String domainEventClassName, String domainEventDescription, String baseDir) throws IOException {
+        String tableName = getTableName(table);
+        String entityPackage = basePackage + "." + getEntityPackage(tableName);
+        String simpleClassName = getEntityJavaType(tableName);
+        String filePath = SourceFileUtils.resolveSourceFile(baseDir, entityPackage + ".events", domainEventClassName);
+        if (!FileUtils.fileExists(filePath)) {
+            getLog().info("开始生成领域事件：" + filePath);
+            BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
+            writeLine(out,
+                    "package " + entityPackage + ".events;\n" +
+                            "\n" +
+//                        "import " + entityPackage + "." + simpleClassName + ";\n" +
+                            "import lombok.AllArgsConstructor;\n" +
+                            "import lombok.Builder;\n" +
+                            "import lombok.Data;\n" +
+                            "import lombok.NoArgsConstructor;\n" +
+                            "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
+                            "import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;\n" +
+                            "\n" +
+                            "/**\n" +
+                            " * " + domainEventDescription + "\n" +
+                            " *\n" +
+                            " * @author cap4j-ddd-codegen\n" +
+                            " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) + "\n" +
+                            " */\n" +
+                            "@DomainEvent(persist = false)\n" +
+                            "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + domainEventClassName + "\", type = Aggregate.TYPE_DOMAIN_EVENT, description = \"" + domainEventDescription.replaceAll("(\\r\\n)|(\\r)|(\\n)", "\\n") + "\")\n" +
+                            "@Data\n" +
+                            "@Builder\n" +
+                            "@AllArgsConstructor\n" +
+                            "@NoArgsConstructor\n" +
+                            "public class " + domainEventClassName + " {\n" +
+                            "    Long id;\n" +
+                            "}"
+            );
+            out.flush();
+            out.close();
+        }
+
+        String subscriberPackage = basePackage + ".application.subscribers";
+        filePath = SourceFileUtils.resolveSourceFile(baseDir, subscriberPackage, domainEventClassName + "Subscriber");
+        if (!FileUtils.fileExists(filePath)) {
+
+            getLog().info("开始生成领域事件订阅：" + filePath);
+            BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
+            writeLine(out,
+                    "package  " + subscriberPackage + ";\n" +
+                            "\n" +
+                            "import  " + entityPackage + ".events." + domainEventClassName + ";\n" +
+                            "import lombok.RequiredArgsConstructor;\n" +
+                            "import org.springframework.context.event.EventListener;\n" +
+                            "import org.springframework.stereotype.Service;\n" +
+                            "\n" +
+                            "/**\n" +
+                            " * todo: 领域事件说明\n" +
+                            " */\n" +
+                            "@Service\n" +
+                            "@RequiredArgsConstructor\n" +
+                            "public class " + domainEventClassName + "Subscriber {\n" +
+                            "\n" +
+                            "    @EventListener(" + domainEventClassName + ".class)\n" +
+                            "    public void on(" + domainEventClassName + " event) {\n" +
+                            "\n" +
+                            "    }\n" +
+                            "\n" +
+                            "}"
+            );
+            out.flush();
+            out.close();
+        }
+    }
+
+    public void writeEnumSourceFile(Map<Integer, String[]> enumConfigs, String enumType, String enumPackage, String baseDir, String enumValueField, String enumNameField) throws IOException {
+        String tableName = EnumTableNameMap.get(enumType);
+
         new File(SourceFileUtils.resolveDirectory(baseDir, enumPackage)).mkdirs();
         String filePath = SourceFileUtils.resolveSourceFile(baseDir, enumPackage, enumType);
 
@@ -1077,8 +1315,10 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, "/**");
         writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
         writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
+        writeLine(out, " * @author cap4j-ddd-codegen");
+        writeLine(out, " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
         writeLine(out, " */");
-        writeLine(out, "@Aggregate(aggregate = \"" + belongAggregate + "\", name = \"" + enumType + "\", type = \"enum\", description = \"\")");
+        writeLine(out, "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + enumType + "\", type = \"enum\", description = \"\")");
         writeLine(out, "public enum " + enumType + " {");
         writeLine(out, "");
         for (Map.Entry<Integer, String[]> entry : enumConfigs.entrySet()) {
@@ -1171,6 +1411,8 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, " * " + getComment(table).replaceAll("[\\r\\n]", " "));
         writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
         writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
+        writeLine(out, " * @author cap4j-ddd-codegen");
+        writeLine(out, " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
         writeLine(out, " */");
         writeLine(out, "@RequiredArgsConstructor");
         writeLine(out, "public class " + simpleClassName + "Schema {");

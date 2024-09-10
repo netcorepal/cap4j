@@ -696,7 +696,7 @@ public class SqlSchemaUtils {
         String enumsConfig = getAnyAnnotation(column, Arrays.asList("Enum", "E"));
         Map<Integer, String[]> result = new HashMap<>();
         if (StringUtils.isNotBlank(enumsConfig)) {
-            String[] enumConfigs = enumsConfig.split("\\|");
+            String[] enumConfigs = TextUtils.splitWithTrim(enumsConfig, "\\|");
             for (int i = 0; i < enumConfigs.length; i++) {
                 String enumConfig = enumConfigs[i];
                 getLog().debug(enumConfig);
@@ -730,5 +730,40 @@ public class SqlSchemaUtils {
             }
         }
         return result;
+    }
+
+    /**
+     * 是否生成工厂
+     *
+     * @param table
+     * @return
+     */
+    public static boolean hasFactory(Map<String, Object> table) {
+        return isAggregateRoot(table) && hasAnyAnnotation(table, Arrays.asList("Factory", "Fac"));
+    }
+
+    /**
+     * 是否生成规约
+     *
+     * @param table
+     * @return
+     */
+    public static boolean hasSpecification(Map<String, Object> table) {
+        return isAggregateRoot(table) && hasAnyAnnotation(table, Arrays.asList("Specification", "Spec"));
+    }
+
+    public static boolean hasDomainEvent(Map<String, Object> table) {
+        return isAggregateRoot(table) && hasAnyAnnotation(table, Arrays.asList("DomainEvent", "DE", "Event", "Evt"));
+    }
+
+    public static List<String> getDomainEvent(Map<String, Object> table) {
+        if (!isAggregateRoot(table)) {
+            return Collections.emptyList();
+        }
+        String literalDomainEvents = getAnyAnnotation(table, Arrays.asList("DomainEvent", "DE", "Event", "Evt"));
+        if (StringUtils.isBlank(literalDomainEvents)) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(TextUtils.splitWithTrim(literalDomainEvents, "\\|")).collect(Collectors.toList());
     }
 }

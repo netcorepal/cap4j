@@ -16,6 +16,8 @@ import org.netcorepal.cap4j.ddd.codegen.misc.TextUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -344,14 +346,22 @@ public class GenArchMojo extends MyAbstractMojo {
                 if (designMap.containsKey("integration_event")) {
                     for (String literalCommand :
                             designMap.get("integration_event")) {
-                        renderAppLayerIntegrationEvent(literalCommand, parentPath, templateNode);
+                        renderAppLayerIntegrationEvent("integration_event", literalCommand, parentPath, templateNode);
                     }
                 }
             case "integration_event_handler":
                 if (designMap.containsKey("integration_event_handler")) {
                     for (String literalCommand :
                             designMap.get("integration_event_handler")) {
-                        renderAppLayerIntegrationEvent(literalCommand, parentPath, templateNode);
+                        renderAppLayerIntegrationEvent("integration_event_handler", literalCommand, parentPath, templateNode);
+                    }
+                }
+                if (designMap.containsKey("integration_event")) {
+                    for (String literalCommand :
+                            designMap.get("integration_event")) {
+                        if(literalCommand.split(":").length >= 3){
+                            renderAppLayerIntegrationEvent("integration_event_handler", literalCommand, parentPath, templateNode);
+                        }
                     }
                 }
                 break;
@@ -361,6 +371,22 @@ public class GenArchMojo extends MyAbstractMojo {
                     for (String literalCommand :
                             designMap.get("domain_event")) {
                         renderDomainLayerDomainEvent(literalCommand, parentPath, templateNode);
+                    }
+                }
+                break;
+            case "specification":
+                if (designMap.containsKey("specification")) {
+                    for (String literalCommand :
+                            designMap.get("specification")) {
+                        renderDomainLayerSpecificaton(literalCommand, parentPath, templateNode);
+                    }
+                }
+                break;
+            case "factory":
+                if (designMap.containsKey("factory")) {
+                    for (String literalCommand :
+                            designMap.get("factory")) {
+                        renderDomainLayerAggregateFactory(literalCommand, parentPath, templateNode);
                     }
                 }
                 break;
@@ -384,159 +410,220 @@ public class GenArchMojo extends MyAbstractMojo {
     }
 
     /**
-     * @param literalCommandDeclaration 文本化命令声明 CommandName[:ResponseType_default_is_Boolean]
+     * @param literalCommandDeclaration 文本化命令声明 CommandName
      * @param templateNode              模板配置
      */
     public void renderAppLayerCommand(String literalCommandDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析命令设计：" + literalCommandDeclaration);
         String path = internalRenderGenericDesign(literalCommandDeclaration, parentPath, templateNode, context -> {
-            String name = context.get("Name");
-            if (!name.endsWith("Cmd") && !name.endsWith("Command")) {
-                name += "Cmd";
+            String Name = context.get("Name");
+            if (!Name.endsWith("Cmd") && !Name.endsWith("Command")) {
+                Name += "Cmd";
             }
-            context.put("Name", name);
-            context.put("ReturnType", NamingUtils.toUpperCamelCase(context.containsKey("Val1") ? context.get("Val1") : "Boolean"));
+            context.put("Name", Name);
             context.put("Command", context.get("Name"));
-            context.put("Request", context.get("Name"));
-            context.put("command", context.get("name"));
-            context.put("request", context.get("name"));
-            context.put("Response", context.get("ReturnType"));
+            context.put("command", context.get("Name").toLowerCase());
+            context.put("Request", context.get("Command") + "Request");
+            context.put("Response", context.get("Command") + "Response");
+
+            context.put("ReturnType", context.get("Response"));
+
+            context.put("Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 命令描述");
+            context.put("comment", context.get("Comment"));
             return context;
         });
         getLog().info("生成命令代码：" + path);
     }
 
     /**
-     * @param literalQueryDeclaration 文本化查询声明 QueryName[:ResponseType_default_is_QueryNameResponse]
+     * @param literalQueryDeclaration 文本化查询声明 QueryName
      * @param templateNode            模板配置
      */
     public void renderAppLayerQuery(String literalQueryDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析查询设计：" + literalQueryDeclaration);
         String path = internalRenderGenericDesign(literalQueryDeclaration, parentPath, templateNode, context -> {
-            String name = context.get("Name");
-            if (!name.endsWith("Qry") && !name.endsWith("Query")) {
-                name += "Qry";
+            String Name = context.get("Name");
+            if (!Name.endsWith("Qry") && !Name.endsWith("Query")) {
+                Name += "Qry";
             }
-            context.put("Name", name);
-            context.put("ReturnType", NamingUtils.toUpperCamelCase(context.containsKey("Val1") ? context.get("Val1") : (context.get("Val0") + "Response")));
+            context.put("Name", Name);
             context.put("Query", context.get("Name"));
-            context.put("Request", context.get("Name"));
-            context.put("query", context.get("name"));
-            context.put("request", context.get("name"));
-            context.put("Response", context.get("ReturnType"));
+            context.put("query", context.get("Name").toLowerCase());
+            context.put("Request", context.get("Query") + "Request");
+            context.put("Response", context.get("Query") + "Response");
+
+            context.put("ReturnType", context.get("Response"));
+
+            context.put("Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 查询描述");
+            context.put("comment", context.get("Comment"));
             return context;
         });
         getLog().info("生成查询代码：" + path);
     }
 
     /**
-     * @param literalClientDeclaration 文本化防腐端声明 ClientName[:ResponseType_default_is_ClientNameResponse]
+     * @param literalClientDeclaration 文本化防腐端声明 ClientName
      * @param templateNode             模板配置
      */
     public void renderAppLayerClient(String literalClientDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析防腐端设计：" + literalClientDeclaration);
         String path = internalRenderGenericDesign(literalClientDeclaration, parentPath, templateNode, context -> {
-            String name = context.get("Name");
-            if (!name.endsWith("Cli") && !name.endsWith("Client")) {
-                name += "Client";
+            String Name = context.get("Name");
+            if (!Name.endsWith("Cli") && !Name.endsWith("Client")) {
+                Name += "Cli";
             }
-            context.put("Name", name);
-            context.put("ReturnType", NamingUtils.toUpperCamelCase(context.containsKey("Val1") ? context.get("Val1") : (context.get("Val0") + "Response")));
+            context.put("Name", Name);
             context.put("Client", context.get("Name"));
-            context.put("Request", context.get("Name"));
-            context.put("client", context.get("name"));
-            context.put("request", context.get("name"));
-            context.put("Response", context.get("ReturnType"));
+            context.put("client", context.get("Name").toLowerCase());
+            context.put("Request", context.get("Name") + "Request");
+            context.put("Response", context.get("Name") + "Response");
+
+            context.put("ReturnType", context.get("Response"));
+
+            context.put("Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 防腐端描述");
+            context.put("comment", context.get("Comment"));
             return context;
         });
         getLog().info("生成防腐端代码：" + path);
     }
 
     /**
+     * @param literalType                        设计类型
      * @param literalIntegrationEventDeclaration 文本化集成事件声明 IntegrationEventName[:mq-topic[:mq-consumer]]
      * @param templateNode                       模板配置
      */
-    public void renderAppLayerIntegrationEvent(String literalIntegrationEventDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
+    public void renderAppLayerIntegrationEvent(String literalType, String literalIntegrationEventDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析集成事件设计：" + literalIntegrationEventDeclaration);
         String path = internalRenderGenericDesign(literalIntegrationEventDeclaration, parentPath, templateNode, context -> {
-            String name = context.get("Name");
-            if (!name.endsWith("Evt") && !name.endsWith("Event")) {
-                name += "IntegrationEvent";
+            String Name = context.get("Name");
+            if (!Name.endsWith("Evt") && !Name.endsWith("Event")) {
+                Name += "IntegrationEvent";
             }
-            context.put("Name", name);
-            context.put("MQ_TOPIC", context.containsKey("Val1") ? context.get("Val1") : context.get("Val0"));
-            if (Objects.equals("event_handler", templateNode.tag)) {
-                context.put("MQ_CONSUMER", context.containsKey("Val2") ? context.get("Val2") : "${spring.application.name}");
-            } else {
-                context.put("MQ_CONSUMER", "[none]");
-            }
+            context.put("Name", Name);
             context.put("IntegrationEvent", context.get("Name"));
-            context.put("Event", context.get("Name"));
-            context.put("integration_event", context.get("name"));
-            context.put("event", context.get("name"));
+            context.put("Event", context.get("IntegrationEvent"));
+            context.put("INTEGRATION_EVENT", context.get("IntegrationEvent"));
+            context.put("IE", context.get("IntegrationEvent"));
+            context.put("I_E", context.get("IntegrationEvent"));
+            context.put("integration_event", context.get("Name").toLowerCase());
+            context.put("event", context.get("integration_event"));
+            context.put("ie", context.get("integration_event"));
+            context.put("i_e", context.get("integration_event"));
+            context.put("MQ_TOPIC", context.containsKey("Val1") ? ("\"" + context.get("Val1") + "\"") : ("\"" + context.get("Val0") + "\""));
+            if (Objects.equals(literalType, "integration_event_handler") && !context.containsKey("Val2")) {
+                context.put("MQ_CONSUMER", "IntegrationEvent.NONE_SUBSCRIBER");
+            } else {
+                context.put("MQ_CONSUMER", context.containsKey("Val2") ? ("\"" + context.get("Val2") + "\"") : "\"${spring.application.name}\"");
+            }
+
+            context.put("Comment", context.containsKey("Val3") ? context.get("Val3") : "todo: 集成事件描述");
+            context.put("comment", context.get("Comment"));
             return context;
         });
         getLog().info("生成集成事件代码：" + path);
     }
 
     /**
-     * @param literalDomainEventDeclaration 文本化领域事件声明 Val1[:Val2[:...]]
+     * @param literalDomainEventDeclaration 文本化领域事件声明 AggregateRootEntityName:DomainEventName
      * @param templateNode                  模板配置
      */
     public void renderDomainLayerDomainEvent(String literalDomainEventDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析领域事件设计：" + literalDomainEventDeclaration);
         String path = internalRenderGenericDesign(literalDomainEventDeclaration, parentPath, templateNode, context -> {
-            String name = context.get("Name");
-            if (!name.endsWith("Evt") && !name.endsWith("Event")) {
-                name += "DomainEvent";
+            String reletivePath = NamingUtils.parentPackageName(context.get("Val0"))
+                    .replace(".", File.separator);
+            if (StringUtils.isNotBlank(reletivePath)) {
+                context.put("path", reletivePath);
+                context.put("package", StringUtils.isEmpty(reletivePath) ? "" : ("." + reletivePath.replace(File.separator, ".")));
             }
-            context.put("Name", name);
+            if(!context.containsKey("Val1")){
+                throw new RuntimeException("缺失领域事件名称，领域事件设计格式：AggregateRootEntityName:DomainEventName");
+            }
+            String Name = NamingUtils.toUpperCamelCase(context.get("Val1"));
+            if (!Name.endsWith("Evt") && !Name.endsWith("Event")) {
+                Name += "DomainEvent";
+            }
+            context.put("Name", Name);
             context.put("DomainEvent", context.get("Name"));
-            context.put("Event", context.get("Name"));
-            context.put("domain_event", context.get("name"));
-            context.put("event", context.get("name"));
+            context.put("DOMAIN_EVENT", context.get("DomainEvent"));
+            context.put("Event", context.get("DomainEvent"));
+            String entity = NamingUtils.toUpperCamelCase(
+                    NamingUtils.getLastPackageName(context.get("Val0"))
+            );
+            boolean persist = false;
+            if(context.containsKey("val2") && "`true`persist`1`".contains("`" + context.get("val2") + "`")){
+                persist = true;
+            }
+            context.put("persist", persist ? "true" : "false");
+            context.put("PERSIST", context.get("persist"));
+            context.put("Entity", entity);
+            context.put("ENTITY", context.get("Entity"));
+            context.put("AggregateRoot", context.get("Entity"));
+            context.put("AGGREGATE_ROOT", context.get("Entity"));
+            context.put("aggregate_root", context.get("Entity"));
+            context.put("Aggregate", context.get("package"));
+            context.put("aggregate", context.get("package"));
+
+            context.put("Comment", context.containsKey("Val2") ? context.get("Val2") : "todo: 领域事件描述");
+            context.put("comment", context.get("Comment"));
             return context;
         });
         getLog().info("生成领域事件代码：" + path);
     }
 
     /**
-     * @param literalAggregateFactoryDeclaration 文本化聚合工厂声明 AggregateFactoryName
+     * @param literalAggregateFactoryDeclaration 文本化聚合工厂声明 AggregateRootEntityName
      * @param templateNode                       模板配置
      */
     public void renderDomainLayerAggregateFactory(String literalAggregateFactoryDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析聚合工厂设计：" + literalAggregateFactoryDeclaration);
         String path = internalRenderGenericDesign(literalAggregateFactoryDeclaration, parentPath, templateNode, context -> {
-            String name = context.get("Name");
-            if (!name.endsWith("Fac") && !name.endsWith("Factory")) {
-                name += "Factory";
-            }
-            context.put("Name", name);
+            String entity = context.get("Name");
+            String Name = entity + "Factory";
+            context.put("Name", Name);
+            context.put("name", Name.toLowerCase());
+            context.put("Entity", entity);
+            context.put("entity", entity.toLowerCase());
+            context.put("ENTITY", context.get("Entity"));
+            context.put("AggregateRoot", context.get("Entity"));
+            context.put("AGGREGATE_ROOT", context.get("Entity"));
+            context.put("aggregate_root", context.get("Entity"));
+            context.put("Aggregate", context.get("package"));
+            context.put("aggregate", context.get("package"));
             context.put("Factory", context.get("Name"));
-            context.put("Fac", context.get("Name"));
-            context.put("factory", context.get("name"));
-            context.put("fac", context.get("name"));
+            context.put("FACTORY", context.get("Factory"));
+
+            context.put("Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 聚合工厂描述");
+            context.put("comment", context.get("Comment"));
             return context;
         });
         getLog().info("生成聚合工厂代码：" + path);
     }
 
     /**
-     * @param literalSpecificationDeclaration 文本化聚合工厂声明 SpecificationName
+     * @param literalSpecificationDeclaration 文本化聚合工厂声明 AggregateRootEntityName
      * @param templateNode                    模板配置
      */
     public void renderDomainLayerSpecificaton(String literalSpecificationDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析实体规约设计：" + literalSpecificationDeclaration);
         String path = internalRenderGenericDesign(literalSpecificationDeclaration, parentPath, templateNode, context -> {
-            String name = context.get("Name");
-            if (!name.endsWith("Spec") && !name.endsWith("Specification")) {
-                name += "Specification";
-            }
-            context.put("Name", name);
-            context.put("Spec", context.get("Name"));
+            String entity = context.get("Name");
+            String Name = entity + "Specification";
+            context.put("Name", Name);
+            context.put("name", Name.toLowerCase());
+            context.put("Entity", entity);
+            context.put("entity", entity.toLowerCase());
+            context.put("ENTITY", context.get("Entity"));
+            context.put("AggregateRoot", context.get("Entity"));
+            context.put("AGGREGATE_ROOT", context.get("Entity"));
+            context.put("aggregate_root", context.get("Entity"));
+            context.put("Aggregate", context.get("package"));
+            context.put("aggregate", context.get("package"));
             context.put("Specification", context.get("Name"));
-            context.put("spec", context.get("name"));
-            context.put("specification", context.get("name"));
+            context.put("SPECIFICATION", context.get("Specification"));
+
+            context.put("Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 实体规约描述");
+            context.put("comment", context.get("Comment"));
             return context;
         });
         getLog().info("生成实体规约代码：" + path);
@@ -556,7 +643,10 @@ public class GenArchMojo extends MyAbstractMojo {
 
             context.put("Name", name);
             context.put("DomainService", context.get("Name"));
-            context.put("domain_service", context.get("name"));
+            context.put("DOMAIN_SERVICE", context.get("DomainService"));
+
+            context.put("Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 领域服务描述");
+            context.put("comment", context.get("Comment"));
             return context;
         });
         getLog().info("生成领域服务代码：" + path);
@@ -580,20 +670,20 @@ public class GenArchMojo extends MyAbstractMojo {
             context.put("val" + i, segments[i].toLowerCase());
         }
 
-        String name = NamingUtils.toUpperCamelCase(NamingUtils.getLastPackageName(segments[0]));
-        String reletivePath = NamingUtils.parentPackageName(segments[0])
-                .replace(".", File.pathSeparator);
+        String name = segments[0].toLowerCase();
+        String Name = NamingUtils.toUpperCamelCase(NamingUtils.getLastPackageName(segments[0]));
+        String path = NamingUtils.parentPackageName(segments[0])
+                .replace(".", File.separator);
 
-        context.put("Name", name);
-        context.put("name", segments[0].toLowerCase());
-        context.put("path", reletivePath);
-        context.put("package", reletivePath.replace(File.separator, "."));
+        context.put("Name", Name);
+        context.put("name", name);
+        context.put("path", path);
+        context.put("package", StringUtils.isEmpty(path) ? "" : ("." + path.replace(File.separator, ".")));
         if (null != contextBuilder) {
             context = contextBuilder.apply(context);
         }
         PathNode pathNode = templateNode.clone().resolve(context);
-        String path = render(pathNode, parentPath);
-        return path;
+        return render(pathNode, parentPath);
     }
 
     /**
@@ -621,18 +711,21 @@ public class GenArchMojo extends MyAbstractMojo {
                     FileUtils.mkdir(path);
                     break;
                 case "skip":
-                    getLog().info("目录存在：" + path);
+//                    getLog().info("目录存在：" + path);
                     break;
             }
         } else {
-            getLog().warn("目录创建：" + path);
+            getLog().info("目录创建：" + path);
             FileUtils.mkdir(path);
         }
 
-        if (StringUtils.isNotBlank(pathNode.tag)) {
-            TemplateNode templateNode = template.select(pathNode.tag);
-            if (null != templateNode) {
-                renderDesign(templateNode, path);
+        if (StringUtils.isNotBlank(pathNode.getTag())) {
+            String[] tags = pathNode.getTag().split(PATTERN_SPLITTER);
+            for (String tag : tags) {
+                TemplateNode templateNode = template.select(tag);
+                if (null != templateNode) {
+                    renderDesign(templateNode, path);
+                }
             }
         }
 
@@ -666,11 +759,11 @@ public class GenArchMojo extends MyAbstractMojo {
                     break;
                 case "skip":
                 default:
-                    getLog().info("文件存在：" + path);
+//                    getLog().info("文件存在：" + path);
                     break;
             }
         } else {
-            getLog().warn("文件创建：" + path);
+            getLog().info("文件创建：" + path);
             FileUtils.fileWrite(path, content);
         }
         return path;
@@ -721,6 +814,9 @@ public class GenArchMojo extends MyAbstractMojo {
         context.put("aggregateIdentityClass", aggregateIdentityClass);
         context.put("aggregateRepositoryCustomerCode", aggregateRepositoryCustomerCode);
         context.put("ignoreAggregateRoots", ignoreAggregateRoots);
+        context.put("date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
+        context.put("SEPARATOR", File.separator);
+        context.put("separator", File.separator);
         context.put("symbol_pound", "#");
         context.put("symbol_escape", "\\");
         context.put("symbol_dollar", "$");
