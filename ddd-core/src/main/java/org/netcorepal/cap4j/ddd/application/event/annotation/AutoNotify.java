@@ -1,9 +1,6 @@
 package org.netcorepal.cap4j.ddd.application.event.annotation;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * 自动发布
@@ -14,6 +11,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(AutoNotifys.class)
 public @interface AutoNotify {
 
     /**

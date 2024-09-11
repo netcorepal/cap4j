@@ -6,13 +6,13 @@ import org.springframework.cglib.beans.BeanCopier;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.converter.Converter;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /**
  * 类型工具类
@@ -76,24 +76,52 @@ public class ClassUtils {
         return null;
     }
 
+    /**
+     * 获取 Converter对象
+     *
+     * @param srcClass       源类型
+     * @param destClass      模板类型
+     * @param converterClass 转换类
+     * @return
+     */
     @SneakyThrows
-    public static Converter<Object, Object> newConverterInstance(Class<?> srcClass, Class<?> descClass, Class<?> converterClass) {
-        Converter<Object, Object> converter = null;
+    public static Converter<Object, Object> newConverterInstance(Class<?> srcClass, Class<?> destClass, Class<?> converterClass) {
+        Converter<?, ?> converter = null;
         try {
             converter = null == converterClass || Void.class.equals(converterClass)
                     ? null
-                    : (Converter<Object, Object>) converterClass.newInstance();
+                    : (Converter<?, ?>) converterClass.newInstance();
         } catch (Exception e) {
             throw new DomainException("事件Converter无法实例化", e);
         }
+
+        Method method = findMethod(
+                destClass,
+                "convert",
+                m -> m.getParameterCount() == 1
+                        && srcClass.isAssignableFrom(m.getParameterTypes()[0])
+                        && destClass.isAssignableFrom(m.getReturnType())
+        );
+        if(null != method) {
+            return (src) ->{
+                Object dest = null;
+                try {
+                    dest = method.invoke(destClass.newInstance(), src);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                return dest;
+            };
+        }
+
         if (converter == null) {
             BeanCopier copier = BeanCopier.create(
                     srcClass,
-                    descClass, false);
+                    destClass, false);
             converter = source -> {
                 Object dest = null;
                 try {
-                    dest = descClass.newInstance();
+                    dest = destClass.newInstance();
                 } catch (Exception e) {
                     throw new DomainException("无法完成事件自动转换", e);
                 }
@@ -101,6 +129,6 @@ public class ClassUtils {
                 return dest;
             };
         }
-        return converter;
+        return (Converter<Object, Object>) converter;
     }
 }

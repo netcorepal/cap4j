@@ -112,7 +112,7 @@
           "type": "file",
           "name": "${IntegrationEvent}Subscriber.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.subscribers;\n\nimport ${basePackage}.application.distributed.events.${IntegrationEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 集成事件描述\n */\n@Service\n@RequiredArgsConstructor\npublic class ${IntegrationEvent}Subscriber {\n\n    @EventListener(${IntegrationEvent}.class)\n    public void on(${IntegrationEvent} event) {\n        \n    }\n\n}\n"
+          "data": "package ${basePackage}.application.subscribers.integration;\n\nimport ${basePackage}.application.distributed.events.${IntegrationEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 集成事件描述\n */\n@Service\n@RequiredArgsConstructor\npublic class ${IntegrationEvent}Subscriber {\n\n    @EventListener(${IntegrationEvent}.class)\n    public void on(${IntegrationEvent} event) {\n        \n    }\n\n}\n"
         }
       ]
     },
@@ -138,7 +138,7 @@
           "type": "file",
           "name": "${DomainEvent}Subscriber.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.subscribers;\n\nimport ${basePackage}.domain.aggregates${package}.events.${DomainEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 领域事件订阅说明\n */\n@Service\n@RequiredArgsConstructor\npublic class ${DomainEvent}Subscriber {\n\n    @EventListener(${DomainEvent}.class)\n    public void on(${DomainEvent} event) {\n        \n    }\n\n}\n"
+          "data": "package ${basePackage}.application.subscribers.domain;\n\nimport ${basePackage}.domain.aggregates${package}.events.${DomainEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 领域事件订阅说明\n */\n@Service\n@RequiredArgsConstructor\npublic class ${DomainEvent}Subscriber {\n\n    @EventListener(${DomainEvent}.class)\n    public void on(${DomainEvent} event) {\n        \n    }\n\n}\n"
         }
       ]
     },
@@ -524,7 +524,18 @@
                         {
                           "type": "dir",
                           "name": "subscribers",
-                          "tag": "domain_event_handler,integration_event_handler"
+                          "children": [
+                            {
+                              "type": "dir",
+                              "name": "domain",
+                              "tag": "domain_event_handler"
+                            },
+                            {
+                              "type": "dir",
+                              "name": "integration",
+                              "tag": "integration_event_handler"
+                            }
+                          ]
                         }
                       ]
                     },

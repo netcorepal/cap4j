@@ -3,11 +3,13 @@ package org.netcorepal.cap4j.ddd.domain.event.impl;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.RequestParam;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
-import org.netcorepal.cap4j.ddd.domain.event.EventSubscriber;
-import org.netcorepal.cap4j.ddd.domain.event.EventSubscriberManager;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
 import org.netcorepal.cap4j.ddd.application.event.annotation.AutoNotify;
+import org.netcorepal.cap4j.ddd.application.event.annotation.AutoNotifys;
 import org.netcorepal.cap4j.ddd.application.event.annotation.AutoRequest;
+import org.netcorepal.cap4j.ddd.application.event.annotation.AutoRequests;
+import org.netcorepal.cap4j.ddd.domain.event.EventSubscriber;
+import org.netcorepal.cap4j.ddd.domain.event.EventSubscriberManager;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 import org.netcorepal.cap4j.ddd.share.misc.ScanUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -16,6 +18,7 @@ import org.springframework.core.annotation.OrderUtils;
 import org.springframework.core.convert.converter.Converter;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -57,14 +60,23 @@ public class DefaultEventSubscriberManager implements EventSubscriberManager {
 
                 // 自动实现 Event -> Request
                 // 领域事件转Request容易导致数据库长时事务，慎用！
-                if( null != domainEventClass.getAnnotation(AutoRequest.class)){
-                    AutoRequest autoRequest = domainEventClass.getAnnotation(AutoRequest.class);
+                List<AutoRequest> autoRequests = null;
+                if (null != domainEventClass.getAnnotation(AutoRequest.class)) {
+                    autoRequests = Arrays.asList(domainEventClass.getAnnotation(AutoRequest.class));
+                }
+                if (null != domainEventClass.getAnnotation(AutoRequests.class)) {
+                    autoRequests = Arrays.asList(domainEventClass.getAnnotation(AutoRequests.class).value());
+                }
+                if (null == autoRequests) {
+                    return;
+                }
+                for (AutoRequest autoRequest : autoRequests) {
                     Class<?> converterClass = null;
                     if (Converter.class.isAssignableFrom(autoRequest.converterClass())) {
                         converterClass = autoRequest.converterClass();
                     }
                     Converter<Object, Object> converter = ClassUtils.newConverterInstance(domainEventClass, autoRequest.targetRequestClass(), converterClass);
-                    subscribe(domainEventClass, domainEvent -> RequestSupervisor.getInstance().send((RequestParam)converter.convert(domainEvent)));
+                    subscribe(domainEventClass, domainEvent -> RequestSupervisor.getInstance().send((RequestParam) converter.convert(domainEvent)));
                 }
             });
             // 集成事件
@@ -72,28 +84,44 @@ public class DefaultEventSubscriberManager implements EventSubscriberManager {
                 subscribe(integrationEventClass, applicationEventPublisher::publishEvent);
 
                 // 自动实现 DomainEvent -> IntegrationEvent 适配
+                List<AutoNotify> autoNotifys = null;
                 if (null != integrationEventClass.getAnnotation(AutoNotify.class)) {
-                    AutoNotify autoNotify = integrationEventClass.getAnnotation(AutoNotify.class);
-                    Class<?> converterClass = null;
-                    if (Converter.class.isAssignableFrom(integrationEventClass)) {
-                        converterClass = integrationEventClass;
+                    autoNotifys = Arrays.asList(integrationEventClass.getAnnotation(AutoNotify.class));
+                }
+                if (null != integrationEventClass.getAnnotation(AutoNotifys.class)) {
+                    autoNotifys = Arrays.asList(integrationEventClass.getAnnotation(AutoNotifys.class).value());
+                }
+                if (null != autoNotifys) {
+                    for (AutoNotify autoNotify : autoNotifys) {
+                        Class<?> converterClass = null;
+                        if (Converter.class.isAssignableFrom(integrationEventClass)) {
+                            converterClass = integrationEventClass;
+                        }
+                        if (Converter.class.isAssignableFrom(autoNotify.converterClass())) {
+                            converterClass = autoNotify.converterClass();
+                        }
+                        Converter<Object, Object> converter = ClassUtils.newConverterInstance(autoNotify.sourceDomainEventClass(), integrationEventClass, converterClass);
+                        subscribe(autoNotify.sourceDomainEventClass(), domainEvent -> IntegrationEventSupervisor.getInstance().notify(converter.convert(domainEvent), Duration.ofSeconds(autoNotify.delayInSeconds())));
                     }
-                    if (Converter.class.isAssignableFrom(autoNotify.converterClass())) {
-                        converterClass = autoNotify.converterClass();
-                    }
-                    Converter<Object, Object> converter = ClassUtils.newConverterInstance(autoNotify.sourceDomainEventClass(), integrationEventClass, converterClass);
-                    subscribe(autoNotify.sourceDomainEventClass(), domainEvent -> IntegrationEventSupervisor.getInstance().notify(converter.convert(domainEvent), Duration.ofSeconds(autoNotify.delayInSeconds())));
                 }
 
                 // 自动实现 Event -> Request 转发
+                List<AutoRequest> autoRequests = null;
                 if (null != integrationEventClass.getAnnotation(AutoRequest.class)) {
-                    AutoRequest autoRequest = integrationEventClass.getAnnotation(AutoRequest.class);
-                    Class<?> converterClass = null;
-                    if (Converter.class.isAssignableFrom(autoRequest.converterClass())) {
-                        converterClass = autoRequest.converterClass();
+                    autoRequests = Arrays.asList(integrationEventClass.getAnnotation(AutoRequest.class));
+                }
+                if (null != integrationEventClass.getAnnotation(AutoRequests.class)) {
+                    autoRequests = Arrays.asList(integrationEventClass.getAnnotation(AutoRequests.class).value());
+                }
+                if (null != autoRequests) {
+                    for (AutoRequest autoRequest : autoRequests) {
+                        Class<?> converterClass = null;
+                        if (Converter.class.isAssignableFrom(autoRequest.converterClass())) {
+                            converterClass = autoRequest.converterClass();
+                        }
+                        Converter<Object, Object> converter = ClassUtils.newConverterInstance(integrationEventClass, autoRequest.targetRequestClass(), converterClass);
+                        subscribe(integrationEventClass, integrationEvent -> RequestSupervisor.getInstance().send((RequestParam<?>) converter.convert(integrationEvent)));
                     }
-                    Converter<Object, Object> converter = ClassUtils.newConverterInstance(integrationEventClass, autoRequest.targetRequestClass(), converterClass);
-                    subscribe(integrationEventClass, integrationEvent -> RequestSupervisor.getInstance().send((RequestParam<?>)converter.convert(integrationEvent)));
                 }
             });
         }

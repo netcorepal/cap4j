@@ -1261,7 +1261,7 @@ public class GenEntityMojo extends MyAbstractMojo {
             out.close();
         }
 
-        String subscriberPackage = basePackage + ".application.subscribers";
+        String subscriberPackage = basePackage + ".application.subscribers.domain";
         filePath = SourceFileUtils.resolveSourceFile(baseDir, subscriberPackage, domainEventClassName + "Subscriber");
         if (!FileUtils.fileExists(filePath)) {
 
