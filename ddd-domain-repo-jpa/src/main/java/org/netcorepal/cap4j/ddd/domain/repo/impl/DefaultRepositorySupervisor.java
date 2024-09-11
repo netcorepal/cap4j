@@ -57,7 +57,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
-        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        Class<ENTITY> entityClass = JpaPredicateSupport.reflectEntityClass(predicate);
         List<ENTITY> entities = repo(entityClass).find(predicate, orders);
         if (entities != null) {
             entities.forEach(unitOfWork::persist);
@@ -67,7 +67,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate) {
-        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        Class<ENTITY> entityClass = JpaPredicateSupport.reflectEntityClass(predicate);
         Optional<ENTITY> entity = repo(entityClass).findOne(predicate);
         entity.ifPresent(unitOfWork::persist);
         return entity;
@@ -75,7 +75,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam) {
-        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        Class<ENTITY> entityClass = JpaPredicateSupport.reflectEntityClass(predicate);
         PageData<ENTITY> page = repo(entityClass).findPage(predicate, pageParam);
         if (page.getList() != null) {
             page.getList().forEach(unitOfWork::persist);
@@ -85,7 +85,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> List<ENTITY> remove(Predicate<ENTITY> predicate, int limit) {
-        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        Class<ENTITY> entityClass = JpaPredicateSupport.reflectEntityClass(predicate);
         PageParam page = new PageParam();
         page.setPageNum(1);
         page.setPageSize(limit);
@@ -98,13 +98,13 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> long count(Predicate<ENTITY> predicate) {
-        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        Class<ENTITY> entityClass = JpaPredicateSupport.reflectEntityClass(predicate);
         return repo(entityClass).count(predicate);
     }
 
     @Override
     public <ENTITY> boolean exists(Predicate<ENTITY> predicate) {
-        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        Class<ENTITY> entityClass = JpaPredicateSupport.reflectEntityClass(predicate);
         return repo(entityClass).exists(predicate);
     }
 }

@@ -1,9 +1,10 @@
 package org.netcorepal.cap4j.ddd.domain.repo;
 
-import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Jpa仓储检索断言
@@ -11,24 +12,22 @@ import java.lang.reflect.Method;
  * @author binking338
  * @date 2024/9/8
  */
+@RequiredArgsConstructor
 public class JpaPredicate<Entity> implements Predicate<Entity> {
-    private Class<Entity> entityClass;
-    private Specification<Entity> spec;
+    final Class<Entity> entityClass;
+    final Specification<Entity> spec;
+    final Object id;
+    final Iterable<Object> ids;
 
-    protected JpaPredicate(Class<Entity> entityClass, Specification<Entity> spec) {
-        this.entityClass = entityClass;
-        this.spec = spec;
+    public static <Entity> Predicate<Entity> byId(Class<Entity> entityClass, Object id) {
+        return new JpaPredicate<>(entityClass, null, id, null);
     }
 
-    public static <Entity> Predicate<Entity> from(Class<Entity> entityClass, Specification<Entity> specification) {
-        return new JpaPredicate<>(entityClass, specification);
+    public static <Entity> Predicate<Entity> byIds(Class<Entity> entityClass, Iterable<Object> ids) {
+        return new JpaPredicate<>(entityClass, null, null, ids);
     }
 
-    public static <Entity> Specification<Entity> resume(Predicate<Entity> predicate){
-        return ((JpaPredicate<Entity>) predicate).spec;
-    }
-
-    public static <Entity> Class<Entity> reflectEntityClass(Predicate<Entity> predicate) {
-        return  ((JpaPredicate<Entity>) predicate).entityClass;
+    public static <Entity> Predicate<Entity> bySpecification(Class<Entity> entityClass, Specification<Entity> specification) {
+        return new JpaPredicate<>(entityClass, specification, null, null);
     }
 }

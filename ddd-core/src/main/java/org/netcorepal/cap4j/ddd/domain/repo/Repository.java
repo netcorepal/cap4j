@@ -1,7 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.repo;
 
-import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
+import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 
 import java.util.List;
@@ -17,31 +17,34 @@ public interface Repository<Entity> {
 
     /**
      * 根据条件获取实体列表
+     *
+     * @param predicate
+     * @return
+     */
+    default List<Entity> find(Predicate<Entity> predicate) {
+        return find(predicate, null);
+    }
+
+    /**
+     * 根据条件获取实体列表
+     *
      * @param predicate
      * @param orders
      * @return
      */
     List<Entity> find(Predicate<Entity> predicate, List<OrderInfo> orders);
-//    /**
-//     * 通过ID获取实体
-//     * @param id
-//     * @return
-//     */
-//    Optional<Entity> findById(Object id);
-//    /**
-//     * 通过ID获取实体
-//     * @param ids
-//     * @return
-//     */
-//    List<Entity> findByIds(Iterable<Object> ids);
+
     /**
      * 根据条件获取实体
+     *
      * @param predicate
      * @return
      */
     Optional<Entity> findOne(Predicate<Entity> predicate);
+
     /**
      * 根据条件获取实体分页列表
+     *
      * @param predicate
      * @param pageParam
      * @return
@@ -50,6 +53,7 @@ public interface Repository<Entity> {
 
     /**
      * 根据条件获取实体计数
+     *
      * @param predicate
      * @return
      */
@@ -57,6 +61,7 @@ public interface Repository<Entity> {
 
     /**
      * 根据条件判断实体是否存在
+     *
      * @param predicate
      * @return
      */
