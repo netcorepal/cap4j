@@ -142,7 +142,14 @@ public class DefaultEventPublisher implements EventPublisher {
             getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.preRelease(event));
             getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.prePublish(event.getMessage()));
 
-            integrationEventPublisheres.forEach(integrationEventPublisher -> integrationEventPublisher.publish(event, new IntegrationEventSendPublishCallback(getOrderedEventMessageInterceptors(), getOrderedIntegrationEventInterceptors(), eventRecordRepository)));
+            integrationEventPublisheres.forEach(integrationEventPublisher -> integrationEventPublisher.publish(
+                    event,
+                    new IntegrationEventSendPublishCallback(
+                            getOrderedEventMessageInterceptors(),
+                            getOrderedIntegrationEventInterceptors(),
+                            eventRecordRepository)
+                    )
+            );
 
         } catch (Exception ex) {
             getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.onException(ex, event));

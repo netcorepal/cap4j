@@ -1,4 +1,4 @@
-package org.netcorepal.cap4j.ddd.share;
+package org.netcorepal.cap4j.ddd.domain.event;
 
 import org.netcorepal.cap4j.ddd.domain.event.EventRecord;
 

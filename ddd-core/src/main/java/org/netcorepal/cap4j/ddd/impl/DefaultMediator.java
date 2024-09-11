@@ -16,7 +16,6 @@ import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 import org.springframework.transaction.annotation.Propagation;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -100,17 +99,12 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
-    public <INTEGRATION_EVENT> void notify(INTEGRATION_EVENT integrationEventPayload) {
-        IntegrationEventSupervisor.getInstance().notify(integrationEventPayload);
+    public <INTEGRATION_EVENT> void attach(INTEGRATION_EVENT integrationEventPayload, LocalDateTime schedule) {
+        IntegrationEventSupervisor.getInstance().attach(integrationEventPayload, schedule);
     }
 
     @Override
-    public <INTEGRATION_EVENT> void notify(INTEGRATION_EVENT integrationEventPayload, Duration delay) {
-        IntegrationEventSupervisor.getInstance().notify(integrationEventPayload, delay);
-    }
-
-    @Override
-    public <INTEGRATION_EVENT> void notify(INTEGRATION_EVENT integrationEventPayload, LocalDateTime schedule) {
-        IntegrationEventSupervisor.getInstance().notify(integrationEventPayload, schedule);
+    public <INTEGRATION_EVENT> void detach(INTEGRATION_EVENT integrationEventPayload) {
+        IntegrationEventSupervisor.getInstance().detach(integrationEventPayload);
     }
 }

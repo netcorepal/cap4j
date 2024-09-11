@@ -1,7 +1,5 @@
 package org.netcorepal.cap4j.ddd.domain.event;
 
-import org.netcorepal.cap4j.ddd.share.EventInterceptor;
-
 import java.time.LocalDateTime;
 
 /**

@@ -1,6 +1,6 @@
 package org.netcorepal.cap4j.ddd.application.event;
 
-import org.netcorepal.cap4j.ddd.share.EventInterceptor;
+import org.netcorepal.cap4j.ddd.domain.event.EventInterceptor;
 
 import java.time.LocalDateTime;
 
@@ -11,12 +11,16 @@ import java.time.LocalDateTime;
  * @date 2024/8/29
  */
 public interface IntegrationEventInterceptor extends EventInterceptor {
-
     /**
-     * 调用通知时
-     *
+     * 附加
      * @param eventPayload
      * @param schedule
      */
-    void onNotify(Object eventPayload, LocalDateTime schedule);
+    void onAttach(Object eventPayload, LocalDateTime schedule);
+
+    /**
+     * 解除附加
+     * @param eventPayload
+     */
+    void onDetach(Object eventPayload);
 }

@@ -5,9 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventManager;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Specification;
 import org.netcorepal.cap4j.ddd.domain.aggregate.SpecificationManager;
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisor;
+import org.netcorepal.cap4j.ddd.domain.event.DomainEventManager;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistListenerManager;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistType;
 import org.netcorepal.cap4j.ddd.share.DomainException;
@@ -37,7 +38,8 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Slf4j
 public class JpaUnitOfWork implements UnitOfWork {
-    private final DomainEventSupervisor domainEventSupervisor;
+    private final DomainEventManager domainEventManager;
+    private final IntegrationEventManager integrationEventManager;
     private final SpecificationManager specificationManager;
     private final PersistListenerManager persistListenerManager;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -163,7 +165,8 @@ public class JpaUnitOfWork implements UnitOfWork {
             if (deleteEntities != null && !deleteEntities.isEmpty()) {
                 entities.addAll(deleteEntities);
             }
-            domainEventSupervisor.release(entities);
+            domainEventManager.release(entities);
+            integrationEventManager.release();
             return null;
         }, saveAndDeleteEntityList, propagation);
     }

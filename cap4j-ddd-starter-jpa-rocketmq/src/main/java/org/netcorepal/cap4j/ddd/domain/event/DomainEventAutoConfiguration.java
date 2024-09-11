@@ -156,7 +156,7 @@ public class DomainEventAutoConfiguration {
 
     @Bean
     @Primary
-    public DomainEventSupervisor defaultDomainEventSupervisor(
+    public DefaultDomainEventSupervisor defaultDomainEventSupervisor(
             EventRecordRepository eventRecordRepository,
             List<DomainEventInterceptor> domainEventInterceptors,
             EventPublisher eventPublisher,
@@ -172,7 +172,8 @@ public class DomainEventAutoConfiguration {
                 svcName
         );
 
-        DomainEventSupervisorSupport.configure(defaultDomainEventSupervisor);
+        DomainEventSupervisorSupport.configure((DomainEventSupervisor)defaultDomainEventSupervisor);
+        DomainEventSupervisorSupport.configure((DomainEventManager) defaultDomainEventSupervisor);
         return defaultDomainEventSupervisor;
     }
 

@@ -8,6 +8,7 @@ package org.netcorepal.cap4j.ddd.domain.event;
  */
 public class DomainEventSupervisorSupport {
     static DomainEventSupervisor instance = null;
+    static DomainEventManager manager = null;
 
     /**
      * 配置领域事件管理器
@@ -15,6 +16,14 @@ public class DomainEventSupervisorSupport {
      */
     public static void configure(DomainEventSupervisor domainEventSupervisor) {
         DomainEventSupervisorSupport.instance = domainEventSupervisor;
+    }
+
+    /**
+     * 配置领域事件发布管理器
+     * @param domainEventManager {@link DomainEventManager}
+     */
+    public static void configure(DomainEventManager domainEventManager) {
+        DomainEventSupervisorSupport.manager = domainEventManager;
     }
 
     /**

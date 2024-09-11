@@ -15,29 +15,42 @@ public interface IntegrationEventSupervisor {
         return IntegrationEventSupervisorSupport.instance;
     }
 
-    /**
-     * 通知集成事件
-     *
-     * @param integrationEventPayload 集成事件消息体
-     * @param <INTEGRATION_EVENT>     事件消息类型
-     */
-    <INTEGRATION_EVENT> void notify(INTEGRATION_EVENT integrationEventPayload);
+    static IntegrationEventManager getManager(){
+        return IntegrationEventSupervisorSupport.manager;
+    }
+
 
     /**
-     * 延迟通知集成事件
+     * 附加事件
      *
-     * @param integrationEventPayload 集成事件消息体
-     * @param delay                   延迟时长
-     * @param <INTEGRATION_EVENT>     事件消息类型
+     * @param eventPayload 事件消息体
      */
-    <INTEGRATION_EVENT> void notify(INTEGRATION_EVENT integrationEventPayload, Duration delay);
+    default <EVENT> void attach(EVENT eventPayload) {
+        attach(eventPayload, LocalDateTime.now());
+    }
 
     /**
-     * 定时通知集成事件
+     * 附加事件到持久化上下文
      *
-     * @param integrationEventPayload 集成事件消息体
-     * @param schedule                定时时间
-     * @param <INTEGRATION_EVENT>     事件消息类型
+     * @param eventPayload 事件消息体
+     * @param delay        延迟发送
      */
-    <INTEGRATION_EVENT> void notify(INTEGRATION_EVENT integrationEventPayload, LocalDateTime schedule);
+    default <EVENT> void attach(EVENT eventPayload, Duration delay){
+        attach(eventPayload, LocalDateTime.now().plus(delay));
+    }
+
+    /**
+     * 附加事件到持久化上下文
+     *
+     * @param eventPayload 事件消息体
+     * @param schedule     指定时间发送
+     */
+    <EVENT> void attach(EVENT eventPayload, LocalDateTime schedule);
+
+    /**
+     * 从持久化上下文剥离事件
+     *
+     * @param eventPayload 事件消息体
+     */
+    <EVENT> void detach(EVENT eventPayload);
 }

@@ -11,8 +11,8 @@ import java.lang.annotation.*;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(AutoNotifys.class)
-public @interface AutoNotify {
+@Repeatable(AutoReleases.class)
+public @interface AutoRelease {
 
     /**
      * 源领域事件类型

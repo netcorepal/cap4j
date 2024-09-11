@@ -49,7 +49,8 @@ public class RocketMqEventAutoConfiguration {
                 svcName
         );
 
-        IntegrationEventSupervisorSupport.configure(defaultIntegrationEventSupervisor);
+        IntegrationEventSupervisorSupport.configure((IntegrationEventSupervisor) defaultIntegrationEventSupervisor);
+        IntegrationEventSupervisorSupport.configure((IntegrationEventManager) defaultIntegrationEventSupervisor);
         return defaultIntegrationEventSupervisor;
     }
 

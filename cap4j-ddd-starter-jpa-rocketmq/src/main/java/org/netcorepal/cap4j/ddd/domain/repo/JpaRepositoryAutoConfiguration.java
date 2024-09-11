@@ -3,6 +3,7 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventManager;
 import org.netcorepal.cap4j.ddd.application.impl.JpaUnitOfWork;
 import org.netcorepal.cap4j.ddd.application.UnitOfWorkSupport;
 import org.netcorepal.cap4j.ddd.domain.aggregate.*;
@@ -63,14 +64,16 @@ public class JpaRepositoryAutoConfiguration {
     @Bean
     @Primary
     public JpaUnitOfWork jpaUnitOfWork(
-            DomainEventSupervisor domainEventSupervisor,
+            DomainEventManager domainEventManager,
+            IntegrationEventManager integrationEventManager,
             ApplicationEventPublisher applicationEventPublisher,
             SpecificationManager specificationManager,
             PersistListenerManager persistListenerManager,
             JpaUnitOfWorkProperties jpaUnitOfWorkProperties
     ) {
         JpaUnitOfWork unitOfWork = new JpaUnitOfWork(
-                domainEventSupervisor,
+                domainEventManager,
+                integrationEventManager,
                 specificationManager,
                 persistListenerManager,
                 applicationEventPublisher,

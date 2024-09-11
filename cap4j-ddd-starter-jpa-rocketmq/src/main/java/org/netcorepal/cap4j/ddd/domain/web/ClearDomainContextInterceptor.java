@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.web;
 
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.application.event.impl.DefaultIntegrationEventSupervisor;
 import org.netcorepal.cap4j.ddd.application.impl.JpaUnitOfWork;
 import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultDomainEventSupervisor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -25,5 +26,6 @@ public class ClearDomainContextInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         JpaUnitOfWork.reset();
         DefaultDomainEventSupervisor.reset();
+        DefaultIntegrationEventSupervisor.reset();
     }
 }

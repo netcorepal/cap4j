@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.RequestParam;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
-import org.netcorepal.cap4j.ddd.application.event.annotation.AutoNotify;
-import org.netcorepal.cap4j.ddd.application.event.annotation.AutoNotifys;
+import org.netcorepal.cap4j.ddd.application.event.annotation.AutoRelease;
+import org.netcorepal.cap4j.ddd.application.event.annotation.AutoReleases;
 import org.netcorepal.cap4j.ddd.application.event.annotation.AutoRequest;
 import org.netcorepal.cap4j.ddd.application.event.annotation.AutoRequests;
 import org.netcorepal.cap4j.ddd.domain.event.EventSubscriber;
@@ -84,24 +84,27 @@ public class DefaultEventSubscriberManager implements EventSubscriberManager {
                 subscribe(integrationEventClass, applicationEventPublisher::publishEvent);
 
                 // 自动实现 DomainEvent -> IntegrationEvent 适配
-                List<AutoNotify> autoNotifys = null;
-                if (null != integrationEventClass.getAnnotation(AutoNotify.class)) {
-                    autoNotifys = Arrays.asList(integrationEventClass.getAnnotation(AutoNotify.class));
+                List<AutoRelease> autoReleases = null;
+                if (null != integrationEventClass.getAnnotation(AutoRelease.class)) {
+                    autoReleases = Arrays.asList(integrationEventClass.getAnnotation(AutoRelease.class));
                 }
-                if (null != integrationEventClass.getAnnotation(AutoNotifys.class)) {
-                    autoNotifys = Arrays.asList(integrationEventClass.getAnnotation(AutoNotifys.class).value());
+                if (null != integrationEventClass.getAnnotation(AutoReleases.class)) {
+                    autoReleases = Arrays.asList(integrationEventClass.getAnnotation(AutoReleases.class).value());
                 }
-                if (null != autoNotifys) {
-                    for (AutoNotify autoNotify : autoNotifys) {
+                if (null != autoReleases) {
+                    for (AutoRelease autoRelease : autoReleases) {
                         Class<?> converterClass = null;
                         if (Converter.class.isAssignableFrom(integrationEventClass)) {
                             converterClass = integrationEventClass;
                         }
-                        if (Converter.class.isAssignableFrom(autoNotify.converterClass())) {
-                            converterClass = autoNotify.converterClass();
+                        if (Converter.class.isAssignableFrom(autoRelease.converterClass())) {
+                            converterClass = autoRelease.converterClass();
                         }
-                        Converter<Object, Object> converter = ClassUtils.newConverterInstance(autoNotify.sourceDomainEventClass(), integrationEventClass, converterClass);
-                        subscribe(autoNotify.sourceDomainEventClass(), domainEvent -> IntegrationEventSupervisor.getInstance().notify(converter.convert(domainEvent), Duration.ofSeconds(autoNotify.delayInSeconds())));
+                        Converter<Object, Object> converter = ClassUtils.newConverterInstance(autoRelease.sourceDomainEventClass(), integrationEventClass, converterClass);
+                        subscribe(autoRelease.sourceDomainEventClass(), domainEvent -> {
+                            IntegrationEventSupervisor.getInstance().attach(converter.convert(domainEvent), Duration.ofSeconds(autoRelease.delayInSeconds()));
+                            IntegrationEventSupervisor.getManager().release();
+                        });
                     }
                 }
 

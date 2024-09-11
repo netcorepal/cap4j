@@ -11,6 +11,6 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AutoNotifys {
-    AutoNotify[] value();
+public @interface AutoReleases {
+    AutoRelease[] value();
 }

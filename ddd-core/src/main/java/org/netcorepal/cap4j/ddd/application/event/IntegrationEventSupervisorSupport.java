@@ -9,6 +9,8 @@ package org.netcorepal.cap4j.ddd.application.event;
 public class IntegrationEventSupervisorSupport {
     static IntegrationEventSupervisor instance = null;
 
+    static IntegrationEventManager manager = null;
+
 
     /**
      * 配置事件管理器
@@ -17,5 +19,13 @@ public class IntegrationEventSupervisorSupport {
      */
     public static void configure(IntegrationEventSupervisor integrationEventSupervisor) {
         IntegrationEventSupervisorSupport.instance = integrationEventSupervisor;
+    }
+    /**
+     * 配置事件管理器
+     *
+     * @param integrationEventManager {@link IntegrationEventManager}
+     */
+    public static void configure(IntegrationEventManager integrationEventManager) {
+        IntegrationEventSupervisorSupport.manager = integrationEventManager;
     }
 }

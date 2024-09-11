@@ -62,8 +62,8 @@ public class DefaultPersistListenerManager implements PersistListenerManager {
                         subscribe(autoAttach.sourceEntityClass(), (e, t) -> {
                             for (PersistType listenPersistType : autoAttach.persistType()) {
                                 if(listenPersistType == t){
-                                    DomainEventSupervisor.getInstance().attach(converter.convert(e), Duration.ofSeconds(autoAttach.delayInSeconds()));
-                                    DomainEventSupervisor.getInstance().release(Collections.singleton(e));
+                                    DomainEventSupervisor.getInstance().attach(converter.convert(e), e, Duration.ofSeconds(autoAttach.delayInSeconds()));
+                                    DomainEventSupervisor.getManager().release(Collections.singleton(e));
                                     break;
                                 }
                             }
