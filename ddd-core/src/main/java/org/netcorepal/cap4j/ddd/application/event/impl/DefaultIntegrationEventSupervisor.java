@@ -1,8 +1,8 @@
 package org.netcorepal.cap4j.ddd.application.event.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventNotifyEvent;
 import org.netcorepal.cap4j.ddd.domain.event.EventPublisher;
-import org.netcorepal.cap4j.ddd.application.event.IntegrationEventAttachedTransactionCommittedEvent;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
@@ -12,11 +12,11 @@ import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.OrderUtils;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -73,11 +73,12 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
         getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.prePersist(event));
         eventRecordRepository.save(event);
         getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.postPersist(event));
-        List<EventRecord> events = new ArrayList<>();
-        events.add(event);
 
-        IntegrationEventAttachedTransactionCommittedEvent integrationEventAttachedTransactionCommittedEvent
-                = new IntegrationEventAttachedTransactionCommittedEvent(this, events);
+
+        event.markPersist(true);
+        eventPublisher.publish(event);
+        IntegrationEventNotifyEvent integrationEventAttachedTransactionCommittedEvent
+                = new IntegrationEventNotifyEvent(this, Arrays.asList(event));
         applicationEventPublisher.publishEvent(integrationEventAttachedTransactionCommittedEvent);
     }
 
@@ -89,17 +90,5 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
     @Override
     public <INTEGRATION_EVENT> void notify(INTEGRATION_EVENT eventPayload, Duration delay) {
         notify(eventPayload, LocalDateTime.now().plus(delay));
-    }
-
-    @TransactionalEventListener(fallbackExecution = true, classes = IntegrationEventAttachedTransactionCommittedEvent.class)
-    public void onTransactionCommitted(IntegrationEventAttachedTransactionCommittedEvent transactionCommittedEvent) {
-        List<EventRecord> events = transactionCommittedEvent.getEvents();
-        if (events != null && !events.isEmpty()) {
-            LocalDateTime now = LocalDateTime.now();
-            events.forEach(event -> {
-                event.markPersist(true);
-                eventPublisher.publish(event);
-            });
-        }
     }
 }

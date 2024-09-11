@@ -5,10 +5,10 @@ import org.netcorepal.cap4j.ddd.application.RequestParam;
 import java.util.List;
 
 /**
- * 列表查询接口
+ * 列表查询参数
  *
  * @author binking338
- * @date
+ * @date 2024/9/6
  */
-public interface ListQuery<PARAM extends RequestParam<List<ITEM>>,ITEM> extends Query<PARAM, List<ITEM>> {
+public class ListQueryParam<RESPONSE_ITEM> implements RequestParam<List<RESPONSE_ITEM>> {
 }

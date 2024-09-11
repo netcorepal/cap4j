@@ -164,6 +164,8 @@ public class Event {
                 : payload.getClass().getAnnotation(IntegrationEvent.class);
         if (integrationEvent != null) {
             this.eventType = integrationEvent.value();
+        } else {
+            this.eventType = "";
         }
         Retry retry = payload == null
                 ? null

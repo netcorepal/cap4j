@@ -17,56 +17,55 @@ public interface Repository<Entity> {
 
     /**
      * 根据条件获取实体列表
-     * @param condition
+     * @param predicate
      * @param orders
      * @return
      */
-    List<Entity> find(Object condition, List<OrderInfo> orders);
-    /**
-     * 通过ID获取实体
-     * @param id
-     * @return
-     */
-    Optional<Entity> findById(Object id);
-
-    /**
-     * 通过ID获取实体
-     * @param ids
-     * @return
-     */
-    List<Entity> findByIds(Iterable<Object> ids);
+    List<Entity> find(Predicate<Entity> predicate, List<OrderInfo> orders);
+//    /**
+//     * 通过ID获取实体
+//     * @param id
+//     * @return
+//     */
+//    Optional<Entity> findById(Object id);
+//    /**
+//     * 通过ID获取实体
+//     * @param ids
+//     * @return
+//     */
+//    List<Entity> findByIds(Iterable<Object> ids);
     /**
      * 根据条件获取实体
-     * @param condition
+     * @param predicate
      * @return
      */
-    Optional<Entity> findOne(Object condition);
+    Optional<Entity> findOne(Predicate<Entity> predicate);
     /**
      * 根据条件获取实体分页列表
-     * @param condition
+     * @param predicate
      * @param pageParam
      * @return
      */
-    PageData<Entity> findPage(Object condition, PageParam pageParam);
+    PageData<Entity> findPage(Predicate<Entity> predicate, PageParam pageParam);
 
     /**
      * 根据条件获取实体计数
-     * @param condition
+     * @param predicate
      * @return
      */
-    long count(Object condition);
+    long count(Predicate<Entity> predicate);
 
     /**
      * 根据条件判断实体是否存在
-     * @param condition
+     * @param predicate
      * @return
      */
-    boolean exists(Object condition);
+    boolean exists(Predicate<Entity> predicate);
 
-    /**
-     * 通过ID判断实体是否存在
-     * @param id
-     * @return
-     */
-    boolean existsById(Object id);
+//    /**
+//     * 通过ID判断实体是否存在
+//     * @param id
+//     * @return
+//     */
+//    boolean existsById(Object id);
 }

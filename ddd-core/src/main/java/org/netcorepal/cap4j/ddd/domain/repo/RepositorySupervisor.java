@@ -28,103 +28,53 @@ public interface RepositorySupervisor {
 
     /**
      * 根据条件获取实体列表
-     * @param entityClass
-     * @param condition
+     * @param predicate
      * @param orders
      * @return
      * @param <ENTITY>
      */
-    <ENTITY> List<ENTITY> find(Class<ENTITY> entityClass, Object condition, List<OrderInfo> orders);
+    <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, List<OrderInfo> orders);
 
     /**
      * 根据条件获取单个实体
-     * @param entityClass
-     * @param condition
+     * @param predicate
      * @return
      * @param <ENTITY>
      */
-    <ENTITY> Optional<ENTITY> findOne(Class<ENTITY> entityClass, Object condition);
+    <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate);
     /**
      * 根据条件获取实体分页列表
-     * @param entityClass
-     * @param condition
+     * @param predicate
      * @param pageParam
      * @return
      * @param <ENTITY>
      */
-    <ENTITY> PageData<ENTITY> findPage(Class<ENTITY> entityClass, Object condition, PageParam pageParam);
-
-    /**
-     * 根据ID获取实体
-     * @param entityClass
-     * @param id
-     * @return
-     * @param <ENTITY>
-     */
-    <ENTITY> Optional<ENTITY> findById(Class<ENTITY> entityClass, Object id);
-    /**
-     * 根据ID获取实体列表
-     * @param entityClass
-     * @param ids
-     * @return
-     * @param <ENTITY>
-     */
-    <ENTITY> List<ENTITY> findByIds(Class<ENTITY> entityClass, Iterable<Object> ids);
+    <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam);
 
     /**
      * 根据条件删除实体
      *
-     * @param entityClass
-     * @param condition
+     * @param predicate
      * @param limit
      * @return
      * @param <ENTITY>
      */
-    <ENTITY> List<ENTITY> remove(Class<ENTITY> entityClass, Object condition, int limit);
-
-    /**
-     * 根据ID删除实体
-     * @param entityClass
-     * @param id
-     * @return
-     * @param <ENTITY>
-     */
-    <ENTITY> Optional<ENTITY> removeById(Class<ENTITY> entityClass, Object id);
-
-    /**
-     * 根据ID批量删除实体
-     * @param entityClass
-     * @param ids
-     * @return
-     * @param <ENTITY>
-     */
-    <ENTITY> List<ENTITY> removeByIds(Class<ENTITY> entityClass, Iterable<Object> ids);
+    <ENTITY> List<ENTITY> remove(Predicate<ENTITY> predicate, int limit);
 
     /**
      * 根据条件获取实体计数
-     * @param entityClass
-     * @param condition
+     * @param predicate
      * @return
      * @param <ENTITY>
      */
-    <ENTITY> long count(Class<ENTITY> entityClass, Object condition);
+    <ENTITY> long count(Predicate<ENTITY> predicate);
 
     /**
      * 根据条件判断实体是否存在
-     * @param entityClass
-     * @param condition
+     * @param predicate
      * @return
      * @param <ENTITY>
      */
-    <ENTITY> boolean exists(Class<ENTITY> entityClass, Object condition);
-
-    /**
-     * 通过ID判断实体是否存在
-     * @param entityClass
-     * @param id
-     * @return
-     * @param <ENTITY>
-     */
-    <ENTITY> boolean existsById(Class<ENTITY> entityClass, Object id);
+    <ENTITY> boolean exists(Predicate<ENTITY> predicate);
 
 }

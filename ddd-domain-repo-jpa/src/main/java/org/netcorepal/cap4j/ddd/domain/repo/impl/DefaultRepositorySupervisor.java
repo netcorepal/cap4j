@@ -2,9 +2,7 @@ package org.netcorepal.cap4j.ddd.domain.repo.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
-import org.netcorepal.cap4j.ddd.domain.repo.AbstractJpaRepository;
-import org.netcorepal.cap4j.ddd.domain.repo.Repository;
-import org.netcorepal.cap4j.ddd.domain.repo.RepositorySupervisor;
+import org.netcorepal.cap4j.ddd.domain.repo.*;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
@@ -58,8 +56,9 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
     }
 
     @Override
-    public <ENTITY> List<ENTITY> find(Class<ENTITY> entityClass, Object condition, List<OrderInfo> orders) {
-        List<ENTITY> entities = repo(entityClass).find(condition, orders);
+    public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
+        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        List<ENTITY> entities = repo(entityClass).find(predicate, orders);
         if (entities != null) {
             entities.forEach(unitOfWork::persist);
         }
@@ -67,15 +66,17 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
     }
 
     @Override
-    public <ENTITY> Optional<ENTITY> findOne(Class<ENTITY> entityClass, Object condition) {
-        Optional<ENTITY> entity = repo(entityClass).findOne(condition);
+    public <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate) {
+        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        Optional<ENTITY> entity = repo(entityClass).findOne(predicate);
         entity.ifPresent(unitOfWork::persist);
         return entity;
     }
 
     @Override
-    public <ENTITY> PageData<ENTITY> findPage(Class<ENTITY> entityClass, Object condition, PageParam pageParam) {
-        PageData<ENTITY> page = repo(entityClass).findPage(condition, pageParam);
+    public <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam) {
+        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        PageData<ENTITY> page = repo(entityClass).findPage(predicate, pageParam);
         if (page.getList() != null) {
             page.getList().forEach(unitOfWork::persist);
         }
@@ -83,27 +84,12 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
     }
 
     @Override
-    public <ENTITY> Optional<ENTITY> findById(Class<ENTITY> entityClass, Object id) {
-        Optional<ENTITY> entity = repo(entityClass).findById(id);
-        entity.ifPresent(unitOfWork::persist);
-        return entity;
-    }
-
-    @Override
-    public <ENTITY> List<ENTITY> findByIds(Class<ENTITY> entityClass, Iterable<Object> ids) {
-        List<ENTITY> entities = repo(entityClass).findByIds(ids);
-        if (entities != null) {
-            entities.forEach(unitOfWork::persist);
-        }
-        return entities;
-    }
-
-    @Override
-    public <ENTITY> List<ENTITY> remove(Class<ENTITY> entityClass, Object condition, int limit) {
+    public <ENTITY> List<ENTITY> remove(Predicate<ENTITY> predicate, int limit) {
+        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
         PageParam page = new PageParam();
         page.setPageNum(1);
         page.setPageSize(limit);
-        PageData<ENTITY> entities = repo(entityClass).findPage(condition, page);
+        PageData<ENTITY> entities = repo(entityClass).findPage(predicate, page);
         if (entities.getList() != null) {
             entities.getList().forEach(unitOfWork::remove);
         }
@@ -111,33 +97,14 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
     }
 
     @Override
-    public <ENTITY> Optional<ENTITY> removeById(Class<ENTITY> entityClass, Object id) {
-        Optional<ENTITY> entity = repo(entityClass).findById(id);
-        entity.ifPresent(unitOfWork::remove);
-        return entity;
+    public <ENTITY> long count(Predicate<ENTITY> predicate) {
+        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        return repo(entityClass).count(predicate);
     }
 
     @Override
-    public <ENTITY> List<ENTITY> removeByIds(Class<ENTITY> entityClass, Iterable<Object> ids) {
-        List<ENTITY> entities = repo(entityClass).findByIds(ids);
-        if (entities != null) {
-            entities.forEach(unitOfWork::remove);
-        }
-        return entities;
-    }
-
-    @Override
-    public <ENTITY> long count(Class<ENTITY> entityClass, Object condition) {
-        return repo(entityClass).count(condition);
-    }
-
-    @Override
-    public <ENTITY> boolean exists(Class<ENTITY> entityClass, Object condition) {
-        return repo(entityClass).exists(condition);
-    }
-
-    @Override
-    public <ENTITY> boolean existsById(Class<ENTITY> entityClass, Object id) {
-        return repo(entityClass).existsById(id);
+    public <ENTITY> boolean exists(Predicate<ENTITY> predicate) {
+        Class<ENTITY> entityClass = JpaPredicate.reflectEntityClass(predicate);
+        return repo(entityClass).exists(predicate);
     }
 }

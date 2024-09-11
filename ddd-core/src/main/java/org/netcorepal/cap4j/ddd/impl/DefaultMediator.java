@@ -1,11 +1,13 @@
 package org.netcorepal.cap4j.ddd.impl;
 
 import org.netcorepal.cap4j.ddd.Mediator;
+import org.netcorepal.cap4j.ddd.application.RequestParam;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
-import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
+import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
+import org.netcorepal.cap4j.ddd.domain.repo.Predicate;
 import org.netcorepal.cap4j.ddd.domain.repo.Repository;
 import org.netcorepal.cap4j.ddd.domain.repo.RepositorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.service.DomainServiceSupervisor;
@@ -28,13 +30,8 @@ import java.util.Optional;
 public class DefaultMediator implements Mediator {
 
     @Override
-    public <ENTITY> ENTITY create(Class<ENTITY> entityClass) {
-        return AggregateFactorySupervisor.getInstance().create(entityClass);
-    }
-
-    @Override
-    public <ENTITY> ENTITY create(Class<ENTITY> entityClass, AggregateFactory.InitHandler<ENTITY> initHandler) {
-        return AggregateFactorySupervisor.getInstance().create(entityClass, initHandler);
+    public <ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> ENTITY create(ENTITY_PAYLOAD entityPayload) {
+        return AggregateFactorySupervisor.getInstance().create(entityPayload);
     }
 
     @Override
@@ -43,43 +40,28 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
-    public <ENTITY> List<ENTITY> find(Class<ENTITY> entityClass, Object condition, List<OrderInfo> orders) {
-        return RepositorySupervisor.getInstance().find(entityClass, condition, orders);
+    public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
+        return RepositorySupervisor.getInstance().find(predicate, orders);
     }
 
     @Override
-    public <ENTITY> Optional<ENTITY> findOne(Class<ENTITY> entityClass, Object condition) {
-        return RepositorySupervisor.getInstance().findOne(entityClass, condition);
+    public <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate) {
+        return RepositorySupervisor.getInstance().findOne(predicate);
     }
 
     @Override
-    public <ENTITY> PageData<ENTITY> findPage(Class<ENTITY> entityClass, Object condition, PageParam pageParam) {
-        return RepositorySupervisor.getInstance().findPage(entityClass, condition, pageParam);
+    public <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam) {
+        return RepositorySupervisor.getInstance().findPage(predicate, pageParam);
     }
 
     @Override
-    public <ENTITY> Optional<ENTITY> findById(Class<ENTITY> entityClass, Object id) {
-        return RepositorySupervisor.getInstance().findById(entityClass, id);
+    public <ENTITY> long count(Predicate<ENTITY> predicate) {
+        return RepositorySupervisor.getInstance().count(predicate);
     }
 
     @Override
-    public <ENTITY> List<ENTITY> findByIds(Class<ENTITY> entityClass, Iterable<Object> ids) {
-        return RepositorySupervisor.getInstance().findByIds(entityClass, ids);
-    }
-
-    @Override
-    public <ENTITY> long count(Class<ENTITY> entityClass, Object condition) {
-        return RepositorySupervisor.getInstance().count(entityClass, condition);
-    }
-
-    @Override
-    public <ENTITY> boolean exists(Class<ENTITY> entityClass, Object condition) {
-        return RepositorySupervisor.getInstance().exists(entityClass, condition);
-    }
-
-    @Override
-    public <ENTITY> boolean existsById(Class<ENTITY> entityClass, Object id) {
-        return RepositorySupervisor.getInstance().existsById(entityClass, id);
+    public <ENTITY> boolean exists(Predicate<ENTITY> predicate) {
+        return RepositorySupervisor.getInstance().exists(predicate);
     }
 
     @Override
@@ -88,18 +70,8 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
-    public <ENTITY> List<ENTITY> remove(Class<ENTITY> entityClass, Object condition, int limit) {
-        return RepositorySupervisor.getInstance().remove(entityClass, condition, limit);
-    }
-
-    @Override
-    public <ENTITY> Optional<ENTITY> removeById(Class<ENTITY> entityClass, Object id) {
-        return RepositorySupervisor.getInstance().removeById(entityClass, id);
-    }
-
-    @Override
-    public <ENTITY> List<ENTITY> removeByIds(Class<ENTITY> entityClass, Iterable<Object> ids) {
-        return RepositorySupervisor.getInstance().removeByIds(entityClass, ids);
+    public <ENTITY> List<ENTITY> remove(Predicate<ENTITY> predicate, int limit) {
+        return RepositorySupervisor.getInstance().remove(predicate, limit);
     }
 
     @Override
@@ -123,18 +95,8 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
-    public <REQUEST> Object send(REQUEST request) {
+    public <REQUEST extends RequestParam<RESPONSE>, RESPONSE> RESPONSE send(REQUEST request) {
         return RequestSupervisor.getInstance().send(request);
-    }
-
-    @Override
-    public <REQUEST, RESPONSE> RESPONSE send(REQUEST request, Class<RESPONSE> resultClass) {
-        return RequestSupervisor.getInstance().send(request, resultClass);
-    }
-
-    @Override
-    public <REQUEST, RESPONSE> RESPONSE send(REQUEST request, Class<REQUEST> paramClass, Class<RESPONSE> resultClass) {
-        return RequestSupervisor.getInstance().send(request, paramClass, resultClass);
     }
 
     @Override

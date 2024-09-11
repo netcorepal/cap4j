@@ -3,7 +3,7 @@ package org.netcorepal.cap4j.ddd.domain.aggregate.impl;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
-import org.netcorepal.cap4j.ddd.share.DomainException;
+import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
 import java.util.HashMap;
@@ -18,9 +18,9 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 public class DefaultAggregateFactorySupervisor implements AggregateFactorySupervisor {
-    private final List<AggregateFactory<?>> factories;
+    private final List<AggregateFactory<?, ?>> factories;
 
-    private Map<Class<?>, AggregateFactory<?>> factoryMap = null;
+    private Map<Class<?>, AggregateFactory<?, ?>> factoryMap = null;
 
     public void init() {
         if (null != factoryMap) {
@@ -32,7 +32,6 @@ public class DefaultAggregateFactorySupervisor implements AggregateFactorySuperv
             }
             factoryMap = new HashMap<>();
             factories.forEach(factory -> {
-
                 factoryMap.put(
                         ClassUtils.resolveGenericTypeClass(
                                 factory.getClass(), 0,
@@ -40,35 +39,18 @@ public class DefaultAggregateFactorySupervisor implements AggregateFactorySuperv
                         ),
                         factory
                 );
-
             });
         }
     }
 
     @Override
-    public <ENTITY> ENTITY create(Class<ENTITY> entityClass) {
-        return create(entityClass, null);
-    }
-
-    @Override
-    public <ENTITY> ENTITY create(Class<ENTITY> entityClass, AggregateFactory.InitHandler<ENTITY> initHandler) {
-        AggregateFactory<?> factory = factoryMap.computeIfAbsent(entityClass, (cls) -> (i) -> {
-            try {
-                ENTITY entity = (ENTITY) entityClass.newInstance();
-                if (null != i) {
-                    i.init(entity);
-                }
-                return entity;
-            } catch (Exception e) {
-                throw new DomainException("聚合实例创建异常", e);
-            }
-        });
-
-        Object instance = ((AggregateFactory<Object>) factory).create(
-                null != initHandler
-                        ? (AggregateFactory.InitHandler<Object>) initHandler
-                        : AggregateFactory.InitHandler.getDefault()
-        );
-        return (ENTITY) instance;
+    public <ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> ENTITY create(ENTITY_PAYLOAD entityPayload) {
+        init();
+        AggregateFactory<?, ?> factory = factoryMap.get(entityPayload.getClass());
+        if (null == factory) {
+            return null;
+        }
+        ENTITY instance = ((AggregateFactory<ENTITY_PAYLOAD, ENTITY>) factory).create(entityPayload);
+        return instance;
     }
 }

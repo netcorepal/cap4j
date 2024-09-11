@@ -5,10 +5,7 @@ import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.impl.JpaUnitOfWork;
 import org.netcorepal.cap4j.ddd.application.UnitOfWorkSupport;
-import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;
-import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
-import org.netcorepal.cap4j.ddd.domain.aggregate.Specification;
-import org.netcorepal.cap4j.ddd.domain.aggregate.SpecificationManager;
+import org.netcorepal.cap4j.ddd.domain.aggregate.*;
 import org.netcorepal.cap4j.ddd.domain.aggregate.impl.DefaultAggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
@@ -97,12 +94,13 @@ public class JpaRepositoryAutoConfiguration {
     @Bean
     @Primary
     public AggregateFactorySupervisor defaultAggregateFactorySupervisor(
-            List<AggregateFactory<?>> factories
+            List<AggregateFactory<?, ?>> factories
     ){
         DefaultAggregateFactorySupervisor aggregateFactorySupervisor = new DefaultAggregateFactorySupervisor(
             factories
         );
         aggregateFactorySupervisor.init();
+        AggregateFactorySupervisorSupport.configure(aggregateFactorySupervisor);
         return aggregateFactorySupervisor;
     }
 

@@ -11,7 +11,7 @@ import java.util.List;
  * @author binking338
  * @date 2024/8/28
  */
-public class DomainEventAttachedTransactionCommitingEvent extends ApplicationEvent {
+public class DomainEventAttachedTransactionPreCommitEvent extends ApplicationEvent {
     @Getter
     List<EventRecord> events;
 
@@ -21,7 +21,7 @@ public class DomainEventAttachedTransactionCommitingEvent extends ApplicationEve
      * @param source the object on which the event initially occurred or with
      *               which the event is associated (never {@code null})
      */
-    public DomainEventAttachedTransactionCommitingEvent(Object source, List<EventRecord> events) {
+    public DomainEventAttachedTransactionPreCommitEvent(Object source, List<EventRecord> events) {
         super(source);
         this.events = events;
     }

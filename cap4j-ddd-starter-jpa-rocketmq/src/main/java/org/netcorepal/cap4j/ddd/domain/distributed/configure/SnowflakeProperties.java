@@ -1,4 +1,4 @@
-package org.netcorepal.cap4j.ddd.application.distributed.configure;
+package org.netcorepal.cap4j.ddd.domain.distributed.configure;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

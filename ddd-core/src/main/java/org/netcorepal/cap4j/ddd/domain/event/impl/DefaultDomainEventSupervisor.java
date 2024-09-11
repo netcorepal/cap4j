@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.domain.event.EventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionCommitingEvent;
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionCommittedEvent;
+import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionPreCommitEvent;
+import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionPostCommitEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.OrderUtils;
@@ -156,11 +156,11 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
                 persistedEvents.add(event);
             }
         }
-        DomainEventAttachedTransactionCommitingEvent domainEventAttachedTransactionCommitingEvent = new DomainEventAttachedTransactionCommitingEvent(this, transientEvents);
-        DomainEventAttachedTransactionCommittedEvent domainEventAttachedTransactionCommittedEvent = new DomainEventAttachedTransactionCommittedEvent(this, persistedEvents);
-        onTransactionCommiting(domainEventAttachedTransactionCommitingEvent);
-        applicationEventPublisher.publishEvent(domainEventAttachedTransactionCommitingEvent);
-        applicationEventPublisher.publishEvent(domainEventAttachedTransactionCommittedEvent);
+        DomainEventAttachedTransactionPreCommitEvent domainEventAttachedTransactionPreCommitEvent = new DomainEventAttachedTransactionPreCommitEvent(this, transientEvents);
+        DomainEventAttachedTransactionPostCommitEvent domainEventAttachedTransactionPostCommitEvent = new DomainEventAttachedTransactionPostCommitEvent(this, persistedEvents);
+        onTransactionCommiting(domainEventAttachedTransactionPreCommitEvent);
+        applicationEventPublisher.publishEvent(domainEventAttachedTransactionPreCommitEvent);
+        applicationEventPublisher.publishEvent(domainEventAttachedTransactionPostCommitEvent);
     }
 
     /**
@@ -181,14 +181,14 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
         }
     }
 
-    protected void onTransactionCommiting(DomainEventAttachedTransactionCommitingEvent domainEventAttachedTransactionCommitingEvent) {
-        List<EventRecord> events = domainEventAttachedTransactionCommitingEvent.getEvents();
+    protected void onTransactionCommiting(DomainEventAttachedTransactionPreCommitEvent domainEventAttachedTransactionPreCommitEvent) {
+        List<EventRecord> events = domainEventAttachedTransactionPreCommitEvent.getEvents();
         publish(events);
     }
 
-    @TransactionalEventListener(fallbackExecution = true, classes = DomainEventAttachedTransactionCommittedEvent.class)
-    public void onTransactionCommitted(DomainEventAttachedTransactionCommittedEvent domainEventAttachedTransactionCommittedEvent) {
-        List<EventRecord> events = domainEventAttachedTransactionCommittedEvent.getEvents();
+    @TransactionalEventListener(fallbackExecution = true, classes = DomainEventAttachedTransactionPostCommitEvent.class)
+    public void onTransactionCommitted(DomainEventAttachedTransactionPostCommitEvent domainEventAttachedTransactionPostCommitEvent) {
+        List<EventRecord> events = domainEventAttachedTransactionPostCommitEvent.getEvents();
         publish(events);
     }
 

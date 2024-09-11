@@ -8,7 +8,7 @@ package org.netcorepal.cap4j.ddd.application;
  * @author binking338
  * @date 2024/8/24
  */
-public interface RequestHandler<REQUEST, RESPONSE> {
+public interface RequestHandler<REQUEST extends RequestParam<RESPONSE>, RESPONSE> {
 
     /**
      * 执行请求

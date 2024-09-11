@@ -438,12 +438,6 @@ public class JpaUnitOfWork implements UnitOfWork {
             this.deletedEntities = deletedEntities;
         }
 
-        protected void reset() {
-            this.createdEntities.clear();
-            this.updatedEntities.clear();
-            this.deletedEntities.clear();
-        }
-
         public EntityPersisttedEvent clone() {
             return new EntityPersisttedEvent(this.getSource(), new HashSet<>(createdEntities), new HashSet<>(updatedEntities), new HashSet<>(deletedEntities));
         }

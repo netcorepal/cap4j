@@ -2,8 +2,7 @@ package org.netcorepal.cap4j.ddd.domain.distributed;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.netcorepal.cap4j.ddd.application.distributed.configure.SnowflakeProperties;
-import org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator;
+import org.netcorepal.cap4j.ddd.domain.distributed.configure.SnowflakeProperties;
 import org.netcorepal.cap4j.ddd.domain.distributed.snowflake.DefaultSnowflakeWorkerIdDispatcher;
 import org.netcorepal.cap4j.ddd.domain.distributed.snowflake.SnowflakeIdGenerator;
 import org.netcorepal.cap4j.ddd.domain.distributed.snowflake.SnowflakeWorkerIdDispatcher;

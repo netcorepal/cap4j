@@ -3,11 +3,10 @@ package org.netcorepal.cap4j.ddd.application.impl;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.RequestHandler;
 import org.netcorepal.cap4j.ddd.application.RequestInterceptor;
+import org.netcorepal.cap4j.ddd.application.RequestParam;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.application.command.Command;
-import org.netcorepal.cap4j.ddd.application.command.CommandNoneParam;
-import org.netcorepal.cap4j.ddd.application.command.CommandNoneParamAndResult;
-import org.netcorepal.cap4j.ddd.application.command.CommandNoneResult;
+import org.netcorepal.cap4j.ddd.application.command.NoneResultCommandParam;
 import org.netcorepal.cap4j.ddd.application.query.*;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
@@ -42,8 +41,8 @@ public class DefaultRequestSupervisor implements RequestSupervisor {
             Class<?> requestPayloadClass = ClassUtils.resolveGenericTypeClass(
                     requestHandler.getClass(), 0,
                     RequestHandler.class,
-                    Command.class, CommandNoneParam.class, CommandNoneResult.class, CommandNoneParamAndResult.class,
-                    Query.class, QueryNoArgs.class, ListQuery.class, ListQueryNoArgs.class, PageQuery.class);
+                    Command.class, NoneResultCommandParam.class,
+                    Query.class, ListQuery.class, PageQuery.class);
             requestHandlerMap.put(requestPayloadClass, requestHandler);
         }
         for (RequestInterceptor<?, ?> requestInterceptor : requestInterceptors) {
@@ -56,22 +55,12 @@ public class DefaultRequestSupervisor implements RequestSupervisor {
     }
 
     @Override
-    public <REQUEST> Object send(REQUEST request) {
-        return send(request, (Class<REQUEST>) request.getClass(), Object.class);
-    }
-
-    @Override
-    public <REQUEST, RESPONSE> RESPONSE send(REQUEST request, Class<RESPONSE> responseClass) {
-        return send(request, (Class<REQUEST>) request.getClass(), responseClass);
-    }
-
-    @Override
-    public <REQUEST, RESPONSE> RESPONSE send(REQUEST request, Class<REQUEST> requestClass, Class<RESPONSE> responseClass) {
+    public <REQUEST extends RequestParam<RESPONSE>, RESPONSE> RESPONSE send(REQUEST request) {
         init();
-        requestInterceptorMap.getOrDefault(requestClass, Collections.emptyList())
+        requestInterceptorMap.getOrDefault(request.getClass(), Collections.emptyList())
                 .forEach(interceptor -> ((RequestInterceptor<REQUEST, RESPONSE>) interceptor).preRequest(request));
-        RESPONSE response = ((RequestHandler<REQUEST, RESPONSE>) requestHandlerMap.get(requestClass)).exec(request);
-        requestInterceptorMap.getOrDefault(requestClass, Collections.emptyList())
+        RESPONSE response = ((RequestHandler<REQUEST, RESPONSE>) requestHandlerMap.get(request.getClass())).exec(request);
+        requestInterceptorMap.getOrDefault(request.getClass(), Collections.emptyList())
                 .forEach(interceptor -> ((RequestInterceptor<REQUEST, RESPONSE>) interceptor).postRequest(request, response));
         return response;
     }

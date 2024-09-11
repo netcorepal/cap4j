@@ -21,6 +21,8 @@ public @interface Aggregate {
     public static final String TYPE_ENUM = "enum";
     public static final String TYPE_REPOSITORY = "repository";
     public static final String TYPE_DOMAIN_EVENT = "domain-event";
+    public static final String TYPE_FACTORY = "factory";
+    public static final String TYPE_FACTORY_PAYLOAD = "factory-payload";
     public static final String TYPE_SPECIFICATION = "specification";
 
     /**

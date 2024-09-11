@@ -1,7 +1,8 @@
 package org.netcorepal.cap4j.ddd.domain.event.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.netcorepal.cap4j.ddd.application.event.*;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.core.Ordered;
@@ -77,9 +78,6 @@ public class DefaultEventPublisher implements EventPublisher {
             case HEADER_VALUE_CAP4J_EVENT_TYPE_INTEGRATION:
                 if (delay.isNegative() || delay.isZero()) {
                     internalPublish4IntegrationEvent(event);
-//                    executor.submit(() -> {
-//                        internalPublish4IntegrationEvent(event);
-//                    });
                 } else {
                     executor.schedule(() -> {
                         internalPublish4IntegrationEvent(event);
@@ -88,20 +86,19 @@ public class DefaultEventPublisher implements EventPublisher {
                 break;
             case HEADER_VALUE_CAP4J_EVENT_TYPE_DOMAIN:
             default:
-                boolean persist = (Boolean) message.getHeaders().getOrDefault(HEADER_KEY_CAP4J_PERSIST, false);
-                if (persist) {
-                    if (delay.isNegative() || delay.isZero()) {
-                        internalPublish4DomainEvent(event);
-//                        executor.submit(() -> {
-//                            internalPublish4DomainEvent(event);
-//                        });
-                    } else {
-                        executor.schedule(() -> {
+                if (delay.isNegative() || delay.isZero()) {
+                    boolean persist = (Boolean) message.getHeaders().getOrDefault(HEADER_KEY_CAP4J_PERSIST, false);
+                    if (persist) {
+                        executor.submit(() -> {
                             internalPublish4DomainEvent(event);
-                        }, delay.getSeconds(), TimeUnit.SECONDS);
+                        });
+                    } else {
+                        internalPublish4DomainEvent(event);
                     }
                 } else {
-                    internalPublish4DomainEvent(event);
+                    executor.schedule(() -> {
+                        internalPublish4DomainEvent(event);
+                    }, delay.getSeconds(), TimeUnit.SECONDS);
                 }
                 break;
         }
@@ -131,6 +128,7 @@ public class DefaultEventPublisher implements EventPublisher {
             getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.postRelease(event));
         } catch (Exception ex) {
             getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onException(ex, event));
+            throw new DomainException(String.format("领域事件发布失败：%s", event.getId()), ex);
         }
     }
 
@@ -147,6 +145,7 @@ public class DefaultEventPublisher implements EventPublisher {
             integrationEventPublisheres.forEach(integrationEventPublisher -> integrationEventPublisher.publish(event, new IntegrationEventSendPublishCallback(getOrderedEventMessageInterceptors(), getOrderedIntegrationEventInterceptors(), eventRecordRepository)));
 
         } catch (Exception ex) {
+            getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.onException(ex, event));
             throw new DomainException(String.format("集成事件发布失败: %s", event.getId()), ex);
         }
     }

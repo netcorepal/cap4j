@@ -36,7 +36,7 @@ public class DefaultSpecificationManager implements SpecificationManager {
             for (Specification<?> specification : specifications) {
                 Class<?> entityClass = ClassUtils.resolveGenericTypeClass(
                         specification.getClass(), 0,
-                        AbstractSpecification.class, Specification.class
+                        Specification.class
                 );
                 if (!specificationMap.containsKey(entityClass)) {
                     specificationMap.put(entityClass, new java.util.ArrayList<>());

@@ -80,7 +80,7 @@ public class ClassUtils {
     public static Converter<Object, Object> newConverterInstance(Class<?> srcClass, Class<?> descClass, Class<?> converterClass) {
         Converter<Object, Object> converter = null;
         try {
-            converter = Void.class.equals(converterClass)
+            converter = null == converterClass || Void.class.equals(converterClass)
                     ? null
                     : (Converter<Object, Object>) converterClass.newInstance();
         } catch (Exception e) {

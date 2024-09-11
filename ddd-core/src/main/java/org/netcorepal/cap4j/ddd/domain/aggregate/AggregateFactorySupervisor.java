@@ -14,19 +14,10 @@ public interface AggregateFactorySupervisor {
     /**
      * 创建新聚合实例
      *
-     * @param entityClass
-     * @param <ENTITY>
+     * @param entityPayload
      * @return
+     * @param <ENTITY_PAYLOAD>
      */
-    <ENTITY> ENTITY create(Class<ENTITY> entityClass);
+    <ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> ENTITY create(ENTITY_PAYLOAD entityPayload);
 
-    /**
-     * 创建新聚合实例
-     *
-     * @param entityClass
-     * @param initHandler
-     * @param <ENTITY>
-     * @return
-     */
-    <ENTITY> ENTITY create(Class<ENTITY> entityClass, AggregateFactory.InitHandler<ENTITY> initHandler);
 }

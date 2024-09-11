@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.event.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.application.RequestParam;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.domain.event.EventSubscriber;
 import org.netcorepal.cap4j.ddd.domain.event.EventSubscriberManager;
@@ -53,20 +54,23 @@ public class DefaultEventSubscriberManager implements EventSubscriberManager {
             ScanUtils.findDomainEventClasses(scanPath).forEach(domainEventClass -> {
                 // 自动实现 Spring EventListener 适配
                 subscribe(domainEventClass, applicationEventPublisher::publishEvent);
-//
-//                // 自动实现 Event -> Request 转发
-//                if( null != domainEventClass.getAnnotation(AutoRequest.class)){
-//                    AutoRequest autoRequest = domainEventClass.getAnnotation(AutoRequest.class);
-//                    Class<?> converterClass = null;
-//                    if (Converter.class.isAssignableFrom(autoRequest.converterClass())) {
-//                        converterClass = autoRequest.converterClass();
-//                    }
-//                    Converter<Object, Object> converter = ClassUtils.newConverterInstance(domainEventClass, autoRequest.requestClass(), converterClass);
-//                    subscribe(domainEventClass, domainEvent -> RequestSupervisor.getInstance().request(converter.convert(domainEvent)));
-//                }
+
+                // 自动实现 Event -> Request
+                // 领域事件转Request容易导致数据库长时事务，慎用！
+                if( null != domainEventClass.getAnnotation(AutoRequest.class)){
+                    AutoRequest autoRequest = domainEventClass.getAnnotation(AutoRequest.class);
+                    Class<?> converterClass = null;
+                    if (Converter.class.isAssignableFrom(autoRequest.converterClass())) {
+                        converterClass = autoRequest.converterClass();
+                    }
+                    Converter<Object, Object> converter = ClassUtils.newConverterInstance(domainEventClass, autoRequest.targetRequestClass(), converterClass);
+                    subscribe(domainEventClass, domainEvent -> RequestSupervisor.getInstance().send((RequestParam)converter.convert(domainEvent)));
+                }
             });
             // 集成事件
             ScanUtils.findIntegrationEventClasses(scanPath).forEach(integrationEventClass -> {
+                subscribe(integrationEventClass, applicationEventPublisher::publishEvent);
+
                 // 自动实现 DomainEvent -> IntegrationEvent 适配
                 if (null != integrationEventClass.getAnnotation(AutoNotify.class)) {
                     AutoNotify autoNotify = integrationEventClass.getAnnotation(AutoNotify.class);
@@ -89,7 +93,7 @@ public class DefaultEventSubscriberManager implements EventSubscriberManager {
                         converterClass = autoRequest.converterClass();
                     }
                     Converter<Object, Object> converter = ClassUtils.newConverterInstance(integrationEventClass, autoRequest.targetRequestClass(), converterClass);
-                    subscribe(integrationEventClass, integrationEvent -> RequestSupervisor.getInstance().send(converter.convert(integrationEvent)));
+                    subscribe(integrationEventClass, integrationEvent -> RequestSupervisor.getInstance().send((RequestParam<?>)converter.convert(integrationEvent)));
                 }
             });
         }

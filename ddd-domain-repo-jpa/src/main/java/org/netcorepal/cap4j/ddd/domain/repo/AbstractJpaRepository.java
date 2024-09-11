@@ -8,12 +8,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -27,47 +28,46 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
     private final JpaSpecificationExecutor<Entity> jpaSpecificationExecutor;
     private final JpaRepository<Entity, ID> jpaRepository;
 
-    public Optional<Entity> findById(Object id) {
-        List<ID> ids = new ArrayList<>(1);
-        ids.add((ID) id);
-        Optional<Entity> entity = jpaRepository.findAllById(ids).stream().findFirst();
-        return entity;
+//    public Optional<Entity> findById(Object id) {
+//        List<ID> ids = new ArrayList<>(1);
+//        ids.add((ID) id);
+//        Optional<Entity> entity = jpaRepository.findAllById(ids).stream().findFirst();
+//        return entity;
+//    }
+//
+//    public List<Entity> findByIds(Iterable<Object> ids) {
+//        List<Entity> entities = jpaRepository.findAllById((Iterable<ID>) ids);
+//        return entities;
+//    }
+//
+//    public boolean existsById(Object id) {
+//        return jpaRepository.existsById((ID) id);
+//    }
+
+    public Optional<Entity> findOne(Predicate<Entity> predicate) {
+        return jpaSpecificationExecutor.findOne(JpaPredicate.resume(predicate));
     }
 
-    public List<Entity> findByIds(Iterable<Object> ids) {
-        List<Entity> entities = jpaRepository.findAllById((Iterable<ID>) ids);
-        return entities;
-    }
-
-    public boolean existsById(Object id) {
-        return jpaRepository.existsById((ID) id);
-    }
-
-    public Optional<Entity> findOne(Object condition) {
-        return jpaSpecificationExecutor.findOne((org.springframework.data.jpa.domain.Specification<Entity>) condition);
-    }
-
-    @Override
-    public PageData<Entity> findPage(Object condition, PageParam pageParam) {
-        Page<Entity> page = jpaSpecificationExecutor.findAll((org.springframework.data.jpa.domain.Specification<Entity>) condition, convertPageable(pageParam));
+    public PageData<Entity> findPage(Predicate<Entity> predicate, PageParam pageParam) {
+        Page<Entity> page = jpaSpecificationExecutor.findAll(JpaPredicate.resume(predicate), convertPageable(pageParam));
         return convertPageData(page);
     }
 
-    public List<Entity> find(Object condition, List<OrderInfo> orders) {
+    public List<Entity> find(Predicate<Entity> predicate, List<OrderInfo> orders) {
         Sort sort = Sort.unsorted();
         if (orders != null && !orders.isEmpty()) {
             sort = convertSort(orders);
         }
-        List<Entity> entities = jpaSpecificationExecutor.findAll((org.springframework.data.jpa.domain.Specification<Entity>) condition, sort);
+        List<Entity> entities = jpaSpecificationExecutor.findAll(JpaPredicate.resume(predicate), sort);
         return entities;
     }
 
-    public long count(Object condition) {
+    public long count(Predicate<Entity> condition) {
         long result = jpaSpecificationExecutor.count((org.springframework.data.jpa.domain.Specification<Entity>) condition);
         return result;
     }
 
-    public boolean exists(Object condition) {
+    public boolean exists(Predicate<Entity> condition) {
         boolean result = jpaSpecificationExecutor.exists((org.springframework.data.jpa.domain.Specification<Entity>) condition);
         return result;
     }
