@@ -281,7 +281,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 getLog().info("尝试父表聚合:" + getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
             }
             if (StringUtils.isBlank(aggregate)) {
-                aggregate = getEntityJavaType(getTableName(table));
+                aggregate = getEntityJavaType(getTableName(table)).toLowerCase();
             }
             getLog().info("聚合解析结果:" + tableName + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
             return aggregate;
