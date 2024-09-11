@@ -10,19 +10,19 @@
           "type": "file",
           "name": "${Command}Request.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * todo: 命令请求参数描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\npublic class ${Command}Request implements RequestParam<${ReturnType}> {\n\n}"
+          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Command}命令请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\npublic class ${Command}Request implements RequestParam<${ReturnType}> {\n\n}"
         },
         {
           "type": "file",
           "name": "${Command}Response.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * todo: 命令响应描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Command}Response {\n    boolean success;\n}\n"
+          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Command}命令响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Command}Response {\n    boolean success;\n}\n"
         },
         {
           "type": "file",
           "name": "${Command}Handler.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.Mediator;\nimport org.netcorepal.cap4j.ddd.application.command.Command;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 命令处理器描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Command}Handler implements Command<${Command}Request, ${Command}Response> {\n\n    @Override\n    public ${Command}Response exec(${Command}Request cmd) {\n        Mediator.uow().save();\n        \n        return null;\n    }\n}\n"
+          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.Mediator;\nimport org.netcorepal.cap4j.ddd.application.command.Command;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Command}命令请求实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Command}Handler implements Command<${Command}Request, ${Command}Response> {\n\n    @Override\n    public ${Command}Response exec(${Command}Request cmd) {\n        Mediator.uow().save();\n        \n        return null;\n    }\n}\n"
         }
       ]
     },
@@ -35,13 +35,13 @@
           "type": "file",
           "name": "${Query}Request.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n\n/**\n * todo: 查询请求参数描述\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request implements RequestParam<${Query}Response> {\n    Long id;\n}"
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n\n/**\n * ${Query}查询请求参数\n * ${Comment}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request implements RequestParam<${Query}Response> {\n    Long id;\n}"
         },
         {
           "type": "file",
           "name": "${Query}Response.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * todo: 查询响应描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Query}查询响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
         }
       ]
     },
@@ -54,7 +54,7 @@
           "type": "file",
           "name": "${Query}Handler.java",
           "format": "raw",
-          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.Query;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 查询处理器描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements Query<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public ${Query}Response exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
+          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.Query;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements Query<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public ${Query}Response exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
         }
       ]
     },
@@ -67,13 +67,13 @@
           "type": "file",
           "name": "${Client}Request.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.distributed.clients;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * todo: 防腐端请求参数描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Request implements RequestParam<${Client}Response> {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.application.distributed.clients;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Client}防腐端请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Request implements RequestParam<${Client}Response> {\n    Long id;\n}\n"
         },
         {
           "type": "file",
           "name": "${Client}Response.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.distributed.clients;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * todo: 防腐端响应描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Response {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.application.distributed.clients;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Client}防腐端响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Response {\n    Long id;\n}\n"
         }
       ]
     },
@@ -86,7 +86,7 @@
           "type": "file",
           "name": "${Client}Handler.java",
           "format": "raw",
-          "data": "package ${basePackage}.adapter.application.distributed.clients${package};\n\nimport ${basePackage}.application.distributed.clients${package}.${Client}Request;\nimport ${basePackage}.application.distributed.clients${package}.${Client}Response;\nimport org.netcorepal.cap4j.ddd.application.RequestHandler;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 防腐端描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\npublic class ${Client}Handler implements RequestHandler<${Client}Request, ${Client}Response> {\n    @Override\n    public ${Client}Response exec(${Client}Request ${Client}Request) {\n        return null;\n    }\n}\n"
+          "data": "package ${basePackage}.adapter.application.distributed.clients${package};\n\nimport ${basePackage}.application.distributed.clients${package}.${Client}Request;\nimport ${basePackage}.application.distributed.clients${package}.${Client}Response;\nimport org.netcorepal.cap4j.ddd.application.RequestHandler;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Client}防腐端\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\npublic class ${Client}Handler implements RequestHandler<${Client}Request, ${Client}Response> {\n    @Override\n    public ${Client}Response exec(${Client}Request ${Client}Request) {\n        return null;\n    }\n}\n"
         }
       ]
     },
@@ -99,7 +99,7 @@
           "type": "file",
           "name": "${IntegrationEvent}.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.distributed.events;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;\n\n/**\n * todo: 集成事件描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@IntegrationEvent(value = ${MQ_TOPIC}, subscriber = ${MQ_CONSUMER})\n@Data\n@Builder\n@AllArgsConstructor\n@NoArgsConstructor\npublic class ${IntegrationEvent} {\n    private Long id;\n}\n"
+          "data": "package ${basePackage}.application.distributed.events;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;\n\n/**\n * ${IntegrationEvent}集成事件\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@IntegrationEvent(value = ${MQ_TOPIC}, subscriber = ${MQ_CONSUMER})\n@Data\n@Builder\n@AllArgsConstructor\n@NoArgsConstructor\npublic class ${IntegrationEvent} {\n    private Long id;\n}\n"
         }
       ]
     },
@@ -112,7 +112,7 @@
           "type": "file",
           "name": "${IntegrationEvent}Subscriber.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.subscribers.integration;\n\nimport ${basePackage}.application.distributed.events.${IntegrationEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 集成事件描述\n */\n@Service\n@RequiredArgsConstructor\npublic class ${IntegrationEvent}Subscriber {\n\n    @EventListener(${IntegrationEvent}.class)\n    public void on(${IntegrationEvent} event) {\n        \n    }\n\n}\n"
+          "data": "package ${basePackage}.application.subscribers.integration;\n\nimport ${basePackage}.application.distributed.events.${IntegrationEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n ${IntegrationEvent}集成事件订阅\n * ${Comment}\n */\n@Service\n@RequiredArgsConstructor\npublic class ${IntegrationEvent}Subscriber {\n\n    @EventListener(${IntegrationEvent}.class)\n    public void on(${IntegrationEvent} event) {\n        \n    }\n\n}\n"
         }
       ]
     },
@@ -125,7 +125,7 @@
           "type": "file",
           "name": "${DomainEvent}.java",
           "format": "raw",
-          "data": "package ${basePackage}.domain.aggregates${package}.events;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;\n\n/**\n * todo: 领域事件描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@DomainEvent(persist = ${persist})\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${DomainEvent}\", type = Aggregate.TYPE_DOMAIN_EVENT, description = \"\")\n@Data\n@Builder\n@AllArgsConstructor\n@NoArgsConstructor\npublic class ${DomainEvent} {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.domain.aggregates${package}.events;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;\n\n/**\n * ${Entity}.${DomainEvent}领域事件\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@DomainEvent(persist = ${persist})\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${DomainEvent}\", type = Aggregate.TYPE_DOMAIN_EVENT, description = \"\")\n@Data\n@Builder\n@AllArgsConstructor\n@NoArgsConstructor\npublic class ${DomainEvent} {\n    Long id;\n}\n"
         }
       ]
     },
@@ -138,7 +138,7 @@
           "type": "file",
           "name": "${DomainEvent}Subscriber.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.subscribers.domain;\n\nimport ${basePackage}.domain.aggregates${package}.events.${DomainEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 领域事件订阅说明\n */\n@Service\n@RequiredArgsConstructor\npublic class ${DomainEvent}Subscriber {\n\n    @EventListener(${DomainEvent}.class)\n    public void on(${DomainEvent} event) {\n        \n    }\n\n}\n"
+          "data": "package ${basePackage}.application.subscribers.domain;\n\nimport ${basePackage}.domain.aggregates${package}.events.${DomainEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}.${DomainEvent}领域事件订阅\n * ${Comment}\n */\n@Service\n@RequiredArgsConstructor\npublic class ${DomainEvent}Subscriber {\n\n    @EventListener(${DomainEvent}.class)\n    public void on(${DomainEvent} event) {\n        \n    }\n\n}\n"
         }
       ]
     },
@@ -151,13 +151,13 @@
           "type": "file",
           "name": "${Entity}Payload.java",
           "format": "raw",
-          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport lombok.Builder;\nimport lombok.Data;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n\n/**\n * todo: 工厂负载描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${Entity}Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n@Data\n@Builder\npublic class ${Entity}Payload implements AggregatePayload<${Entity}> {\n    \n}\n"
+          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport lombok.Builder;\nimport lombok.Data;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n\n/**\n * ${Entity}工厂负载\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${Entity}Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n@Data\n@Builder\npublic class ${Entity}Payload implements AggregatePayload<${Entity}> {\n    \n}\n"
         },
         {
           "type": "file",
           "name": "${Entity}Factory.java",
           "format": "raw",
-          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;\nimport org.springframework.stereotype.Service;\n\n/**\n * TODO: 聚合工厂\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${Entity}Factory\", type = Aggregate.TYPE_FACTORY, description = \"\")\n@Service\npublic class ${Entity}Factory implements AggregateFactory<${Entity}Payload, ${Entity}> {\n\n    @Override\n    public ${Entity} create(${Entity}Payload payload) {\n\n        return ${Entity}.builder()\n\n                .build();\n    }\n}\n"
+          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}聚合工厂\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${Entity}Factory\", type = Aggregate.TYPE_FACTORY, description = \"\")\n@Service\npublic class ${Entity}Factory implements AggregateFactory<${Entity}Payload, ${Entity}> {\n\n    @Override\n    public ${Entity} create(${Entity}Payload payload) {\n\n        return ${Entity}.builder()\n\n                .build();\n    }\n}\n"
         }
       ]
     },
@@ -170,7 +170,7 @@
           "type": "file",
           "name": "${Entity}Specification.java",
           "format": "raw",
-          "data": "package ${basePackage}.domain.aggregates${package}.specs;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.Specification;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 实体规格约束描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${Entity}Specification\", type = Aggregate.TYPE_SPECIFICATION, description = \"\")\n@Service\npublic class ${Entity}Specification implements Specification<${Entity}> {\n    @Override\n    public Result specify(${Entity} entity) {\n        return Result.fail(\"未实现\");\n    }\n}\n"
+          "data": "package ${basePackage}.domain.aggregates${package}.specs;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.Specification;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}规格约束\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${Entity}Specification\", type = Aggregate.TYPE_SPECIFICATION, description = \"\")\n@Service\npublic class ${Entity}Specification implements Specification<${Entity}> {\n    @Override\n    public Result specify(${Entity} entity) {\n        return Result.fail(\"未实现\");\n    }\n}\n"
         }
       ]
     },

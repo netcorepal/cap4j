@@ -1202,7 +1202,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                         "import org.springframework.stereotype.Service;\n" +
                         "\n" +
                         "/**\n" +
-                        " * " + simpleClassName + "的规格约束\n" +
+                        " * " + simpleClassName + "规格约束\n" +
                         " * todo: 规格约束描述\n" +
                         " *\n" +
                         " * @author cap4j-ddd-codegen\n" +
@@ -1242,6 +1242,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                             "import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;\n" +
                             "\n" +
                             "/**\n" +
+                            " * " + simpleClassName + "领域事件\n" +
                             " * " + domainEventDescription + "\n" +
                             " *\n" +
                             " * @author cap4j-ddd-codegen\n" +
@@ -1276,7 +1277,8 @@ public class GenEntityMojo extends MyAbstractMojo {
                             "import org.springframework.stereotype.Service;\n" +
                             "\n" +
                             "/**\n" +
-                            " * todo: 领域事件说明\n" +
+                            " * " + simpleClassName + "领域事件订阅\n" +
+                            " * todo: 领域事件订阅描述\n" +
                             " */\n" +
                             "@Service\n" +
                             "@RequiredArgsConstructor\n" +

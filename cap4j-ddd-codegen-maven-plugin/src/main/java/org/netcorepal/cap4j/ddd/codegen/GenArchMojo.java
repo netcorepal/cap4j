@@ -359,7 +359,7 @@ public class GenArchMojo extends MyAbstractMojo {
                 if (designMap.containsKey("integration_event")) {
                     for (String literalCommand :
                             designMap.get("integration_event")) {
-                        if(literalCommand.split(":").length >= 3){
+                        if (literalCommand.split(":").length >= 3) {
                             renderAppLayerIntegrationEvent("integration_event_handler", literalCommand, parentPath, templateNode);
                         }
                     }
@@ -536,7 +536,7 @@ public class GenArchMojo extends MyAbstractMojo {
                 context.put("path", reletivePath);
                 context.put("package", StringUtils.isEmpty(reletivePath) ? "" : ("." + reletivePath.replace(File.separator, ".")));
             }
-            if(!context.containsKey("Val1")){
+            if (!context.containsKey("Val1")) {
                 throw new RuntimeException("缺失领域事件名称，领域事件设计格式：AggregateRootEntityName:DomainEventName");
             }
             String Name = NamingUtils.toUpperCamelCase(context.get("Val1"));
@@ -551,7 +551,7 @@ public class GenArchMojo extends MyAbstractMojo {
                     NamingUtils.getLastPackageName(context.get("Val0"))
             );
             boolean persist = false;
-            if(context.containsKey("val2") && "`true`persist`1`".contains("`" + context.get("val2") + "`")){
+            if (context.containsKey("val2") && "`true`persist`1`".contains("`" + context.get("val2") + "`")) {
                 persist = true;
             }
             context.put("persist", persist ? "true" : "false");
@@ -563,8 +563,11 @@ public class GenArchMojo extends MyAbstractMojo {
             context.put("aggregate_root", context.get("Entity"));
             context.put("Aggregate", context.get("package"));
             context.put("aggregate", context.get("package"));
-
-            context.put("Comment", context.containsKey("Val2") ? context.get("Val2") : "todo: 领域事件描述");
+            if (Objects.equals("domain_event_handler", alias4Design(templateNode.getTag()))) {
+                context.put("Comment", context.containsKey("Val2") ? context.get("Val2") : "todo: 领域事件订阅描述");
+            } else {
+                context.put("Comment", context.containsKey("Val2") ? context.get("Val2") : "todo: 领域事件描述");
+            }
             context.put("comment", context.get("Comment"));
             return context;
         });
