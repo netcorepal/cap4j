@@ -9,8 +9,6 @@ import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionCommi
 import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionCommittedEvent;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.OrderUtils;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Duration;
@@ -26,13 +24,11 @@ import java.util.*;
 @RequiredArgsConstructor
 public class DefaultDomainEventSupervisor implements DomainEventSupervisor, DomainEventManager {
     private final EventRecordRepository eventRecordRepository;
-    private final List<DomainEventInterceptor> domainEventInterceptors;
+    private final DomainEventInterceptorManager domainEventInterceptorManager;
     private final EventPublisher eventPublisher;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final String svcName;
 
-
-//    private static final ThreadLocal<Set<Object>> TL_EVENT_PAYLOADS = new ThreadLocal<Set<Object>>();
     private static final ThreadLocal<Map<Object, Set<Object>>> TL_ENTITY_EVENT_PAYLOADS = new ThreadLocal<Map<Object, Set<Object>>>();
     private static final ThreadLocal<Map<Object, LocalDateTime>> TL_EVENT_SCHEDULE_MAP = new ThreadLocal<Map<Object, LocalDateTime>>();
     private static final Set<Object> EMPTY_EVENT_PAYLOADS = Collections.emptySet();
@@ -44,19 +40,6 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
      * 默认事件重试次数
      */
     private static final int DEFAULT_EVENT_RETRY_TIMES = 16;
-
-    private List<DomainEventInterceptor> sortedDomainEventInterceptors = null;
-    /**
-     * 拦截器基于 {@link org.springframework.core.annotation.Order} 排序
-     * @return
-     */
-    protected List<DomainEventInterceptor> getOrderedDomainEventInterceptors() {
-        if(sortedDomainEventInterceptors == null){
-            sortedDomainEventInterceptors = new ArrayList<>(domainEventInterceptors);
-            sortedDomainEventInterceptors.sort(Comparator.comparingInt(a -> OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE)));
-        }
-        return sortedDomainEventInterceptors;
-    }
 
     @Override
     public void attach(Object eventPayload, Object entity, LocalDateTime schedule) {
@@ -78,7 +61,7 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
         entityEventPayloads.get(entity).add(eventPayload);
 
         putDeliverTime(eventPayload, schedule);
-        getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onAttach(eventPayload, entity, schedule));
+        domainEventInterceptorManager.getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onAttach(eventPayload, entity, schedule));
     }
 
     @Override
@@ -93,7 +76,7 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
         }
 
         eventPayloads.remove(eventPayload);
-        getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onDetach(eventPayload, entity));
+        domainEventInterceptorManager.getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onDetach(eventPayload, entity));
     }
 
     @Override
@@ -117,9 +100,9 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
                 transientEvents.add(event);
             } else {
                 event.markPersist(true);
-                getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.prePersist(event));
+                domainEventInterceptorManager.getOrderedEventInterceptors4DomainEvent().forEach(interceptor -> interceptor.prePersist(event));
                 eventRecordRepository.save(event);
-                getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.postPersist(event));
+                domainEventInterceptorManager.getOrderedEventInterceptors4DomainEvent().forEach(interceptor -> interceptor.postPersist(event));
                 persistedEvents.add(event);
             }
         }

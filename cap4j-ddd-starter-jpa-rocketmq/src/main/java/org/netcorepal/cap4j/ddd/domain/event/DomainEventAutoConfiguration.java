@@ -2,14 +2,17 @@ package org.netcorepal.cap4j.ddd.domain.event;
 
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.distributed.Locker;
-import org.netcorepal.cap4j.ddd.application.event.*;
-import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultEventPublisher;
-import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultEventSubscriberManager;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptorManager;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventScheduleProperties;
 import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultDomainEventSupervisor;
+import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultEventPublisher;
+import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultEventSubscriberManager;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEventJpaRepository;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.EventJpaRepository;
+import org.netcorepal.cap4j.ddd.impl.DefaultEventInterceptorManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -25,12 +28,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.time.Duration;
 import java.util.List;
 
-import static org.netcorepal.cap4j.ddd.share.Constants.*;
+import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
 
 /**
  * 基于RocketMq的领域事件（集成事件）实现自动配置类
- *
- *
  *
  * @author binking338
  * @date 2023/9/10
@@ -119,18 +120,18 @@ public class DomainEventAutoConfiguration {
             EventSubscriberManager eventSubscriberManager,
             List<IntegrationEventPublisher> integrationEventPublisheres,
             EventRecordRepository eventRecordRepository,
-            List<EventMessageInterceptor> eventMessageInterceptors,
-            List<DomainEventInterceptor> domainEventInterceptors,
-            List<IntegrationEventInterceptor> integrationEventInterceptors,
+            EventMessageInterceptorManager eventMessageInterceptorManager,
+            DomainEventInterceptorManager domainEventInterceptorManager,
+            IntegrationEventInterceptorManager integrationEventInterceptorManager,
             EventProperties eventProperties
-    ){
+    ) {
         DefaultEventPublisher defaultEventPublisher = new DefaultEventPublisher(
                 eventSubscriberManager,
                 integrationEventPublisheres,
                 eventRecordRepository,
-                eventMessageInterceptors,
-                domainEventInterceptors,
-                integrationEventInterceptors,
+                eventMessageInterceptorManager,
+                domainEventInterceptorManager,
+                integrationEventInterceptorManager,
                 eventProperties.getPublisherThreadPoolSize()
         );
         defaultEventPublisher.init();
@@ -158,7 +159,7 @@ public class DomainEventAutoConfiguration {
     @Primary
     public DefaultDomainEventSupervisor defaultDomainEventSupervisor(
             EventRecordRepository eventRecordRepository,
-            List<DomainEventInterceptor> domainEventInterceptors,
+            DomainEventInterceptorManager domainEventInterceptorManager,
             EventPublisher eventPublisher,
             ApplicationEventPublisher applicationEventPublisher,
             @Value(CONFIG_KEY_4_SVC_NAME)
@@ -166,15 +167,28 @@ public class DomainEventAutoConfiguration {
     ) {
         DefaultDomainEventSupervisor defaultDomainEventSupervisor = new DefaultDomainEventSupervisor(
                 eventRecordRepository,
-                domainEventInterceptors,
+                domainEventInterceptorManager,
                 eventPublisher,
                 applicationEventPublisher,
                 svcName
         );
 
-        DomainEventSupervisorSupport.configure((DomainEventSupervisor)defaultDomainEventSupervisor);
+        DomainEventSupervisorSupport.configure((DomainEventSupervisor) defaultDomainEventSupervisor);
         DomainEventSupervisorSupport.configure((DomainEventManager) defaultDomainEventSupervisor);
         return defaultDomainEventSupervisor;
+    }
+
+    @Bean
+    @Primary
+    public DefaultEventInterceptorManager defaultEventInterceptorManager(
+            List<EventMessageInterceptor> eventMessageInterceptors,
+            List<EventInterceptor> interceptors
+    ) {
+        DefaultEventInterceptorManager defaultEventInterceptorManager = new DefaultEventInterceptorManager(
+                eventMessageInterceptors,
+                interceptors
+        );
+        return defaultEventInterceptorManager;
     }
 
 }

@@ -1,18 +1,13 @@
 package org.netcorepal.cap4j.ddd.application.event.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.netcorepal.cap4j.ddd.application.event.IntegrationEventAttachedTransactionCommittedEvent;
-import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;
-import org.netcorepal.cap4j.ddd.application.event.IntegrationEventManager;
-import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
+import org.netcorepal.cap4j.ddd.application.event.*;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
 import org.netcorepal.cap4j.ddd.domain.event.EventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.EventRecord;
 import org.netcorepal.cap4j.ddd.domain.event.EventRecordRepository;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.OrderUtils;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Duration;
@@ -29,28 +24,13 @@ import java.util.*;
 public class DefaultIntegrationEventSupervisor implements IntegrationEventSupervisor, IntegrationEventManager {
     private final EventPublisher eventPublisher;
     private final EventRecordRepository eventRecordRepository;
-    private final List<IntegrationEventInterceptor> integrationEventInterceptors;
+    private final IntegrationEventInterceptorManager integrationEventInterceptorManager;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final String svcName;
 
     private static final ThreadLocal<Set<Object>> TL_EVENT_PAYLOADS = new ThreadLocal<Set<Object>>();
     private static final ThreadLocal<Map<Object, LocalDateTime>> TL_EVENT_SCHEDULE_MAP = new ThreadLocal<Map<Object, LocalDateTime>>();
     private static final Set<Object> EMPTY_EVENT_PAYLOADS = Collections.emptySet();
-
-    private List<IntegrationEventInterceptor> sortedIntegrationEventInterceptors = null;
-
-    /**
-     * 拦截器基于 {@link org.springframework.core.annotation.Order} 排序
-     *
-     * @return
-     */
-    protected List<IntegrationEventInterceptor> getOrderedIntegrationEventInterceptors() {
-        if (sortedIntegrationEventInterceptors == null) {
-            sortedIntegrationEventInterceptors = new ArrayList<>(integrationEventInterceptors);
-            sortedIntegrationEventInterceptors.sort(Comparator.comparingInt(a -> OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE)));
-        }
-        return sortedIntegrationEventInterceptors;
-    }
 
     /**
      * 默认事件过期时间（分钟）
@@ -78,7 +58,7 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
         }
         eventPayloads.add(eventPayload);
         putDeliverTime(eventPayload, schedule);
-        getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.onAttach(eventPayload, schedule));
+        integrationEventInterceptorManager.getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.onAttach(eventPayload, schedule));
 
     }
 
@@ -89,7 +69,7 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
             return;
         }
         eventPayloads.remove(eventPayload);
-        getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.onDetach(eventPayload));
+        integrationEventInterceptorManager.getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.onDetach(eventPayload));
     }
 
     @Override
@@ -102,9 +82,9 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
             EventRecord event = eventRecordRepository.create();
             event.init(eventPayload, this.svcName, deliverTime, Duration.ofMinutes(DEFAULT_EVENT_EXPIRE_MINUTES), DEFAULT_EVENT_RETRY_TIMES);
             event.markPersist(true);
-            getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.prePersist(event));
+            integrationEventInterceptorManager.getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.prePersist(event));
             eventRecordRepository.save(event);
-            getOrderedIntegrationEventInterceptors().forEach(interceptor -> interceptor.postPersist(event));
+            integrationEventInterceptorManager.getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.postPersist(event));
             persistedEvents.add(event);
         }
         IntegrationEventAttachedTransactionCommittedEvent integrationEventAttachedTransactionCommittedEvent = new IntegrationEventAttachedTransactionCommittedEvent(this, persistedEvents);

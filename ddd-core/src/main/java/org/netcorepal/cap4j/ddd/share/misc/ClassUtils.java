@@ -1,12 +1,10 @@
 package org.netcorepal.cap4j.ddd.share.misc;
 
 import lombok.SneakyThrows;
-import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.cglib.beans.BeanCopier;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.converter.Converter;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -92,7 +90,7 @@ public class ClassUtils {
                     ? null
                     : (Converter<?, ?>) converterClass.newInstance();
         } catch (Exception e) {
-            throw new DomainException("事件Converter无法实例化", e);
+            throw new RuntimeException("事件Converter无法实例化", e);
         }
 
         Method method = findMethod(
@@ -123,7 +121,7 @@ public class ClassUtils {
                 try {
                     dest = destClass.newInstance();
                 } catch (Exception e) {
-                    throw new DomainException("无法完成事件自动转换", e);
+                    throw new RuntimeException("无法完成事件自动转换", e);
                 }
                 copier.copy(source, dest, null);
                 return dest;

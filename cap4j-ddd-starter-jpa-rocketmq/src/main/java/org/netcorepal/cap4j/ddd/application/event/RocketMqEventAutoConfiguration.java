@@ -36,7 +36,7 @@ public class RocketMqEventAutoConfiguration {
     public DefaultIntegrationEventSupervisor defaultIntegrationEventSupervisor(
         EventPublisher eventPublisher,
         EventRecordRepository eventRecordRepository,
-        List<IntegrationEventInterceptor> integrationEventInterceptors,
+        IntegrationEventInterceptorManager integrationEventInterceptorManager,
         ApplicationEventPublisher applicationEventPublisher,
         @Value(CONFIG_KEY_4_SVC_NAME)
         String svcName
@@ -44,7 +44,7 @@ public class RocketMqEventAutoConfiguration {
         DefaultIntegrationEventSupervisor defaultIntegrationEventSupervisor = new DefaultIntegrationEventSupervisor(
                 eventPublisher,
                 eventRecordRepository,
-                integrationEventInterceptors,
+                integrationEventInterceptorManager,
                 applicationEventPublisher,
                 svcName
         );
