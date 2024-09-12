@@ -11,9 +11,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
+import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.annotation.Retry;
-import org.springframework.core.annotation.AnnotationUtils;
 
 import javax.persistence.*;
 import java.io.PrintWriter;
@@ -162,8 +162,13 @@ public class Event {
         IntegrationEvent integrationEvent = payload == null
                 ? null
                 : payload.getClass().getAnnotation(IntegrationEvent.class);
+        DomainEvent domainEvent = payload == null
+                ? null
+                : payload.getClass().getAnnotation(DomainEvent.class);
         if (integrationEvent != null) {
             this.eventType = integrationEvent.value();
+        } else if (domainEvent != null) {
+            this.eventType = domainEvent.value();
         } else {
             this.eventType = "";
         }
