@@ -10,5 +10,5 @@ import java.util.List;
  * @author binking338
  * @date 2024/9/6
  */
-public class ListQueryParam<RESPONSE_ITEM> implements RequestParam<List<RESPONSE_ITEM>> {
+public interface ListQueryParam<RESPONSE_ITEM> extends RequestParam<List<RESPONSE_ITEM>> {
 }

@@ -30,6 +30,7 @@
       "type": "dir",
       "tag": "query",
       "name": "${path}",
+      "pattern": "^(?!.*(List|list|Page|page)).*$",
       "children": [
         {
           "type": "file",
@@ -47,14 +48,83 @@
     },
     {
       "type": "dir",
+      "tag": "query",
+      "name": "${path}",
+      "pattern": "^.*(List|list).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Request.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.query.ListQueryParam;\n\n\n/**\n * ${Query}查询请求参数\n * ${Comment}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request implements ListQueryParam<${Query}Response> {\n    Long id;\n}"
+        },
+        {
+          "type": "file",
+          "name": "${Query}Response.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Query}查询响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "query",
+      "name": "${path}",
+      "pattern": "^.*(Page|page).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Request.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.query.PageQueryParam;\n\n/**\n * ${Query}查询请求参数\n * ${Comment}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request extends PageQueryParam<${Query}Response> {\n    Long id;\n}"
+        },
+        {
+          "type": "file",
+          "name": "${Query}Response.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Query}查询响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
       "tag": "query_handler",
       "name": "",
+      "pattern": "^(?!.*(List|list|Page|page)).*$",
       "children": [
         {
           "type": "file",
           "name": "${Query}Handler.java",
           "format": "raw",
           "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.Query;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements Query<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public ${Query}Response exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "query_handler",
+      "name": "",
+      "pattern": "^.*(List|list).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Handler.java",
+          "format": "raw",
+          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.ListQuery;\nimport org.springframework.stereotype.Service;\n\nimport java.util.List;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements ListQuery<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public List<${Query}Response> exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "query_handler",
+      "name": "",
+      "pattern": "^.*(Page|page).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Handler.java",
+          "format": "raw",
+          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.PageQuery;\nimport org.netcorepal.cap4j.ddd.share.PageData;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements PageQuery<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public PageData<${Query}Response> exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
         }
       ]
     },

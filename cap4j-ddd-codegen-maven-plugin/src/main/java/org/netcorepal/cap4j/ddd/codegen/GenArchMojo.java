@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -115,7 +116,13 @@ public class GenArchMojo extends MyAbstractMojo {
     /**
      * 脚手架模板模板节点
      */
+    @Data
     public static class TemplateNode extends PathNode {
+
+        /**
+         * 元素匹配正则
+         */
+        String pattern;
 
         public TemplateNode clone() {
             TemplateNode templateNode = JSON.parseObject(JSON.toJSONString(this), TemplateNode.class);
@@ -148,10 +155,10 @@ public class GenArchMojo extends MyAbstractMojo {
          * @param tag
          * @return
          */
-        public TemplateNode select(String tag) {
+        public List<TemplateNode> select(String tag) {
             if (this.templates == null) return null;
-            Optional<TemplateNode> node = templates.stream().filter(t -> Objects.equals(t.tag, tag)).findFirst();
-            return node.orElse(null);
+            List<TemplateNode> nodes = templates.stream().filter(t -> Objects.equals(t.tag, tag)).collect(Collectors.toList());
+            return nodes;
         }
     }
 
@@ -306,106 +313,121 @@ public class GenArchMojo extends MyAbstractMojo {
     /**
      * 构建模型设计元素
      *
-     * @param templateNode
+     * @param templateNodes
      * @param parentPath
      * @throws IOException
      */
-    public void renderDesign(TemplateNode templateNode, String parentPath) throws IOException {
+    public void renderDesign(List<TemplateNode> templateNodes, String parentPath) throws IOException {
         Map<String, Set<String>> designMap = Arrays.stream(this.design.split(PATTERN_SPLITTER))
                 .map(item -> TextUtils.splitWithTrim(item, ":", 2))
                 .filter(item -> item.length == 2)
                 .collect(Collectors.groupingBy(g -> alias4Design(g[0]), Collectors.mapping(g -> g[1].trim(), Collectors.toSet())));
-        switch (alias4Design(templateNode.tag)) {
-            case "command":
-                if (designMap.containsKey("command")) {
-                    for (String literalCommand :
-                            designMap.get("command")) {
-                        renderAppLayerCommand(literalCommand, parentPath, templateNode);
-                    }
-                }
-                break;
-            case "query":
-            case "query_handler":
-                if (designMap.containsKey("query")) {
-                    for (String literalCommand :
-                            designMap.get("query")) {
-                        renderAppLayerQuery(literalCommand, parentPath, templateNode);
-                    }
-                }
-                break;
-            case "client":
-            case "client_handler":
-                if (designMap.containsKey("client")) {
-                    for (String literalCommand :
-                            designMap.get("client")) {
-                        renderAppLayerClient(literalCommand, parentPath, templateNode);
-                    }
-                }
-                break;
-            case "integration_event":
-                if (designMap.containsKey("integration_event")) {
-                    for (String literalCommand :
-                            designMap.get("integration_event")) {
-                        renderAppLayerIntegrationEvent("integration_event", literalCommand, parentPath, templateNode);
-                    }
-                }
-            case "integration_event_handler":
-                if (designMap.containsKey("integration_event_handler")) {
-                    for (String literalCommand :
-                            designMap.get("integration_event_handler")) {
-                        renderAppLayerIntegrationEvent("integration_event_handler", literalCommand, parentPath, templateNode);
-                    }
-                }
-                if (designMap.containsKey("integration_event")) {
-                    for (String literalCommand :
-                            designMap.get("integration_event")) {
-                        if (literalCommand.split(":").length >= 3) {
-                            renderAppLayerIntegrationEvent("integration_event_handler", literalCommand, parentPath, templateNode);
+
+
+        for (TemplateNode templateNode : templateNodes) {
+            switch (alias4Design(templateNode.tag)) {
+                case "command":
+                    if (designMap.containsKey("command")) {
+                        for (String literalCommand : designMap.get("command")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderAppLayerCommand(literalCommand, parentPath, templateNode);
+                            }
                         }
                     }
-                }
-                break;
-            case "domain_event":
-            case "domain_event_handler":
-                if (designMap.containsKey("domain_event")) {
-                    for (String literalCommand :
-                            designMap.get("domain_event")) {
-                        renderDomainLayerDomainEvent(literalCommand, parentPath, templateNode);
+                    break;
+                case "query":
+                case "query_handler":
+                    if (designMap.containsKey("query")) {
+                        for (String literalCommand : designMap.get("query")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderAppLayerQuery(literalCommand, parentPath, templateNode);
+                            }
+                        }
                     }
-                }
-                break;
-            case "specification":
-                if (designMap.containsKey("specification")) {
-                    for (String literalCommand :
-                            designMap.get("specification")) {
-                        renderDomainLayerSpecificaton(literalCommand, parentPath, templateNode);
+                    break;
+                case "client":
+                case "client_handler":
+                    if (designMap.containsKey("client")) {
+                        for (String literalCommand : designMap.get("client")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderAppLayerClient(literalCommand, parentPath, templateNode);
+                            }
+                        }
                     }
-                }
-                break;
-            case "factory":
-                if (designMap.containsKey("factory")) {
-                    for (String literalCommand :
-                            designMap.get("factory")) {
-                        renderDomainLayerAggregateFactory(literalCommand, parentPath, templateNode);
+                    break;
+                case "integration_event":
+                    if (designMap.containsKey("integration_event")) {
+                        for (String literalCommand : designMap.get("integration_event")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderAppLayerIntegrationEvent("integration_event", literalCommand, parentPath, templateNode);
+                            }
+                        }
                     }
-                }
-                break;
-            case "domain_service":
-                if (designMap.containsKey("domain_service")) {
-                    for (String literalCommand :
-                            designMap.get("domain_service")) {
-                        renderDomainLayerDomainService(literalCommand, parentPath, templateNode);
+                case "integration_event_handler":
+                    if (designMap.containsKey("integration_event_handler")) {
+                        for (String literalCommand : designMap.get("integration_event_handler")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderAppLayerIntegrationEvent("integration_event_handler", literalCommand, parentPath, templateNode);
+                            }
+                        }
                     }
-                }
-                break;
-            default:
-                if (designMap.containsKey(templateNode.tag)) {
-                    for (String literalCommand :
-                            designMap.get(templateNode.tag)) {
-                        renderGenericDesign(literalCommand, parentPath, templateNode);
+                    if (designMap.containsKey("integration_event")) {
+                        for (String literalCommand : designMap.get("integration_event")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                if (literalCommand.split(":").length >= 3) {
+                                    renderAppLayerIntegrationEvent("integration_event_handler", literalCommand, parentPath, templateNode);
+                                }
+                            }
+                        }
                     }
-                }
-                break;
+                    break;
+                case "domain_event":
+                case "domain_event_handler":
+                    if (designMap.containsKey("domain_event")) {
+                        for (String literalCommand : designMap.get("domain_event")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderDomainLayerDomainEvent(literalCommand, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    break;
+                case "specification":
+                    if (designMap.containsKey("specification")) {
+                        for (String literalCommand : designMap.get("specification")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderDomainLayerSpecificaton(literalCommand, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    break;
+                case "factory":
+                    if (designMap.containsKey("factory")) {
+                        for (String literalCommand : designMap.get("factory")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderDomainLayerAggregateFactory(literalCommand, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    break;
+                case "domain_service":
+                    if (designMap.containsKey("domain_service")) {
+                        for (String literalCommand : designMap.get("domain_service")) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderDomainLayerDomainService(literalCommand, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    if (designMap.containsKey(templateNode.tag)) {
+                        for (String literalCommand : designMap.get(templateNode.tag)) {
+                            if (StringUtils.isBlank(templateNode.pattern) || Pattern.compile(templateNode.pattern).asPredicate().test(literalCommand)) {
+                                renderGenericDesign(literalCommand, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    break;
+            }
         }
     }
 
@@ -432,6 +454,10 @@ public class GenArchMojo extends MyAbstractMojo {
             context.put("comment", context.get("Comment"));
             return context;
         });
+        if (StringUtils.isBlank(path)) {
+            getLog().info("模板不匹配：" + templateNode.pattern);
+            return;
+        }
         getLog().info("生成命令代码：" + path);
     }
 
@@ -458,6 +484,10 @@ public class GenArchMojo extends MyAbstractMojo {
             context.put("comment", context.get("Comment"));
             return context;
         });
+        if (StringUtils.isBlank(path)) {
+            getLog().info("模板不匹配：" + templateNode.pattern);
+            return;
+        }
         getLog().info("生成查询代码：" + path);
     }
 
@@ -484,6 +514,10 @@ public class GenArchMojo extends MyAbstractMojo {
             context.put("comment", context.get("Comment"));
             return context;
         });
+        if (StringUtils.isBlank(path)) {
+            getLog().info("模板不匹配：" + templateNode.pattern);
+            return;
+        }
         getLog().info("生成防腐端代码：" + path);
     }
 
@@ -520,6 +554,10 @@ public class GenArchMojo extends MyAbstractMojo {
             context.put("comment", context.get("Comment"));
             return context;
         });
+        if (StringUtils.isBlank(path)) {
+            getLog().info("模板不匹配：" + templateNode.pattern);
+            return;
+        }
         getLog().info("生成集成事件代码：" + path);
     }
 
@@ -571,6 +609,10 @@ public class GenArchMojo extends MyAbstractMojo {
             context.put("comment", context.get("Comment"));
             return context;
         });
+        if (StringUtils.isBlank(path)) {
+            getLog().info("模板不匹配：" + templateNode.pattern);
+            return;
+        }
         getLog().info("生成领域事件代码：" + path);
     }
 
@@ -600,6 +642,10 @@ public class GenArchMojo extends MyAbstractMojo {
             context.put("comment", context.get("Comment"));
             return context;
         });
+        if (StringUtils.isBlank(path)) {
+            getLog().info("模板不匹配：" + templateNode.pattern);
+            return;
+        }
         getLog().info("生成聚合工厂代码：" + path);
     }
 
@@ -652,6 +698,10 @@ public class GenArchMojo extends MyAbstractMojo {
             context.put("comment", context.get("Comment"));
             return context;
         });
+        if (StringUtils.isBlank(path)) {
+            getLog().info("模板不匹配：" + templateNode.pattern);
+            return;
+        }
         getLog().info("生成领域服务代码：" + path);
     }
 
@@ -662,10 +712,19 @@ public class GenArchMojo extends MyAbstractMojo {
     public void renderGenericDesign(String literalGenericDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析自定义元素设计：" + literalGenericDeclaration);
         String path = internalRenderGenericDesign(literalGenericDeclaration, parentPath, templateNode, null);
+        if (StringUtils.isBlank(path)) {
+            getLog().info("模板不匹配：" + templateNode.pattern);
+            return;
+        }
         getLog().info("生成自定义元素代码：" + path);
     }
 
     public String internalRenderGenericDesign(String literalGenericDeclaration, String parentPath, TemplateNode templateNode, Function<Map<String, String>, Map<String, String>> contextBuilder) throws IOException {
+        if (StringUtils.isNotBlank(templateNode.pattern)) {
+            if (!Pattern.compile(templateNode.pattern).asPredicate().test(literalGenericDeclaration)) {
+                return null;
+            }
+        }
         String[] segments = TextUtils.splitWithTrim(literalGenericDeclaration, ":");
         Map<String, String> context = new HashMap<>(getEscapeContext());
         for (int i = 0; i < segments.length; i++) {
@@ -725,9 +784,9 @@ public class GenArchMojo extends MyAbstractMojo {
         if (StringUtils.isNotBlank(pathNode.getTag())) {
             String[] tags = pathNode.getTag().split(PATTERN_SPLITTER);
             for (String tag : tags) {
-                TemplateNode templateNode = template.select(tag);
-                if (null != templateNode) {
-                    renderDesign(templateNode, path);
+                List<TemplateNode> templateNodes = template.select(tag);
+                if (null != templateNodes) {
+                    renderDesign(templateNodes, path);
                 }
             }
         }
