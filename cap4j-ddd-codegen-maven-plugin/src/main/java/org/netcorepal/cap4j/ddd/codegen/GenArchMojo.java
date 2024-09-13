@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 生成项目目录结构
@@ -30,12 +32,12 @@ public class GenArchMojo extends MyAbstractMojo {
 
     public final String PATTERN_SPLITTER = "[\\,\\;]";
 
-    private String projectGroupId = "";
-    private String projectArtifactId = "";
-    private String projectVersion = "";
+    protected String projectGroupId = "";
+    protected String projectArtifactId = "";
+    protected String projectVersion = "";
 
-    private String projectDir = "";
-    private Template template = null;
+    protected String projectDir = "";
+    protected Template template = null;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -76,8 +78,12 @@ public class GenArchMojo extends MyAbstractMojo {
         } catch (IOException e) {
             getLog().error("模板文件加载失败！");
         }
+        startRender();
+    }
+
+    protected void startRender(){
         try {
-            render(template, projectDir);
+            render(template, projectDir, false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -90,24 +96,24 @@ public class GenArchMojo extends MyAbstractMojo {
      * @param parentPath
      * @throws IOException
      */
-    public String render(PathNode pathNode, String parentPath) throws IOException {
+    public String render(PathNode pathNode, String parentPath, boolean onlyRenderDir) throws IOException {
         String path = parentPath;
         switch (pathNode.getType()) {
             case "file":
-                path = renderFile(pathNode, parentPath);
+                path = renderFile(pathNode, parentPath, onlyRenderDir);
                 break;
             case "dir":
                 path = renderDir(pathNode, parentPath);
                 if (pathNode.getChildren() != null) {
                     for (PathNode childPathNode : pathNode.getChildren()) {
-                        render(childPathNode, path);
+                        render(childPathNode, path, onlyRenderDir);
                     }
                 }
                 break;
             case "root":
                 if (pathNode.getChildren() != null) {
                     for (PathNode childPathNode : pathNode.getChildren()) {
-                        render(childPathNode, parentPath);
+                        render(childPathNode, parentPath, onlyRenderDir);
                     }
                 }
                 break;
@@ -177,7 +183,7 @@ public class GenArchMojo extends MyAbstractMojo {
      * @param parentPath
      * @return
      */
-    public String renderFile(PathNode pathNode, String parentPath) throws IOException {
+    public String renderFile(PathNode pathNode, String parentPath, boolean onlyRenderDir) throws IOException {
         if (!"file".equalsIgnoreCase(pathNode.getType())) {
             throw new RuntimeException("节点类型必须是文件");
         }
@@ -185,6 +191,7 @@ public class GenArchMojo extends MyAbstractMojo {
             throw new RuntimeException("模板节点配置 name 不得为空 parentPath = " + parentPath);
         }
         String path = parentPath + File.separator + pathNode.getName();
+        if (onlyRenderDir) return path;
 
         String content = pathNode.getData();
         if (FileUtils.fileExists(path)) {
@@ -216,6 +223,7 @@ public class GenArchMojo extends MyAbstractMojo {
         context.put("version", projectVersion);
         context.put("archTemplate", archTemplate);
         context.put("archTemplateEncoding", archTemplateEncoding);
+        context.put("designFile", designFile);
         context.put("basePackage", basePackage);
         context.put("basePackage__as_path", basePackage.replace(".", File.separator));
         context.put("multiModule", multiModule ? "true" : "false");

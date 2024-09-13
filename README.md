@@ -49,8 +49,8 @@ Mediator中介者模式、
                 <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
                 <version>1.0.0-alpha-2</version>
                 <configuration>
-                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/main/cap4j-ddd-codegen-template.json</archTemplate>
                     <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>
+                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/main/cap4j-ddd-codegen-template.json</archTemplate>
                     <multiModule>false</multiModule>
                     <moduleNameSuffix4Adapter>-adapter</moduleNameSuffix4Adapter>
                     <moduleNameSuffix4Domain>-domain</moduleNameSuffix4Domain>
@@ -63,11 +63,11 @@ Mediator中介者模式、
                     <schema>test</schema>
                     <table></table>
                     <ignoreTable></ignoreTable>
+                    <ignoreFields></ignoreFields>
                     <idField>id</idField>
                     <versionField>version</versionField>
                     <deletedField>db_deleted</deletedField>
                     <readonlyFields>db_created_at,db_updated_at</readonlyFields>
-                    <ignoreFields></ignoreFields>
                     <entityBaseClass></entityBaseClass>
                     <entityClassExtraImports>
                         <import>static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events</import>

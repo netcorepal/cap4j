@@ -749,7 +749,7 @@ public class SqlSchemaUtils {
      * @return
      */
     public static boolean hasSpecification(Map<String, Object> table) {
-        return isAggregateRoot(table) && hasAnyAnnotation(table, Arrays.asList("Specification", "Spec"));
+        return isAggregateRoot(table) && hasAnyAnnotation(table, Arrays.asList("Specification", "Spec", "Spe"));
     }
 
     public static boolean hasDomainEvent(Map<String, Object> table) {

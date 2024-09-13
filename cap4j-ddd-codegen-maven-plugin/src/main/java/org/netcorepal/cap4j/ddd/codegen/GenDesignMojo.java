@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.codehaus.plexus.util.FileUtils;
 import org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils;
 import org.netcorepal.cap4j.ddd.codegen.misc.TextUtils;
 import org.netcorepal.cap4j.ddd.codegen.template.PathNode;
@@ -24,10 +25,20 @@ import java.util.stream.Collectors;
  */
 @Mojo(name = "gen-design")
 public class GenDesignMojo extends GenArchMojo {
+    public final String DESIGN_PARAMS_SPLITTER = ":";
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         super.execute();
+    }
+
+    @Override
+    protected void startRender() {
+        try {
+            render(template, projectDir, true);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -38,24 +49,24 @@ public class GenDesignMojo extends GenArchMojo {
      * @throws IOException
      */
     @Override
-    public String render(PathNode pathNode, String parentPath) throws IOException {
+    public String render(PathNode pathNode, String parentPath, boolean onlyRenderDir) throws IOException {
         String path = parentPath;
         switch (pathNode.getType()) {
             case "file":
-                // path = renderFile(pathNode, parentPath);
+                path = renderFile(pathNode, parentPath, onlyRenderDir);
                 break;
             case "dir":
                 path = renderDir(pathNode, parentPath);
                 if (pathNode.getChildren() != null) {
                     for (PathNode childPathNode : pathNode.getChildren()) {
-                        render(childPathNode, path);
+                        render(childPathNode, path, onlyRenderDir);
                     }
                 }
                 break;
             case "root":
                 if (pathNode.getChildren() != null) {
                     for (PathNode childPathNode : pathNode.getChildren()) {
-                        render(childPathNode, parentPath);
+                        render(childPathNode, parentPath, onlyRenderDir);
                     }
                 }
                 break;
@@ -92,6 +103,13 @@ public class GenDesignMojo extends GenArchMojo {
             case "evt_hdl":
             case "i_e_h":
             case "ieh":
+            case "integration_event_subscribers":
+            case "integration_event_subscriber":
+            case "event_subscribers":
+            case "event_subscriber":
+            case "evt_sub":
+            case "i_e_s":
+            case "ies":
                 return "integration_event_handler";
             case "repositories":
             case "repository":
@@ -106,6 +124,7 @@ public class GenDesignMojo extends GenArchMojo {
             case "specification":
             case "specs":
             case "spec":
+            case "spe":
                 return "specification";
             case "domain_events":
             case "domain_event":
@@ -116,6 +135,10 @@ public class GenDesignMojo extends GenArchMojo {
             case "domain_event_handler":
             case "d_e_h":
             case "deh":
+            case "domain_event_subscribers":
+            case "domain_event_subscriber":
+            case "d_e_s":
+            case "des":
                 return "domain_event_handler";
             case "domain_service":
             case "service":
@@ -124,6 +147,16 @@ public class GenDesignMojo extends GenArchMojo {
             default:
                 return name;
         }
+    }
+
+    public Map<String, Set<String>> resolveLiteralDesign(String design) {
+        if (StringUtils.isBlank(design)) {
+            return new HashMap<>();
+        }
+        return Arrays.stream(design.split(PATTERN_SPLITTER))
+                .map(item -> TextUtils.splitWithTrim(item, DESIGN_PARAMS_SPLITTER, 2))
+                .filter(item -> item.length == 2)
+                .collect(Collectors.groupingBy(g -> alias4Design(g[0]), Collectors.mapping(g -> g[1].trim(), Collectors.toSet())));
     }
 
     /**
@@ -135,11 +168,14 @@ public class GenDesignMojo extends GenArchMojo {
      */
     @Override
     public void renderDesign(List<TemplateNode> templateNodes, String parentPath) throws IOException {
-        Map<String, Set<String>> designMap = Arrays.stream(this.design.split(PATTERN_SPLITTER))
-                .map(item -> TextUtils.splitWithTrim(item, ":", 2))
-                .filter(item -> item.length == 2)
-                .collect(Collectors.groupingBy(g -> alias4Design(g[0]), Collectors.mapping(g -> g[1].trim(), Collectors.toSet())));
-
+        String design = "";
+        if (StringUtils.isNotBlank(this.design)) {
+            design += this.design;
+        }
+        if (StringUtils.isNotBlank(this.designFile) && FileUtils.fileExists(this.designFile)) {
+            design += (DESIGN_PARAMS_SPLITTER + FileUtils.fileRead(this.designFile, this.archTemplateEncoding));
+        }
+        Map<String, Set<String>> designMap = resolveLiteralDesign(design);
 
         for (TemplateNode templateNode : templateNodes) {
             switch (alias4Design(templateNode.getTag())) {
@@ -191,7 +227,7 @@ public class GenDesignMojo extends GenArchMojo {
                     if (designMap.containsKey("integration_event")) {
                         for (String literalDesign : designMap.get("integration_event")) {
                             if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
-                                if (literalDesign.split(":").length >= 3) {
+                                if (literalDesign.split(DESIGN_PARAMS_SPLITTER).length >= 3) {
                                     renderAppLayerIntegrationEvent("integration_event_handler", literalDesign, parentPath, templateNode);
                                 }
                             }
@@ -199,9 +235,24 @@ public class GenDesignMojo extends GenArchMojo {
                     }
                     break;
                 case "domain_event":
-                case "domain_event_handler":
                     if (designMap.containsKey("domain_event")) {
                         for (String literalDesign : designMap.get("domain_event")) {
+                            if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
+                                renderDomainLayerDomainEvent(literalDesign, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    if (designMap.containsKey("domain_event_handler")) {
+                        for (String literalDesign : designMap.get("domain_event_handler")) {
+                            if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
+                                renderDomainLayerDomainEvent(literalDesign, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    break;
+                case "domain_event_handler":
+                    if (designMap.containsKey("domain_event_handler")) {
+                        for (String literalDesign : designMap.get("domain_event_handler")) {
                             if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
                                 renderDomainLayerDomainEvent(literalDesign, parentPath, templateNode);
                             }
@@ -505,7 +556,7 @@ public class GenDesignMojo extends GenArchMojo {
     }
 
     public String internalRenderGenericDesign(String literalGenericDeclaration, String parentPath, TemplateNode templateNode, Function<Map<String, String>, Map<String, String>> contextBuilder) throws IOException {
-        String[] segments = TextUtils.splitWithTrim(literalGenericDeclaration, ":");
+        String[] segments = TextUtils.splitWithTrim(literalGenericDeclaration, DESIGN_PARAMS_SPLITTER);
         Map<String, String> context = new HashMap<>(getEscapeContext());
         for (int i = 0; i < segments.length; i++) {
             context.put("Val" + i, segments[i]);
@@ -525,7 +576,7 @@ public class GenDesignMojo extends GenArchMojo {
             context = contextBuilder.apply(context);
         }
         PathNode pathNode = templateNode.clone().resolve(context);
-        return render(pathNode, parentPath);
+        return render(pathNode, parentPath, false);
     }
 
 }
