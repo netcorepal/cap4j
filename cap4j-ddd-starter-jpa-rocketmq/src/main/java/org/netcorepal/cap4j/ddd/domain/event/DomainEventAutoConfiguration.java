@@ -2,7 +2,6 @@ package org.netcorepal.cap4j.ddd.domain.event;
 
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.distributed.Locker;
-import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptorManager;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
@@ -19,11 +18,11 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.List;
@@ -44,48 +43,36 @@ import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
 @EntityScan(basePackages = {
         "org.netcorepal.cap4j.ddd.domain.event.persistence"
 })
-@EnableScheduling
 public class DomainEventAutoConfiguration {
     public static final String CONFIG_KEY_4_EVENT_COMPENSE_LOCKER_KEY = "event_compense[" + CONFIG_KEY_4_SVC_NAME + "]";
     public static final String CONFIG_KEY_4_EVENT_ARCHIVE_LOCKER_KEY = "event_archive[" + CONFIG_KEY_4_SVC_NAME + "]";
 
 
-    private static final String CONFIG_KEY_4_COMPENSE_CRON = "${cap4j.ddd.domain.event.schedule.compenseCron:${cap4j.ddd.domain.event.schedule.compense-cron:0 */1 * * * ?}}";
-    private static final String CONFIG_KEY_4_ARCHIVE_CRON = "${cap4j.ddd.domain.event.schedule.archiveCron:${cap4j.ddd.domain.event.schedule.archive-cron:0 0 2 * * ?}}";
-    private static final String CONFIG_KEY_4_ADD_PARTITION_CRON = "${cap4j.ddd.domain.event.schedule.addPartitionCron:${cap4j.ddd.domain.event.schedule.add-partition-cron:0 0 0 * * ?}}";
-
-
-    private final EventScheduleProperties eventScheduleProperties;
-    private JpaEventScheduleService scheduleService = null;
-
-    @Scheduled(cron = CONFIG_KEY_4_COMPENSE_CRON)
-    public void compensation() {
-        if (scheduleService == null) return;
-        scheduleService.compense(
-                eventScheduleProperties.getCompenseBatchSize(),
-                eventScheduleProperties.getCompenseMaxConcurrency(),
-                Duration.ofSeconds(eventScheduleProperties.getCompenseIntervalSeconds()),
-                Duration.ofSeconds(eventScheduleProperties.getCompenseMaxLockSeconds())
+    @Bean
+    public DefaultDomainEventSupervisor defaultDomainEventSupervisor(
+            EventRecordRepository eventRecordRepository,
+            DomainEventInterceptorManager domainEventInterceptorManager,
+            EventPublisher eventPublisher,
+            ApplicationEventPublisher applicationEventPublisher,
+            @Value(CONFIG_KEY_4_SVC_NAME)
+            String svcName
+    ) {
+        DefaultDomainEventSupervisor defaultDomainEventSupervisor = new DefaultDomainEventSupervisor(
+                eventRecordRepository,
+                domainEventInterceptorManager,
+                eventPublisher,
+                applicationEventPublisher,
+                svcName
         );
-    }
 
-    @Scheduled(cron = CONFIG_KEY_4_ARCHIVE_CRON)
-    public void archive() {
-        if (scheduleService == null) return;
-        scheduleService.archive(
-                eventScheduleProperties.getArchiveExpireDays(),
-                eventScheduleProperties.getArchiveBatchSize(),
-                Duration.ofSeconds(eventScheduleProperties.getArchiveMaxLockSeconds())
-        );
-    }
-
-    @Scheduled(cron = CONFIG_KEY_4_ADD_PARTITION_CRON)
-    public void addTablePartition() {
-        scheduleService.addPartition();
+        DomainEventSupervisorSupport.configure((DomainEventSupervisor) defaultDomainEventSupervisor);
+        DomainEventSupervisorSupport.configure((DomainEventManager) defaultDomainEventSupervisor);
+        return defaultDomainEventSupervisor;
     }
 
     @Bean
-    public JpaEventScheduleService eventScheduleService(
+    @ConditionalOnMissingBean(JpaEventScheduleService.class)
+    public JpaEventScheduleService jpaEventScheduleService(
             EventPublisher eventPublisher,
             EventRecordRepository eventRecordRepository,
             EventJpaRepository eventJpaRepository,
@@ -99,7 +86,7 @@ public class DomainEventAutoConfiguration {
             String archiveLockerKey,
             EventScheduleProperties eventScheduleProperties,
             JdbcTemplate jdbcTemplate) {
-        scheduleService = new JpaEventScheduleService(
+        JpaEventScheduleService scheduleService = new JpaEventScheduleService(
                 eventPublisher,
                 eventRecordRepository,
                 eventJpaRepository,
@@ -114,9 +101,52 @@ public class DomainEventAutoConfiguration {
         return scheduleService;
     }
 
+    /**
+     * 领域事件定时补偿任务
+     */
+    @RequiredArgsConstructor
+    @Service
+    @EnableScheduling
+    private static class __DomainEventScheduleLoader {
+
+        private static final String CONFIG_KEY_4_COMPENSE_CRON = "${cap4j.ddd.domain.event.schedule.compenseCron:${cap4j.ddd.domain.event.schedule.compense-cron:0 */1 * * * ?}}";
+        private static final String CONFIG_KEY_4_ARCHIVE_CRON = "${cap4j.ddd.domain.event.schedule.archiveCron:${cap4j.ddd.domain.event.schedule.archive-cron:0 0 2 * * ?}}";
+        private static final String CONFIG_KEY_4_ADD_PARTITION_CRON = "${cap4j.ddd.domain.event.schedule.addPartitionCron:${cap4j.ddd.domain.event.schedule.add-partition-cron:0 0 0 * * ?}}";
+
+
+        private final EventScheduleProperties eventScheduleProperties;
+        private final JpaEventScheduleService scheduleService = null;
+
+        @Scheduled(cron = CONFIG_KEY_4_COMPENSE_CRON)
+        public void compensation() {
+            if (scheduleService == null) return;
+            scheduleService.compense(
+                    eventScheduleProperties.getCompenseBatchSize(),
+                    eventScheduleProperties.getCompenseMaxConcurrency(),
+                    Duration.ofSeconds(eventScheduleProperties.getCompenseIntervalSeconds()),
+                    Duration.ofSeconds(eventScheduleProperties.getCompenseMaxLockSeconds())
+            );
+        }
+
+        @Scheduled(cron = CONFIG_KEY_4_ARCHIVE_CRON)
+        public void archive() {
+            if (scheduleService == null) return;
+            scheduleService.archive(
+                    eventScheduleProperties.getArchiveExpireDays(),
+                    eventScheduleProperties.getArchiveBatchSize(),
+                    Duration.ofSeconds(eventScheduleProperties.getArchiveMaxLockSeconds())
+            );
+        }
+
+        @Scheduled(cron = CONFIG_KEY_4_ADD_PARTITION_CRON)
+        public void addTablePartition() {
+            scheduleService.addPartition();
+        }
+    }
+
     @Bean
     @ConditionalOnMissingBean(EventPublisher.class)
-    public EventPublisher defaultEventPublisher(
+    public DefaultEventPublisher defaultEventPublisher(
             EventSubscriberManager eventSubscriberManager,
             List<IntegrationEventPublisher> integrationEventPublisheres,
             EventRecordRepository eventRecordRepository,
@@ -140,7 +170,7 @@ public class DomainEventAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(EventSubscriberManager.class)
-    public EventSubscriberManager defaultEventSubscriberManager(
+    public DefaultEventSubscriberManager defaultEventSubscriberManager(
             List<EventSubscriber<?>> subscribers,
             ApplicationEventPublisher applicationEventPublisher,
             EventProperties eventProperties
@@ -156,30 +186,7 @@ public class DomainEventAutoConfiguration {
     }
 
     @Bean
-    @Primary
-    public DefaultDomainEventSupervisor defaultDomainEventSupervisor(
-            EventRecordRepository eventRecordRepository,
-            DomainEventInterceptorManager domainEventInterceptorManager,
-            EventPublisher eventPublisher,
-            ApplicationEventPublisher applicationEventPublisher,
-            @Value(CONFIG_KEY_4_SVC_NAME)
-            String svcName
-    ) {
-        DefaultDomainEventSupervisor defaultDomainEventSupervisor = new DefaultDomainEventSupervisor(
-                eventRecordRepository,
-                domainEventInterceptorManager,
-                eventPublisher,
-                applicationEventPublisher,
-                svcName
-        );
-
-        DomainEventSupervisorSupport.configure((DomainEventSupervisor) defaultDomainEventSupervisor);
-        DomainEventSupervisorSupport.configure((DomainEventManager) defaultDomainEventSupervisor);
-        return defaultDomainEventSupervisor;
-    }
-
-    @Bean
-    @Primary
+    @ConditionalOnMissingBean(DefaultEventInterceptorManager.class)
     public DefaultEventInterceptorManager defaultEventInterceptorManager(
             List<EventMessageInterceptor> eventMessageInterceptors,
             List<EventInterceptor> interceptors
@@ -190,5 +197,4 @@ public class DomainEventAutoConfiguration {
         );
         return defaultEventInterceptorManager;
     }
-
 }

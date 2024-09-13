@@ -24,8 +24,7 @@ public class DomainServiceAutoConfiguration {
      * @return
      */
     @Bean
-    @ConditionalOnMissingBean(DomainServiceSupervisor.class)
-    public DomainServiceSupervisor defaultDomainServiceSupervisor(ApplicationContext applicationContext) {
+    public DefaultDomainServiceSupervisor defaultDomainServiceSupervisor(ApplicationContext applicationContext) {
         DefaultDomainServiceSupervisor domainServiceSupervisor = new DefaultDomainServiceSupervisor(
                 applicationContext
         );

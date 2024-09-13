@@ -2,7 +2,6 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventManager;
 import org.netcorepal.cap4j.ddd.application.impl.JpaUnitOfWork;
 import org.netcorepal.cap4j.ddd.application.UnitOfWorkSupport;
@@ -21,7 +20,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 import java.util.List;
 
@@ -41,28 +39,29 @@ import java.util.List;
 public class JpaRepositoryAutoConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean(PersistListenerManager.class)
-    public PersistListenerManager defaultPersistListenerManager(
-            List<PersistListener<?>> persistListeners,
-            EventProperties eventProperties
-    ) {
-        DefaultPersistListenerManager persistListenerManager = new DefaultPersistListenerManager(
-                persistListeners,
-                eventProperties.getEventScanPackage());
-        persistListenerManager.init();
-        return persistListenerManager;
+    public DefaultRepositorySupervisor defaultRepositorySupervisor(
+            List<AbstractJpaRepository<?,?>> repositories,
+            JpaUnitOfWork unitOfWork
+    ){
+        DefaultRepositorySupervisor repositorySupervisor = new DefaultRepositorySupervisor(repositories, unitOfWork);
+        repositorySupervisor.init();
+        RepositorySupervisorSupport.configure(repositorySupervisor);
+        return repositorySupervisor;
     }
 
     @Bean
-    @ConditionalOnMissingBean(SpecificationManager.class)
-    public SpecificationManager defaultSpecificationManager(List<Specification<?>> specifications) {
-        DefaultSpecificationManager specificationManager = new DefaultSpecificationManager(specifications);
-        specificationManager.init();
-        return specificationManager;
+    public DefaultAggregateFactorySupervisor defaultAggregateFactorySupervisor(
+            List<AggregateFactory<?, ?>> factories
+    ){
+        DefaultAggregateFactorySupervisor aggregateFactorySupervisor = new DefaultAggregateFactorySupervisor(
+                factories
+        );
+        aggregateFactorySupervisor.init();
+        AggregateFactorySupervisorSupport.configure(aggregateFactorySupervisor);
+        return aggregateFactorySupervisor;
     }
 
     @Bean
-    @Primary
     public JpaUnitOfWork jpaUnitOfWork(
             DomainEventManager domainEventManager,
             IntegrationEventManager integrationEventManager,
@@ -81,32 +80,6 @@ public class JpaRepositoryAutoConfiguration {
         UnitOfWorkSupport.configure(unitOfWork);
         return unitOfWork;
     }
-
-    @Bean
-    @Primary
-    public RepositorySupervisor defaultRepositorySupervisor(
-            List<AbstractJpaRepository<?,?>> repositories,
-            UnitOfWork unitOfWork
-    ){
-        DefaultRepositorySupervisor repositorySupervisor = new DefaultRepositorySupervisor(repositories, unitOfWork);
-        repositorySupervisor.init();
-        RepositorySupervisorSupport.configure(repositorySupervisor);
-        return repositorySupervisor;
-    }
-
-    @Bean
-    @Primary
-    public AggregateFactorySupervisor defaultAggregateFactorySupervisor(
-            List<AggregateFactory<?, ?>> factories
-    ){
-        DefaultAggregateFactorySupervisor aggregateFactorySupervisor = new DefaultAggregateFactorySupervisor(
-            factories
-        );
-        aggregateFactorySupervisor.init();
-        AggregateFactorySupervisorSupport.configure(aggregateFactorySupervisor);
-        return aggregateFactorySupervisor;
-    }
-
 
     @Configuration
     private static class __JpaUnitOfWorkLoader {
@@ -129,5 +102,26 @@ public class JpaRepositoryAutoConfiguration {
                         eventJpaRepository
                 );
         return eventRecordRepository;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(PersistListenerManager.class)
+    public DefaultPersistListenerManager defaultPersistListenerManager(
+            List<PersistListener<?>> persistListeners,
+            EventProperties eventProperties
+    ) {
+        DefaultPersistListenerManager persistListenerManager = new DefaultPersistListenerManager(
+                persistListeners,
+                eventProperties.getEventScanPackage());
+        persistListenerManager.init();
+        return persistListenerManager;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(SpecificationManager.class)
+    public DefaultSpecificationManager defaultSpecificationManager(List<Specification<?>> specifications) {
+        DefaultSpecificationManager specificationManager = new DefaultSpecificationManager(specifications);
+        specificationManager.init();
+        return specificationManager;
     }
 }

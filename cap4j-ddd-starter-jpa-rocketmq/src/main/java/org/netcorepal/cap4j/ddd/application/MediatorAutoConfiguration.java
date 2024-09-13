@@ -22,8 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MediatorAutoConfiguration {
     @Bean
-    @Primary
-    public RequestSupervisor defaultRequestSupervisor(
+    public DefaultRequestSupervisor defaultRequestSupervisor(
             List<RequestHandler<?,?>> requestHandlers,
             List<RequestInterceptor<?,?>> requestInterceptors
     ){
