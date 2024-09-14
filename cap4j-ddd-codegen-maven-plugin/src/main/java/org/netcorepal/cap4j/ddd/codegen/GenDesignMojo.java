@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  */
 @Mojo(name = "gen-design")
 public class GenDesignMojo extends GenArchMojo {
-    public final String DESIGN_PARAMS_SPLITTER = ":";
+    public final String DESIGN_PARAMS_SPLITTER = "[\\:]";
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -153,10 +153,16 @@ public class GenDesignMojo extends GenArchMojo {
         if (StringUtils.isBlank(design)) {
             return new HashMap<>();
         }
-        return Arrays.stream(design.split(PATTERN_SPLITTER))
+        return Arrays.stream(escape(design).split(PATTERN_SPLITTER))
                 .map(item -> TextUtils.splitWithTrim(item, DESIGN_PARAMS_SPLITTER, 2))
                 .filter(item -> item.length == 2)
-                .collect(Collectors.groupingBy(g -> alias4Design(g[0]), Collectors.mapping(g -> g[1].trim(), Collectors.toSet())));
+                .collect(Collectors.groupingBy(
+                        g -> alias4Design(g[0]),
+                        Collectors.mapping(
+                                g -> g[1].trim(),
+                                Collectors.toSet()
+                        )
+                ));
     }
 
     /**
@@ -399,14 +405,14 @@ public class GenDesignMojo extends GenArchMojo {
             context.put("event", context.get("integration_event"));
             context.put("ie", context.get("integration_event"));
             context.put("i_e", context.get("integration_event"));
-            if(context.containsKey("Val1")) {
+            if (context.containsKey("Val1")) {
                 context.put("MQ_TOPIC", ("\"" + context.get("Val1") + "\""));
             } else {
                 context.put("MQ_TOPIC", ("\"" + context.get("Val0") + "\""));
             }
             if (Objects.equals(literalType, "integration_event_handler") && !context.containsKey("Val2")) {
                 context.put("MQ_CONSUMER", "IntegrationEvent.NONE_SUBSCRIBER");
-            } else if(context.containsKey("Val2")) {
+            } else if (context.containsKey("Val2")) {
                 context.put("MQ_CONSUMER", ("\"" + context.get("Val2") + "\""));
             } else {
                 context.put("MQ_CONSUMER", "\"${spring.application.name}\"");
@@ -561,8 +567,16 @@ public class GenDesignMojo extends GenArchMojo {
         getLog().info("生成自定义元素代码：" + path);
     }
 
-    public String internalRenderGenericDesign(String literalGenericDeclaration, String parentPath, TemplateNode templateNode, Function<Map<String, String>, Map<String, String>> contextBuilder) throws IOException {
-        String[] segments = TextUtils.splitWithTrim(literalGenericDeclaration, DESIGN_PARAMS_SPLITTER);
+    public String internalRenderGenericDesign(
+            String literalGenericDeclaration,
+            String parentPath,
+            TemplateNode templateNode,
+            Function<Map<String, String>, Map<String, String>> contextBuilder
+    ) throws IOException {
+        String[] segments = TextUtils.splitWithTrim(escape(literalGenericDeclaration), DESIGN_PARAMS_SPLITTER);
+        for (int i = 0; i < segments.length; i++) {
+            segments[i] = unescape(segments[i]);
+        }
         Map<String, String> context = new HashMap<>(getEscapeContext());
         for (int i = 0; i < segments.length; i++) {
             context.put("Val" + i, segments[i]);
@@ -583,6 +597,22 @@ public class GenDesignMojo extends GenArchMojo {
         }
         PathNode pathNode = templateNode.clone().resolve(context);
         return render(pathNode, parentPath, false);
+    }
+
+    public String escape(String content) {
+        return content
+                .replace("\\\\", "${symbol_escape}")
+                .replace("\\:", "${symbol_colon}")
+                .replace("\\,", "${symbol_comma}")
+                .replace("\\;", "${symbol_semicolon}");
+    }
+
+    public String unescape(String escape) {
+        return escape
+                .replace("${symbol_escape}", "\\")
+                .replace("${symbol_colon}", ":")
+                .replace("${symbol_comma}", ",")
+                .replace("${symbol_semicolon}", ";");
     }
 
 }
