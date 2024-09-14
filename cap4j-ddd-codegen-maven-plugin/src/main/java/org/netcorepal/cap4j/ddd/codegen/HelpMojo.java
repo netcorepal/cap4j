@@ -221,6 +221,7 @@ public class HelpMojo extends AbstractMojo {
         getLog().info("mvn cap4j-ddd-codegen:gen-design -Ddesign=literalDesign1;[literalDesign2;][...][literalDesignN;]");
         getLog().info("mvn cap4j-ddd-codegen:gen-design -DdesignFile=/path/to/designFile");
         getLog().info("literalDesignN; 支持如下设计元素:");
+        getLog().info("(可使用转义符'\\'对 ';' ':' 进行转义)");
         getLog().info("--------------------------------------------------");
         getLog().info("cmd:{命令名称}[:命令说明]");
         getLog().info("功能：定义【应用层】设计元素【命令】，CQS中的C");
@@ -231,7 +232,7 @@ public class HelpMojo extends AbstractMojo {
         getLog().info("cli:{防腐端名称}[:防腐端说明]");
         getLog().info("功能：定义【应用层】设计元素【防腐端】，作为外部服务接口防腐层，ACL");
         getLog().info("--------------------------------------------------");
-        getLog().info("ie:{集成事件名称}[:mq-topic[:mq-consumer[:集成事件说明]]]");
+        getLog().info("ie:{集成事件名称}[:mq-topic[:集成事件说明]]");
         getLog().info("功能：定义【应用层】设计元素【集成事件】，Integration Event");
         getLog().info("--------------------------------------------------");
         getLog().info("ies:{集成事件名称}[:mq-topic[:mq-consumer[:集成事件说明]]]");
