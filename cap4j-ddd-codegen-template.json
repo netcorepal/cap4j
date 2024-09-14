@@ -137,13 +137,13 @@
           "type": "file",
           "name": "${Client}Request.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.distributed.clients;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Client}防腐端请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Request implements RequestParam<${Client}Response> {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.application.distributed.clients${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Client}防腐端请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Request implements RequestParam<${Client}Response> {\n    Long id;\n}\n"
         },
         {
           "type": "file",
           "name": "${Client}Response.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.distributed.clients;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Client}防腐端响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Response {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.application.distributed.clients${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Client}防腐端响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Response {\n    Long id;\n}\n"
         }
       ]
     },
@@ -355,7 +355,7 @@
                                       "type": "file",
                                       "name": "MyIntegrationEventInterceptor.java",
                                       "format": "raw",
-                                      "data": "package ${basePackage}.adapter.application._share.configure;\n\nimport org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;\nimport org.netcorepal.cap4j.ddd.domain.event.EventRecord;\nimport org.springframework.stereotype.Service;\n\nimport java.time.LocalDateTime;\n\n/**\n * 集成事件拦截器\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\npublic class MyIntegrationEventInterceptor implements IntegrationEventInterceptor {\n    @Override\n    public void onNotify(Object eventPayload, LocalDateTime schedule) {\n\n    }\n\n    @Override\n    public void prePersist(EventRecord event) {\n\n    }\n\n    @Override\n    public void postPersist(EventRecord event) {\n\n    }\n\n    @Override\n    public void preRelease(EventRecord event) {\n\n    }\n\n    @Override\n    public void postRelease(EventRecord event) {\n\n    }\n\n    @Override\n    public void onException(Throwable throwable, EventRecord event) {\n\n    }\n}\n"
+                                      "data": "package ${basePackage}.adapter.application._share.configure;\n\nimport org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;\nimport org.netcorepal.cap4j.ddd.domain.event.EventRecord;\nimport org.springframework.stereotype.Service;\n\nimport java.time.LocalDateTime;\n\n/**\n * 集成事件拦截器\n *\n * @author cap4j-ddd-codegen\n * @date 2024/09/14\n */\n@Service\npublic class MyIntegrationEventInterceptor implements IntegrationEventInterceptor {\n\n    @Override\n    public void prePersist(EventRecord event) {\n\n    }\n\n    @Override\n    public void postPersist(EventRecord event) {\n\n    }\n\n    @Override\n    public void preRelease(EventRecord event) {\n\n    }\n\n    @Override\n    public void postRelease(EventRecord event) {\n\n    }\n\n    @Override\n    public void onException(Throwable throwable, EventRecord event) {\n\n    }\n\n    @Override\n    public void onAttach(Object eventPayload, LocalDateTime schedule) {\n\n    }\n\n    @Override\n    public void onDetach(Object eventPayload) {\n\n    }\n}\n"
                                     }
                                   ]
                                 }
