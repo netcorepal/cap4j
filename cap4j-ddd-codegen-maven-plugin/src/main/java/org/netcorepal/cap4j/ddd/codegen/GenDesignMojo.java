@@ -399,11 +399,17 @@ public class GenDesignMojo extends GenArchMojo {
             context.put("event", context.get("integration_event"));
             context.put("ie", context.get("integration_event"));
             context.put("i_e", context.get("integration_event"));
-            context.put("MQ_TOPIC", context.containsKey("Val1") ? ("\"" + context.get("Val1") + "\"") : ("\"" + context.get("Val0") + "\""));
+            if(context.containsKey("Val1")) {
+                context.put("MQ_TOPIC", ("\"" + context.get("Val1") + "\""));
+            } else {
+                context.put("MQ_TOPIC", ("\"" + context.get("Val0") + "\""));
+            }
             if (Objects.equals(literalType, "integration_event_handler") && !context.containsKey("Val2")) {
                 context.put("MQ_CONSUMER", "IntegrationEvent.NONE_SUBSCRIBER");
+            } else if(context.containsKey("Val2")) {
+                context.put("MQ_CONSUMER", ("\"" + context.get("Val2") + "\""));
             } else {
-                context.put("MQ_CONSUMER", context.containsKey("Val2") ? ("\"" + context.get("Val2") + "\"") : "\"${spring.application.name}\"");
+                context.put("MQ_CONSUMER", "\"${spring.application.name}\"");
             }
 
             context.put("Comment", context.containsKey("Val3") ? context.get("Val3") : "todo: 集成事件描述");
