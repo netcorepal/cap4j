@@ -153,7 +153,7 @@ public class GenDesignMojo extends GenArchMojo {
         if (StringUtils.isBlank(design)) {
             return new HashMap<>();
         }
-        return Arrays.stream(escape(design).split(PATTERN_SPLITTER))
+        return Arrays.stream(escape(design).replaceAll("\\r\\n|\\r|\\n", ";").split(PATTERN_SPLITTER))
                 .map(item -> TextUtils.splitWithTrim(item, DESIGN_PARAMS_SPLITTER, 2))
                 .filter(item -> item.length == 2)
                 .collect(Collectors.groupingBy(
@@ -179,7 +179,7 @@ public class GenDesignMojo extends GenArchMojo {
             design += this.design;
         }
         if (StringUtils.isNotBlank(this.designFile) && FileUtils.fileExists(this.designFile)) {
-            design += (DESIGN_PARAMS_SPLITTER + FileUtils.fileRead(this.designFile, this.archTemplateEncoding));
+            design += (";" + FileUtils.fileRead(this.designFile, this.archTemplateEncoding));
         }
         Map<String, Set<String>> designMap = resolveLiteralDesign(design);
 
@@ -406,19 +406,26 @@ public class GenDesignMojo extends GenArchMojo {
             context.put("ie", context.get("integration_event"));
             context.put("i_e", context.get("integration_event"));
             if (context.containsKey("Val1")) {
-                context.put("MQ_TOPIC", ("\"" + context.get("Val1") + "\""));
+                context.put("MQ_TOPIC", StringUtils.isBlank(context.get("Val1"))
+                        ? ("\"" + context.get("Val0") + "\"")
+                        : ("\"" + context.get("Val1") + "\""));
             } else {
                 context.put("MQ_TOPIC", ("\"" + context.get("Val0") + "\""));
             }
-            if (Objects.equals(literalType, "integration_event_handler") && !context.containsKey("Val2")) {
+            if (Objects.equals(literalType, "integration_event")) {
                 context.put("MQ_CONSUMER", "IntegrationEvent.NONE_SUBSCRIBER");
-            } else if (context.containsKey("Val2")) {
-                context.put("MQ_CONSUMER", ("\"" + context.get("Val2") + "\""));
+                context.put("Comment", context.containsKey("Val2") ? context.get("Val2") : "todo: 集成事件描述");
             } else {
-                context.put("MQ_CONSUMER", "\"${spring.application.name}\"");
+                if (context.containsKey("Val2")) {
+                    context.put("MQ_CONSUMER", StringUtils.isBlank(context.get("Val2"))
+                            ? "\"${spring.application.name}\""
+                            : ("\"" + context.get("Val2") + "\"")
+                    );
+                } else {
+                    context.put("MQ_CONSUMER", "\"${spring.application.name}\"");
+                }
+                context.put("Comment", context.containsKey("Val3") ? context.get("Val3") : "todo: 集成事件描述");
             }
-
-            context.put("Comment", context.containsKey("Val3") ? context.get("Val3") : "todo: 集成事件描述");
             context.put("comment", context.get("Comment"));
             return context;
         });
