@@ -529,8 +529,27 @@ public class SqlSchemaUtils {
      * @return
      */
     public static boolean isAggregateRoot(Map<String, Object> table) {
-        return hasAnyAnnotation(table, Arrays.asList("AggregateRoot", "Root", "R"))
-                || !hasAnyAnnotation(table, Arrays.asList("Parent", "P"));
+        return !hasParent(table) || hasAnyAnnotation(table, Arrays.asList("AggregateRoot", "Root", "R"));
+    }
+
+    /**
+     * 是否值对象
+     *
+     * @param table
+     * @return
+     */
+    public static boolean isValueObject(Map<String, Object> table) {
+        return hasAnyAnnotation(table, Arrays.asList("ValueObject", "VO"));
+    }
+
+    /**
+     * 是否含聚合关系中的父表
+     *
+     * @param table
+     * @return
+     */
+    public static boolean hasParent(Map<String, Object> table) {
+        return hasAnyAnnotation(table, Arrays.asList("Parent", "P"));
     }
 
     /**

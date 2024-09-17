@@ -80,6 +80,8 @@ public class HelpMojo extends AbstractMojo {
                 "                    <fetchType>EAGER</fetchType>\n" +
                 "                    <!-- [gen-entity]主键生成器 默认自增策略 -->\n" +
                 "                    <idGenerator></idGenerator>\n" +
+                "                    <!-- [gen-entity]值对象主键生成器 默认md5哈希 -->\n" +
+                "                    <idGenerator4ValueObject></idGenerator4ValueObject>\n" +
                 "                    <!-- [gen-entity]枚举类型【值】字段名称 默认'value' -->\n" +
                 "                    <enumValueField>code</enumValueField>\n" +
                 "                    <!-- [gen-entity]枚举类型【名】字段名称 默认'name' -->\n" +

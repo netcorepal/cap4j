@@ -29,7 +29,6 @@ import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.writeLine;
  */
 @Mojo(name = "gen-repository")
 public class GenRepositoryMojo extends MyAbstractMojo {
-
     Map<String, String> AggregateRoot2AggregateNameMap = new HashMap<>();
 
     @Override
@@ -99,12 +98,15 @@ public class GenRepositoryMojo extends MyAbstractMojo {
                     this.getLog().info("发现聚合根: " + className);
 
                     String simpleClassName = SourceFileUtils.resolveSimpleClassName(file.getAbsolutePath());
+
+                    String identityClass = getIdType(content);
+                    this.getLog().info("聚合根ID类型: " + identityClass);
                     if (Arrays.stream(ignoreAggregateRoots.split("[\\,\\;]"))
                             .anyMatch(i -> i.equalsIgnoreCase(simpleClassName))) {
                         return;
                     }
                     try {
-                        writeAggregateRepositorySourceFile(file.getAbsolutePath(), basePackage, adapterModulePath);
+                        writeAggregateRepositorySourceFile(className, simpleClassName, identityClass, basePackage, adapterModulePath);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -117,7 +119,7 @@ public class GenRepositoryMojo extends MyAbstractMojo {
         this.getLog().info("结束生成仓储代码");
     }
 
-    Pattern AGGREGATE_PATTERN = Pattern.compile("\\((aggregate\\s*=\\s*){1}\\\"(){1}\\\"\\)");
+    static Pattern AGGREGATE_PATTERN = Pattern.compile("\\s*aggregate\\s*=\\s*\\\"([^\\\"]*)\\\"");
 
     private boolean isAggregateRoot(String content, String className) {
         return Arrays.stream(content.split("(\r)|(\n)|(\r\n)"))
@@ -137,24 +139,36 @@ public class GenRepositoryMojo extends MyAbstractMojo {
                                 return hasAggregateRoot;
                             }
 
-                            boolean hasAggregate =
-                                    line.matches("@Aggregate\\s*\\(.*type\\s*=\\s*\\\"root\\\".*\\)")
-                                            || line.matches("@Aggregate\\s*\\(.*type\\s*=\\s*Aggregate.TYPE_ROOT.*\\)")
-                                            || line.matches("@Aggregate\\s*\\(.*type\\s*=\\s*TYPE_ROOT.*\\)");
-                            if (hasAggregate) {
+                            boolean aggregateRoot =
+                                    line.matches("@Aggregate\\s*\\(.*root\\s*=\\s*true.*\\)");
+                            if (aggregateRoot) {
                                 Matcher matcher = AGGREGATE_PATTERN.matcher(line);
-                                if (matcher.find() && matcher.groupCount() > 1) {
-                                    AggregateRoot2AggregateNameMap.put(className, matcher.group(2));
+                                if (matcher.find() && matcher.groupCount() == 1) {
+                                    AggregateRoot2AggregateNameMap.put(className, matcher.group(1));
                                 }
                             }
-                            boolean aggregateRoot = hasAggregate;
 
                             getLog().debug("annotationline: " + line);
                             getLog().debug("hasAggregateRoot=" + hasAggregateRoot);
-                            getLog().debug("hasAggregate=" + hasAggregate);
+                            getLog().debug("aggregateRoot=" + aggregateRoot);
                             return aggregateRoot;
                         }
                 );
+    }
+
+    private String getIdType(String content) {
+        Pattern ID_FIELD_PATTERN = Pattern.compile("^\\s*([_A-Za-z][_A-Za-z0-9]*)\\s*" + idField + "\\s*;$");
+        String idFieldLine = Arrays.stream(content.split("(\r)|(\n)|(\r\n)"))
+                .filter(ID_FIELD_PATTERN.asPredicate())
+                .findFirst()
+                .orElse(null);
+        if (null != idFieldLine) {
+            Matcher matcher = ID_FIELD_PATTERN.matcher(idFieldLine);
+            if (matcher.find() && matcher.groupCount() == 1) {
+                return matcher.group(1);
+            }
+        }
+        return "Long";
     }
 
     /**
@@ -231,11 +245,8 @@ public class GenRepositoryMojo extends MyAbstractMojo {
         }
     }
 
-    public void writeAggregateRepositorySourceFile(String entitySourceFilePath, String basePackage, String baseDir) throws IOException {
+    public void writeAggregateRepositorySourceFile(String className, String simpleClassName, String aggregateIdentityClass, String basePackage, String baseDir) throws IOException {
         String packageName = basePackage + ".adapter.domain.repositories";
-
-        String simpleClassName = SourceFileUtils.resolveSimpleClassName(entitySourceFilePath);
-        String className = SourceFileUtils.resolveClassName(entitySourceFilePath);
         String aggregate = AggregateRoot2AggregateNameMap.getOrDefault(className, simpleClassName);
 
         new File(SourceFileUtils.resolveDirectory(baseDir, packageName)).mkdirs();

@@ -16,8 +16,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Aggregate {
-    public static final String TYPE_ROOT = "root";
     public static final String TYPE_ENTITY = "entity";
+    public static final String TYPE_VALUE_OBJECT = "value-object";
     public static final String TYPE_ENUM = "enum";
     public static final String TYPE_REPOSITORY = "repository";
     public static final String TYPE_DOMAIN_EVENT = "domain-event";
@@ -40,8 +40,14 @@ public @interface Aggregate {
     String name() default "";
 
     /**
+     * 是否聚合根
+     * @return
+     */
+    boolean root() default false;
+
+    /**
      * 元素类型
-     * root、entity、domain-event、specification、repository
+     * entity、value-object、repository、factory、factory-payload、domain-event、specification、enum
      *
      * @return
      */

@@ -259,7 +259,6 @@ public class GenArchMojo extends MyAbstractMojo {
         context.put("generateBuild", generateBuild ? "true" : "false");
         context.put("aggregateRootAnnotation", aggregateRootAnnotation);
         context.put("aggregateRepositoryBaseClass", aggregateRepositoryBaseClass);
-        context.put("aggregateIdentityClass", aggregateIdentityClass);
         context.put("aggregateRepositoryCustomerCode", aggregateRepositoryCustomerCode);
         context.put("ignoreAggregateRoots", ignoreAggregateRoots);
         context.put("date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));

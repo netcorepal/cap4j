@@ -243,6 +243,14 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "idGenerator", defaultValue = "")
     public String idGenerator = "";
+
+    /**
+     * 值对象主键生成器 默认md5哈希
+     *
+     * @parameter expression="${idGenerator4ValueObject}"
+     */
+    @Parameter(property = "idGenerator4ValueObject", defaultValue = "")
+    public String idGenerator4ValueObject = "";
     /**
      * 枚举类型【值】字段名称
      *
@@ -309,14 +317,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "generateBuild", defaultValue = "false")
     public Boolean generateBuild = false;
-
-    /**
-     * 聚合唯一标识类型
-     *
-     * @parameter expression="${aggregateIdentityClass}"
-     */
-    @Parameter(property = "aggregateIdentityClass", defaultValue = "Long")
-    public String aggregateIdentityClass = "Long";
 
     /**
      * 聚合根注解

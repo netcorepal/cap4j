@@ -62,7 +62,6 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("忽略字段：" + ignoreFields);
         getLog().info("");
         getLog().info("主键ID生成器：" + idGenerator);
-        getLog().info("聚合根主键映射Java类型：" + aggregateIdentityClass);
         getLog().info("日期类型映射Java包：" + datePackage4Java);
         getLog().info("枚举值Java字段名称：" + enumValueField);
         getLog().info("枚举名Java字段名称：" + enumNameField);
@@ -597,11 +596,14 @@ public class GenEntityMojo extends MyAbstractMojo {
         String tableName = getTableName(table);
         boolean annotationEmpty = annotationLines.size() == 0;
         SourceFileUtils.removeText(annotationLines, "@Aggregate\\(.*\\)");
-        if (isAggregateRoot(table)) {
-            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = Aggregate.TYPE_ROOT, description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
-        } else {
-            SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + getEntityJavaType(tableName) + "\", type = Aggregate.TYPE_ENTITY, relevant = { \"" + getEntityJavaType(getParent(table)) + "\" }, description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\")", (list, line) -> 0);
-        }
+        SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(" +
+                "aggregate = \"" + getAggregateWithModule(tableName) + "\", " +
+                "name = \"" + getEntityJavaType(tableName) + "\", " +
+                "root = " + (isAggregateRoot(table) ? "true" : "false") + ", " +
+                "type = " + (isValueObject(table) ? "Aggregate.TYPE_VALUE_OBJECT" : "Aggregate.TYPE_ENTITY") + ", " +
+                (isAggregateRoot(table) ? "" : ("relevant = { \"" + getEntityJavaType(getParent(table)) + "\" }, ")) +
+                "description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\"" +
+                ")", (list, line) -> 0);
         if (StringUtils.isNotBlank(getAggregateRootAnnotation())) {
             if (isAggregateRoot(table)) {
                 SourceFileUtils.addIfNone(annotationLines, getAggregateRootAnnotation() + "(\\(.*\\))?", getAggregateRootAnnotation());
@@ -735,6 +737,11 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
     }
 
+    private Map<String, Object> getIdColumn(List<Map<String, Object>> columns){
+        return columns.stream().filter(column -> Objects.equals(idField, getColumnName(column)))
+                .findFirst().orElse(null);
+    }
+
     private String generateEntityClassMainSource(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, List<String> enums, List<String> annotationLines, List<String> customerLines) throws IOException {
         String tableName = getTableName(table);
         String simpleClassName = getEntityJavaType(tableName);
@@ -761,14 +768,24 @@ public class GenEntityMojo extends MyAbstractMojo {
         if (hasIdGenerator(table)) {
             writeLine(out, "    @GeneratedValue(generator = \"" + getIdGenerator(table) + "\")");
             writeLine(out, "    @GenericGenerator(name = \"" + getIdGenerator(table) + "\", strategy = \"" + getIdGenerator(table) + "\")");
-        } else if (StringUtils.isNotBlank(idGenerator)) {
-            writeLine(out, "    @GeneratedValue(generator = \"" + idGenerator + "\")");
-            writeLine(out, "    @GenericGenerator(name = \"" + idGenerator + "\", strategy = \"" + idGenerator + "\")");
+        } else if (isValueObject(table)) {
+            if (StringUtils.isNotBlank(idGenerator4ValueObject)) {
+                writeLine(out, "    @GeneratedValue(generator = \"" + idGenerator4ValueObject + "\")");
+                writeLine(out, "    @GenericGenerator(name = \"" + idGenerator4ValueObject + "\", strategy = \"" + idGenerator4ValueObject + "\")");
+            } else {
+                writeLine(out, "    @GeneratedValue(generator = \"org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator\")");
+                writeLine(out, "    @GenericGenerator(name = \"org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator\", strategy = \"org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator\")");
+            }
         } else {
-            writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
+            if (StringUtils.isNotBlank(idGenerator)) {
+                writeLine(out, "    @GeneratedValue(generator = \"" + idGenerator + "\")");
+                writeLine(out, "    @GenericGenerator(name = \"" + idGenerator + "\", strategy = \"" + idGenerator + "\")");
+            } else {
+                writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
+            }
         }
         writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + "\")");
-        writeLine(out, "    Long " + idField + ";");
+        writeLine(out, "    " + getColumnJavaType(getIdColumn(columns)) + " " + idField + ";");
         writeLine(out, "");
         for (Map<String, Object> column : columns) {
             writeColumnProperty(out, table, column, relations, enums);
