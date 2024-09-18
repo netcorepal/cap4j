@@ -99,6 +99,9 @@ public class SqlSchemaUtils {
                 case DB_TYPE_MYSQL:
                     Class.forName("com.mysql.jdbc.Driver");
                     break;
+                case DB_TYPE_POSTGRESQL:
+                    Class.forName("org.postgresql.Driver");
+                    break;
             }
             //2.获得数据库链接
             Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
@@ -142,6 +145,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.resolveTables(connectionString, user, pwd);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.resolveTables(connectionString, user, pwd);
         }
     }
 
@@ -159,6 +164,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.resolveColumns(connectionString, user, pwd);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.resolveColumns(connectionString, user, pwd);
         }
     }
 
@@ -181,6 +188,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.getColumnJavaType(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.getColumnJavaType(column);
         }
     }
 
@@ -195,6 +204,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.getColumnDefaultJavaLiteral(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.getColumnDefaultJavaLiteral(column);
         }
     }
 
@@ -209,6 +220,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.isAutoUpdateDateColumn(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.isAutoUpdateDateColumn(column);
         }
     }
 
@@ -223,6 +236,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.isAutoInsertDateColumn(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.isAutoInsertDateColumn(column);
         }
     }
 
@@ -238,6 +253,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.isColumnInTable(column, table);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.isColumnInTable(column, table);
         }
     }
 
@@ -252,6 +269,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.getOridinalPosition(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.getOridinalPosition(column);
         }
     }
 
@@ -267,6 +286,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.hasColumn(columnName, columns);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.hasColumn(columnName, columns);
         }
     }
 
@@ -281,6 +302,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.getName(tableOrColumn);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.getName(tableOrColumn);
         }
     }
 
@@ -295,20 +318,24 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.getColumnName(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.getColumnName(column);
         }
     }
 
     /**
      * 获取表名
      *
-     * @param tableOrColumn
+     * @param table
      * @return
      */
-    public static String getTableName(Map<String, Object> tableOrColumn) {
+    public static String getTableName(Map<String, Object> table) {
         switch (mojo.dbType) {
             default:
             case DB_TYPE_MYSQL:
-                return SqlSchemaUtils4Mysql.getTableName(tableOrColumn);
+                return SqlSchemaUtils4Mysql.getTableName(table);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.getTableName(table);
         }
     }
 
@@ -323,6 +350,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.getColumnDbType(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.getColumnDbType(column);
         }
     }
 
@@ -337,6 +366,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.getColumnDbDataType(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.getColumnDbDataType(column);
         }
     }
 
@@ -351,6 +382,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.isColumnNullable(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.isColumnNullable(column);
         }
     }
 
@@ -366,6 +399,8 @@ public class SqlSchemaUtils {
             default:
             case DB_TYPE_MYSQL:
                 return SqlSchemaUtils4Mysql.getComment(tableOrColumn, cleanAnnotations);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.getComment(tableOrColumn, cleanAnnotations);
         }
     }
 

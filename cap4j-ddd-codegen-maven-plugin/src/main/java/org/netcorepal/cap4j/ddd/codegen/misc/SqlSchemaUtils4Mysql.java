@@ -27,6 +27,7 @@ public class SqlSchemaUtils4Mysql {
             String whereClause = String.join(" or ", Arrays.stream(mojo.ignoreTable.split(mojo.PATTERN_SPLITTER)).map(t -> "table_name like " + LEFT_QUOTES_4_LITERAL_STRING + t + RIGHT_QUOTES_4_LITERAL_STRING).collect(Collectors.toList()));
             tableSql += " and not (" + whereClause + ")";
         }
+        mojo.getLog().debug(tableSql);
         return executeQuery(tableSql, connectionString, user, pwd);
     }
     public static List<Map<String, Object>> resolveColumns(String connectionString, String user, String pwd){
@@ -39,6 +40,7 @@ public class SqlSchemaUtils4Mysql {
             String whereClause = String.join(" or ", Arrays.stream(mojo.ignoreTable.split(mojo.PATTERN_SPLITTER)).map(t -> "table_name like " + LEFT_QUOTES_4_LITERAL_STRING + t + RIGHT_QUOTES_4_LITERAL_STRING).collect(Collectors.toList()));
             columnSql += " and not (" + whereClause + ")";
         }
+        mojo.getLog().debug(columnSql);
         return executeQuery(columnSql, connectionString, user, pwd);
     }
 
@@ -143,9 +145,9 @@ public class SqlSchemaUtils4Mysql {
             case "Boolean":
                 if (StringUtils.isNotEmpty(columnDefault)) {
                     if (columnDefault.trim().equalsIgnoreCase("b'1'")) {
-                        return "false";
-                    } else if (columnDefault.trim().equalsIgnoreCase("b'0'")) {
                         return "true";
+                    } else if (columnDefault.trim().equalsIgnoreCase("b'0'")) {
+                        return "false";
                     }
                     return "" + (columnDefault.trim().equalsIgnoreCase("0") ? "false" : "true");
                 } else {
@@ -164,7 +166,6 @@ public class SqlSchemaUtils4Mysql {
                 } else {
                     return "java.math.BigDecimal.ZERO";
                 }
-            case "java.util.Date":
             default:
                 break;
         }
@@ -208,8 +209,8 @@ public class SqlSchemaUtils4Mysql {
         return column.get("COLUMN_NAME").toString();
     }
 
-    public static String getTableName(Map<String, Object> tableOrColumn) {
-        return tableOrColumn.get("TABLE_NAME").toString();
+    public static String getTableName(Map<String, Object> table) {
+        return table.get("TABLE_NAME").toString();
     }
 
     public static String getColumnDbType(Map<String, Object> column) {

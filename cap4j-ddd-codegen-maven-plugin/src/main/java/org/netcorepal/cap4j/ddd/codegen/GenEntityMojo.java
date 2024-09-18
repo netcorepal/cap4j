@@ -346,8 +346,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     public boolean isReservedColumn(Map<String, Object> column) {
         String columnName = getColumnName(column).toLowerCase();
         boolean isReserved = idField.equalsIgnoreCase(columnName)
-                || versionField.equalsIgnoreCase(columnName)
-                || columnName.startsWith("db_");
+                || versionField.equalsIgnoreCase(columnName);
         return isReserved;
     }
 
@@ -627,19 +626,19 @@ public class GenEntityMojo extends MyAbstractMojo {
 //            }
 //        }
         SourceFileUtils.addIfNone(annotationLines, "@Entity(\\(.*\\))?", "@Entity");
-        SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(name = \"" + LEFT_QUOTES_4_ID_ALIAS + tableName + RIGHT_QUOTES_4_ID_ALIAS + "\")");
+        SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicInsert(\\(.*\\))?", "@DynamicInsert");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicUpdate(\\(.*\\))?", "@DynamicUpdate");
         if (StringUtils.isNotBlank(deletedField) && hasColumn(deletedField, columns)) {
             if (hasColumn(versionField, columns)) {
-                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS + tableName + RIGHT_QUOTES_4_ID_ALIAS + " set " + LEFT_QUOTES_4_ID_ALIAS + deletedField + RIGHT_QUOTES_4_ID_ALIAS + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + " = ? and " + LEFT_QUOTES_4_ID_ALIAS + versionField + RIGHT_QUOTES_4_ID_ALIAS + " = ? \")");
+                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " set " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? and " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + versionField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? \")");
             } else {
-                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS + tableName + RIGHT_QUOTES_4_ID_ALIAS + " set " + LEFT_QUOTES_4_ID_ALIAS + deletedField + RIGHT_QUOTES_4_ID_ALIAS + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + " = ? \")");
+                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " set " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? \")");
             }
             if (hasColumn(versionField, columns) && !SourceFileUtils.hasLine(annotationLines, "@SQLDelete(\\(.*" + versionField + ".*\\))")) {
-                SourceFileUtils.replaceText(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS + tableName + RIGHT_QUOTES_4_ID_ALIAS + " set " + LEFT_QUOTES_4_ID_ALIAS + deletedField + RIGHT_QUOTES_4_ID_ALIAS + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + " = ? and " + LEFT_QUOTES_4_ID_ALIAS + versionField + RIGHT_QUOTES_4_ID_ALIAS + " = ? \")");
+                SourceFileUtils.replaceText(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " set " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? and " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + versionField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? \")");
             }
-            SourceFileUtils.addIfNone(annotationLines, "@Where(\\(.*\\))?", "@Where(clause = \"" + LEFT_QUOTES_4_ID_ALIAS + deletedField + RIGHT_QUOTES_4_ID_ALIAS + " = 0\")");
+            SourceFileUtils.addIfNone(annotationLines, "@Where(\\(.*\\))?", "@Where(clause = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 0\")");
         }
         if (annotationEmpty) {
             annotationLines.add("");
@@ -793,7 +792,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         } else {
             writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
         }
-        writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + "\")");
+        writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
         writeLine(out, "    " + getColumnJavaType(getIdColumn(columns)) + " " + idField + ";");
         writeLine(out, "");
         if (isValueObject(table)) {
@@ -813,7 +812,7 @@ public class GenEntityMojo extends MyAbstractMojo {
             writeLine(out, "     * 数据版本（支持乐观锁）");
             writeLine(out, "     */");
             writeLine(out, "    @Version");
-            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + versionField + RIGHT_QUOTES_4_ID_ALIAS + "\")");
+            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + versionField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
             if (generateDefault) {
                 writeLine(out, "    @Builder.Default");
                 writeLine(out, "    Integer " + toLowerCamelCase(versionField) + " = 0;");
@@ -978,9 +977,9 @@ public class GenEntityMojo extends MyAbstractMojo {
             writeLine(out, "    @Convert(converter = " + columnJavaType + ".Converter.class)");
         }
         if (!updatable || !insertable) {
-            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + columnName + RIGHT_QUOTES_4_ID_ALIAS + "\", insertable = " + (insertable ? "true" : "false") + ", updatable = " + (updatable ? "true" : "false") + ")");
+            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + columnName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", insertable = " + (insertable ? "true" : "false") + ", updatable = " + (updatable ? "true" : "false") + ")");
         } else {
-            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + columnName + RIGHT_QUOTES_4_ID_ALIAS + "\")");
+            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + columnName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
         }
         if (generateDefault) {
             String defaultJavaLiteral = getColumnDefaultJavaLiteral(column);
@@ -1044,7 +1043,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                     switch (refInfos[0]) {
                         case "OneToMany":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY, orphanRemoval = true)");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\", nullable = false)");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
                             boolean countIsOne = countIsOne(navTable);
                             if (countIsOne) {
                                 writeLine(out, "    @Getter(lombok.AccessLevel.PROTECTED)");
@@ -1060,12 +1059,12 @@ public class GenEntityMojo extends MyAbstractMojo {
                             break;
                         case "ManyToOne":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
                             writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                             break;
                         case "OneToOne":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
                             writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                             break;
                         case "*OneToMany":
@@ -1078,7 +1077,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                             break;
                         case "ManyToMany":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS + "\", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")}, inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS + "\")})");
+                            writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")}, inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")})");
                             writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                             break;
                         case "*ManyToMany":
@@ -1094,7 +1093,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                     switch (refInfos[0]) {
                         case "OneToMany":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER, orphanRemoval = true) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\", nullable = false)");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
                             boolean countIsOne = countIsOne(navTable);
                             if (countIsOne) {
                                 writeLine(out, "    @Getter(lombok.AccessLevel.PROTECTED)");
@@ -1110,12 +1109,12 @@ public class GenEntityMojo extends MyAbstractMojo {
                             break;
                         case "ManyToOne":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
                             writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                             break;
                         case "OneToOne":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")");
+                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
                             writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                             break;
                         case "*OneToMany":
@@ -1128,7 +1127,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                             break;
                         case "ManyToMany":
                             writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS + "\", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS + "\")}, inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS + "\")})");
+                            writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")}, inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")})");
                             writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                             break;
                         case "*ManyToMany":

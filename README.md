@@ -62,8 +62,8 @@ Mediator中介者模式、
                     <pwd>123456</pwd>
                     <schema>test</schema>
                     <table></table>
-                    <ignoreTable></ignoreTable>
-                    <ignoreFields></ignoreFields>
+                    <ignoreTable>__%</ignoreTable>
+                    <ignoreFields>db_%</ignoreFields>
                     <idField>id</idField>
                     <versionField>version</versionField>
                     <deletedField>db_deleted</deletedField>
