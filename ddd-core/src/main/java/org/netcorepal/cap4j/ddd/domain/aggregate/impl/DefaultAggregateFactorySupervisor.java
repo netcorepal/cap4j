@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.aggregate.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
@@ -19,6 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DefaultAggregateFactorySupervisor implements AggregateFactorySupervisor {
     private final List<AggregateFactory<?, ?>> factories;
+    private final UnitOfWork unitOfWork;
 
     private Map<Class<?>, AggregateFactory<?, ?>> factoryMap = null;
 
@@ -51,6 +53,7 @@ public class DefaultAggregateFactorySupervisor implements AggregateFactorySuperv
             return null;
         }
         ENTITY instance = ((AggregateFactory<ENTITY_PAYLOAD, ENTITY>) factory).create(entityPayload);
+        unitOfWork.persist(instance);
         return instance;
     }
 }

@@ -51,10 +51,12 @@ public class JpaRepositoryAutoConfiguration {
 
     @Bean
     public DefaultAggregateFactorySupervisor defaultAggregateFactorySupervisor(
-            List<AggregateFactory<?, ?>> factories
+            List<AggregateFactory<?, ?>> factories,
+            JpaUnitOfWork jpaUnitOfWork
     ){
         DefaultAggregateFactorySupervisor aggregateFactorySupervisor = new DefaultAggregateFactorySupervisor(
-                factories
+                factories,
+                jpaUnitOfWork
         );
         aggregateFactorySupervisor.init();
         AggregateFactorySupervisorSupport.configure(aggregateFactorySupervisor);

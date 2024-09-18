@@ -538,6 +538,13 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
 
         List<String> entityClassExtraImports = getEntityClassExtraImports();
+        if (isValueObject(table)) {
+            if (entityClassExtraImports.indexOf("org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate") > 0) {
+                entityClassExtraImports.add(entityClassExtraImports.indexOf("org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate"), "org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject");
+            } else {
+                entityClassExtraImports.add("org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject");
+            }
+        }
         if (importEmpty) {
             boolean breakLine = false;
             for (String entityClassExtraImport : entityClassExtraImports) {
@@ -737,7 +744,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
     }
 
-    private Map<String, Object> getIdColumn(List<Map<String, Object>> columns){
+    private Map<String, Object> getIdColumn(List<Map<String, Object>> columns) {
         return columns.stream().filter(column -> Objects.equals(idField, getColumnName(column)))
                 .findFirst().orElse(null);
     }
@@ -748,7 +755,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         StringWriter stringWriter = new StringWriter();
         BufferedWriter out = new BufferedWriter(stringWriter);
         annotationLines.forEach(line -> writeLine(out, line));
-        writeLine(out, "public class " + simpleClassName + (StringUtils.isNotBlank(entityBaseClass) ? " extends " + entityBaseClass : "") + " {");
+        writeLine(out, "public class " + simpleClassName + (StringUtils.isNotBlank(entityBaseClass) ? " extends " + entityBaseClass : "") + (isValueObject(table) ? " implements ValueObject" : "") + " {");
         if (customerLines.size() > 0) {
             customerLines.forEach(line -> writeLine(out, line));
         } else {
@@ -765,28 +772,37 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, "    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
         writeLine(out, "");
         writeLine(out, "    @Id");
+        String entityIdGenerator = null;
         if (hasIdGenerator(table)) {
-            writeLine(out, "    @GeneratedValue(generator = \"" + getIdGenerator(table) + "\")");
-            writeLine(out, "    @GenericGenerator(name = \"" + getIdGenerator(table) + "\", strategy = \"" + getIdGenerator(table) + "\")");
+            entityIdGenerator = getIdGenerator(table);
         } else if (isValueObject(table)) {
             if (StringUtils.isNotBlank(idGenerator4ValueObject)) {
-                writeLine(out, "    @GeneratedValue(generator = \"" + idGenerator4ValueObject + "\")");
-                writeLine(out, "    @GenericGenerator(name = \"" + idGenerator4ValueObject + "\", strategy = \"" + idGenerator4ValueObject + "\")");
+                entityIdGenerator = idGenerator4ValueObject;
             } else {
-                writeLine(out, "    @GeneratedValue(generator = \"org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator\")");
-                writeLine(out, "    @GenericGenerator(name = \"org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator\", strategy = \"org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator\")");
+                entityIdGenerator = "org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator";
             }
         } else {
             if (StringUtils.isNotBlank(idGenerator)) {
-                writeLine(out, "    @GeneratedValue(generator = \"" + idGenerator + "\")");
-                writeLine(out, "    @GenericGenerator(name = \"" + idGenerator + "\", strategy = \"" + idGenerator + "\")");
+                entityIdGenerator = idGenerator;
             } else {
-                writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
             }
+        }
+        if (null != entityIdGenerator) {
+            writeLine(out, "    @GeneratedValue(generator = \"" + entityIdGenerator + "\")");
+            writeLine(out, "    @GenericGenerator(name = \"" + entityIdGenerator + "\", strategy = \"" + entityIdGenerator + "\")");
+        } else {
+            writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
         }
         writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS + idField + RIGHT_QUOTES_4_ID_ALIAS + "\")");
         writeLine(out, "    " + getColumnJavaType(getIdColumn(columns)) + " " + idField + ";");
         writeLine(out, "");
+        if (isValueObject(table)) {
+            writeLine(out, "    @Override\n" +
+                    "    public String hash() {\n" +
+                    "        return (String) new " + entityIdGenerator + "().generate(null, this);\n" +
+                    "    }");
+            writeLine(out, "");
+        }
         for (Map<String, Object> column : columns) {
             writeColumnProperty(out, table, column, relations, enums);
         }
