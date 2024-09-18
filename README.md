@@ -86,7 +86,6 @@ Mediator中介者模式、
                     <generateDbType>true</generateDbType>
                     <generateSchema>true</generateSchema>
                     <generateBuild>false</generateBuild>
-                    <aggregateIdentityClass>Long</aggregateIdentityClass>
                     <aggregateRootAnnotation></aggregateRootAnnotation>
                     <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>
                     <aggregateRepositoryCustomerCode></aggregateRepositoryCustomerCode>
