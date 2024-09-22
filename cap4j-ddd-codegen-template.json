@@ -10,7 +10,7 @@
           "type": "file",
           "name": "${Command}Request.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Command}命令请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\npublic class ${Command}Request implements RequestParam<${ReturnType}> {\n\n}"
+          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Command}命令请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Command}Request implements RequestParam<${ReturnType}> {\n    String param;\n\n}"
         },
         {
           "type": "file",
@@ -22,7 +22,7 @@
           "type": "file",
           "name": "${Command}Handler.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.Mediator;\nimport org.netcorepal.cap4j.ddd.application.command.Command;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Command}命令请求实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Command}Handler implements Command<${Command}Request, ${Command}Response> {\n\n    @Override\n    public ${Command}Response exec(${Command}Request cmd) {\n        Mediator.uow().save();\n        \n        return null;\n    }\n}\n"
+          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.Mediator;\nimport org.netcorepal.cap4j.ddd.application.command.Command;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Command}命令请求实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Command}Handler implements Command<${Command}Request, ${Command}Response> {\n\n    @Override\n    public ${Command}Response exec(${Command}Request cmd) {\n        Mediator.uow().save();\n        \n        return ${Command}Response.builder()\n                .success(true)\n                .build();\n    }\n}\n"
         }
       ]
     },
@@ -221,7 +221,7 @@
           "type": "file",
           "name": "${Entity}Payload.java",
           "format": "raw",
-          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport lombok.Builder;\nimport lombok.Data;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n\n/**\n * ${Entity}工厂负载\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${Entity}Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n@Data\n@Builder\npublic class ${Entity}Payload implements AggregatePayload<${Entity}> {\n    \n}\n"
+          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n\n/**\n * ${Entity}工厂负载\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggreagate}\", name = \"${Entity}Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Entity}Payload implements AggregatePayload<${Entity}> {\n    \n}\n"
         },
         {
           "type": "file",
@@ -247,13 +247,13 @@
     {
       "type": "dir",
       "tag": "domain_service",
-      "name": "",
+      "name": "${path}",
       "children": [
         {
           "type": "file",
           "name": "${Name}.java",
           "format": "raw",
-          "data": "package ${basePackage}.domain.services;\n\nimport org.netcorepal.cap4j.ddd.domain.service.annotation.DomainService;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 领域服务描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@DomainService\n@Service\npublic class ${Name} {\n}\n"
+          "data": "package ${basePackage}.domain.services${package};\n\nimport org.netcorepal.cap4j.ddd.domain.service.annotation.DomainService;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@DomainService\n@Service\npublic class ${Name} {\n}\n"
         }
       ]
     }
