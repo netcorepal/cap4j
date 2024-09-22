@@ -14,8 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.toLowerCamelCase;
-import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.toUpperCamelCase;
+import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.*;
 import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.writeLine;
 import static org.netcorepal.cap4j.ddd.codegen.misc.SqlSchemaUtils.*;
 
@@ -250,11 +249,18 @@ public class GenEntityMojo extends MyAbstractMojo {
             String module = SqlSchemaUtils.getModule(table);
             getLog().info("尝试解析模块:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[缺失]" : module));
             while (!isAggregateRoot(table) && StringUtils.isBlank(module)) {
-                table = TableMap.get(getParent(table));
+                String parent = getParent(table);
+                if (StringUtils.isBlank(parent)) {
+                    break;
+                }
+                table = TableMap.get(parent);
+                if (table == null) {
+                    getLog().error("表 " + tableName + " @Parent 注解值填写错误，不存在表名为 " + parent + " 的表");
+                }
                 module = SqlSchemaUtils.getModule(table);
                 getLog().info("尝试父表模块:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[缺失]" : module));
             }
-            getLog().info("模块解析结果:" + getTableName(table) + " " + (StringUtils.isBlank(module) ? "[无]" : module));
+            getLog().info("模块解析结果:" + tableName + " " + (StringUtils.isBlank(module) ? "[无]" : module));
             return module;
         });
     }
@@ -280,7 +286,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 getLog().info("尝试父表聚合:" + getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
             }
             if (StringUtils.isBlank(aggregate)) {
-                aggregate = getEntityJavaType(getTableName(table)).toLowerCase();
+                aggregate =  toSnakeCase(getEntityJavaType(getTableName(table)));
             }
             getLog().info("聚合解析结果:" + tableName + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
             return aggregate;
@@ -1155,8 +1161,10 @@ public class GenEntityMojo extends MyAbstractMojo {
                     "package " + entityPackage + ".factory;\n" +
                             "\n" +
                             "import " + entityPackage + "." + simpleClassName + ";\n" +
+                            "import lombok.AllArgsConstructor;\n" +
                             "import lombok.Builder;\n" +
                             "import lombok.Data;\n" +
+                            "import lombok.NoArgsConstructor;\n" +
                             "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
                             "import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n" +
                             "\n" +
@@ -1170,6 +1178,8 @@ public class GenEntityMojo extends MyAbstractMojo {
                             "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + simpleClassName + "Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n" +
                             "@Data\n" +
                             "@Builder\n" +
+                            "@NoArgsConstructor\n" +
+                            "@AllArgsConstructor\n" +
                             "public class " + simpleClassName + "Payload implements AggregatePayload<" + simpleClassName + "> {\n" +
                             "    private Long id;\n" +
                             "}"
