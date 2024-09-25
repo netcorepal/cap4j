@@ -56,6 +56,7 @@ public class JpaUnitOfWork implements UnitOfWork {
 
     private static ThreadLocal<Set<Object>> persistedEntitiesThreadLocal = new ThreadLocal<>();
     private static ThreadLocal<Set<Object>> removedEntitiesThreadLocal = new ThreadLocal<>();
+    private static ThreadLocal<Set<Object>> processedPersistenceContextEntitiesThreadLocal = new ThreadLocal<>();
     private static ThreadLocal<EntityPersisttedEvent> entityPersisttedEventThreadLocal = new ThreadLocal<>();
 
 
@@ -81,11 +82,35 @@ public class JpaUnitOfWork implements UnitOfWork {
         save(Propagation.REQUIRED);
     }
 
+    private boolean pushProcessedPersistenceContextEntities(Object entity, Set<Object> currentProcessedPersistenceContextEntities) {
+        if (processedPersistenceContextEntitiesThreadLocal.get() == null) {
+            processedPersistenceContextEntitiesThreadLocal.set(new HashSet<>());
+            processedPersistenceContextEntitiesThreadLocal.get().add(entity);
+            currentProcessedPersistenceContextEntities.add(entity);
+            return true;
+        } else if(!processedPersistenceContextEntitiesThreadLocal.get().contains(entity)){
+            processedPersistenceContextEntitiesThreadLocal.get().add(entity);
+            currentProcessedPersistenceContextEntities.add(entity);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean popProcessedPersistenceContextEntities(Set<Object> currentProcessedPersistenceContextEntities) {
+        if (processedPersistenceContextEntitiesThreadLocal.get() != null && currentProcessedPersistenceContextEntities != null) {
+            return processedPersistenceContextEntitiesThreadLocal.get().removeAll(currentProcessedPersistenceContextEntities);
+        }
+        return true;
+    }
+
     public void save(Propagation propagation) {
+        Set<Object> currentProcessedPersistenceContextEntities = new HashSet<>();
+
         Set<Object> persistEntityList = null;
         if (persistedEntitiesThreadLocal.get() != null) {
             persistEntityList = new HashSet<>(persistedEntitiesThreadLocal.get());
             persistedEntitiesThreadLocal.get().clear();
+            persistEntityList.forEach(e -> pushProcessedPersistenceContextEntities(e, currentProcessedPersistenceContextEntities));
         } else {
             persistEntityList = new HashSet<>();
         }
@@ -93,13 +118,16 @@ public class JpaUnitOfWork implements UnitOfWork {
         if (removedEntitiesThreadLocal.get() != null) {
             deleteEntityList = new HashSet<>(removedEntitiesThreadLocal.get());
             removedEntitiesThreadLocal.get().clear();
+            deleteEntityList.forEach(e -> pushProcessedPersistenceContextEntities(e, currentProcessedPersistenceContextEntities));
         } else {
             deleteEntityList = new HashSet<>();
         }
         for (Object entity : persistenceContextEntities()) {
-            // 如果不在删除列表中，则加入保存列表
-            if (!deleteEntityList.contains(entity)) {
-                persistEntityList.add(entity);
+            if (pushProcessedPersistenceContextEntities(entity, currentProcessedPersistenceContextEntities)) {
+                // 如果不在删除列表中，则加入保存列表
+                if (!deleteEntityList.contains(entity)) {
+                    persistEntityList.add(entity);
+                }
             }
         }
         if (!persistEntityList.isEmpty() || !deleteEntityList.isEmpty()) {
@@ -169,11 +197,13 @@ public class JpaUnitOfWork implements UnitOfWork {
             integrationEventManager.release();
             return null;
         }, saveAndDeleteEntityList, propagation);
+        popProcessedPersistenceContextEntities(currentProcessedPersistenceContextEntities);
     }
 
     public static void reset() {
         persistedEntitiesThreadLocal.remove();
         removedEntitiesThreadLocal.remove();
+        processedPersistenceContextEntitiesThreadLocal.remove();
         entityPersisttedEventThreadLocal.remove();
     }
 
@@ -439,10 +469,6 @@ public class JpaUnitOfWork implements UnitOfWork {
             this.createdEntities = createdEntities;
             this.updatedEntities = updatedEntities;
             this.deletedEntities = deletedEntities;
-        }
-
-        public EntityPersisttedEvent clone() {
-            return new EntityPersisttedEvent(this.getSource(), new HashSet<>(createdEntities), new HashSet<>(updatedEntities), new HashSet<>(deletedEntities));
         }
     }
 
