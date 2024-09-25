@@ -44,13 +44,28 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
+    public <ENTITY> List<ENTITY> find4Update(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
+        return RepositorySupervisor.getInstance().find4Update(predicate, orders);
+    }
+
+    @Override
     public <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate) {
         return RepositorySupervisor.getInstance().findOne(predicate);
     }
 
     @Override
+    public <ENTITY> Optional<ENTITY> findOne4Update(Predicate<ENTITY> predicate) {
+        return RepositorySupervisor.getInstance().findOne4Update(predicate);
+    }
+
+    @Override
     public <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam) {
         return RepositorySupervisor.getInstance().findPage(predicate, pageParam);
+    }
+
+    @Override
+    public <ENTITY> PageData<ENTITY> findPage4Update(Predicate<ENTITY> predicate, PageParam pageParam) {
+        return RepositorySupervisor.getInstance().findPage4Update(predicate, pageParam);
     }
 
     @Override

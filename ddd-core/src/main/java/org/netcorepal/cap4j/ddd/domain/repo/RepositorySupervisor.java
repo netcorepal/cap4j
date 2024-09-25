@@ -40,6 +40,18 @@ public interface RepositorySupervisor {
 
     /**
      * 根据条件获取实体列表
+     * 自动调用 UnitOfWork::persist
+     *
+     * @param predicate
+     * @param <ENTITY>
+     * @return
+     */
+    default <ENTITY> List<ENTITY> find4Update(Predicate<ENTITY> predicate) {
+        return find4Update(predicate, null);
+    }
+
+    /**
+     * 根据条件获取实体列表
      *
      * @param predicate
      * @param orders
@@ -47,6 +59,17 @@ public interface RepositorySupervisor {
      * @return
      */
     <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, List<OrderInfo> orders);
+
+    /**
+     * 根据条件获取实体列表
+     * 自动调用 UnitOfWork::persist
+     *
+     * @param predicate
+     * @param orders
+     * @param <ENTITY>
+     * @return
+     */
+    <ENTITY> List<ENTITY> find4Update(Predicate<ENTITY> predicate, List<OrderInfo> orders);
 
     /**
      * 根据条件获取单个实体
@@ -58,6 +81,16 @@ public interface RepositorySupervisor {
     <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate);
 
     /**
+     * 根据条件获取单个实体
+     * 自动调用 UnitOfWork::persist
+     *
+     * @param predicate
+     * @param <ENTITY>
+     * @return
+     */
+    <ENTITY> Optional<ENTITY> findOne4Update(Predicate<ENTITY> predicate);
+
+    /**
      * 根据条件获取实体分页列表
      *
      * @param predicate
@@ -66,6 +99,17 @@ public interface RepositorySupervisor {
      * @return
      */
     <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam);
+
+    /**
+     * 根据条件获取实体分页列表
+     * 自动调用 UnitOfWork::persist
+     *
+     * @param predicate
+     * @param pageParam
+     * @param <ENTITY>
+     * @return
+     */
+    <ENTITY> PageData<ENTITY> findPage4Update(Predicate<ENTITY> predicate, PageParam pageParam);
 
     /**
      * 根据条件删除实体
