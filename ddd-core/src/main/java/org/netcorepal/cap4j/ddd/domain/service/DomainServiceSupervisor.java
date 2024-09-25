@@ -9,7 +9,7 @@ package org.netcorepal.cap4j.ddd.domain.service;
 public interface DomainServiceSupervisor {
 
     public static DomainServiceSupervisor getInstance(){
-        return DomainServiceSupervisorConfiguration.instance;
+        return DomainServiceSupervisorSupport.instance;
     }
 
     /**

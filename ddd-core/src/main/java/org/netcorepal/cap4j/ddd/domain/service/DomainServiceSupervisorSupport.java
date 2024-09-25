@@ -6,10 +6,10 @@ package org.netcorepal.cap4j.ddd.domain.service;
  * @author binking338
  * @date 2024/9/4
  */
-public class DomainServiceSupervisorConfiguration {
+public class DomainServiceSupervisorSupport {
     static DomainServiceSupervisor instance;
 
     public static void configure(DomainServiceSupervisor domainServiceSupervisor){
-        domainServiceSupervisor = instance;
+        instance = domainServiceSupervisor;
     }
 }
