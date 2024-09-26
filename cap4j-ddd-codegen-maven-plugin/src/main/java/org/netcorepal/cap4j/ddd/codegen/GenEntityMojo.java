@@ -1442,7 +1442,6 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "import " + basePackage + "." + entityMetaInfoClassOutputPackage + ".Schema;\n" +
                 "import " + tablePackageMap.get(tableName) + "." + simpleClassName + ";\n" +
                 "import lombok.RequiredArgsConstructor;\n" +
-                "import org.apache.commons.collections4.CollectionUtils;\n" +
                 "import org.springframework.data.domain.Sort;\n" +
                 "import org.springframework.data.jpa.domain.Specification;\n" +
                 "\n" +
@@ -1554,7 +1553,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "     * @return\n" +
                 "     */\n" +
                 "    public static Sort orderBy(Collection<Schema.OrderBuilder<" + simpleClassName + "Schema>> builders) {\n" +
-                "        if(CollectionUtils.isEmpty(builders)) {\n" +
+                "        if(null == builders || builders.isEmpty()) {\n" +
                 "            return Sort.unsorted();\n" +
                 "        }\n" +
                 "        return Sort.by(builders.stream()\n" +
