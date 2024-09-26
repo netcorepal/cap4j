@@ -14,26 +14,26 @@ public interface UnitOfWork {
     }
 
     /**
-     * 新增或更新持久化记录
+     * 提交新增或更新实体持久化记录意图到UnitOfWork上下文
      *
      * @param entity 实体对象
      */
     void persist(Object entity);
 
     /**
-     * 移除持久化记录
+     * 提交移除实体持久化记录意图到UnitOfWork上下文
      *
      * @param entity 实体对象
      */
     void remove(Object entity);
 
     /**
-     * 提交事务
+     * 将持久化意图转换成持久化指令，并提交事务
      */
     void save();
 
     /**
-     * 提交事务
+     * 将持久化意图转换成持久化指令，并提交事务
      *
      * @param propagation 事务传播特性
      */
