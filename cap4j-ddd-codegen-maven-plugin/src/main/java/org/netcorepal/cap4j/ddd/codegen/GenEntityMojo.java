@@ -208,7 +208,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("");
         if (generateSchema) {
             try {
-                writeBaseSechemaSourceFile(basePackage, applicationModulePath);
+                writeBaseSechemaSourceFile(basePackage, domainModulePath);
             } catch (IOException e) {
                 e.printStackTrace();
                 getLog().error(e);
@@ -745,7 +745,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         writeLine(out, mainSource);
         out.close();
         if (generateSchema) {
-            writeSchemaSourceFile(table, columns, tablePackageMap, relations, basePackage, baseDir.replace("-domain", "-application"));
+            writeSchemaSourceFile(table, columns, tablePackageMap, relations, basePackage, baseDir);
         }
     }
 
