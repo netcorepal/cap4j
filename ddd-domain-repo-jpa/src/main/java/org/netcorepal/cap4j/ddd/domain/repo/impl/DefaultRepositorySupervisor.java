@@ -56,15 +56,15 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
     }
 
     @Override
-    public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
+    public <ENTITY> List<ENTITY> findWithoutPersist(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
         Class<ENTITY> entityClass = JpaPredicateSupport.reflectEntityClass(predicate);
         List<ENTITY> entities = repo(entityClass).find(predicate, orders);
         return entities;
     }
 
     @Override
-    public <ENTITY> List<ENTITY> find4Update(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
-        List<ENTITY> entities = find(predicate, orders);
+    public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
+        List<ENTITY> entities = findWithoutPersist(predicate, orders);
         if (entities != null) {
             entities.forEach(unitOfWork::persist);
         }
@@ -72,29 +72,29 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
     }
 
     @Override
-    public <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate) {
+    public <ENTITY> Optional<ENTITY> findOneWithoutPersist(Predicate<ENTITY> predicate) {
         Class<ENTITY> entityClass = JpaPredicateSupport.reflectEntityClass(predicate);
         Optional<ENTITY> entity = repo(entityClass).findOne(predicate);
         return entity;
     }
 
     @Override
-    public <ENTITY> Optional<ENTITY> findOne4Update(Predicate<ENTITY> predicate) {
-        Optional<ENTITY> entity = findOne(predicate);
+    public <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate) {
+        Optional<ENTITY> entity = findOneWithoutPersist(predicate);
         entity.ifPresent(unitOfWork::persist);
         return entity;
     }
 
     @Override
-    public <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam) {
+    public <ENTITY> PageData<ENTITY> findPageWithoutPersist(Predicate<ENTITY> predicate, PageParam pageParam) {
         Class<ENTITY> entityClass = JpaPredicateSupport.reflectEntityClass(predicate);
         PageData<ENTITY> page = repo(entityClass).findPage(predicate, pageParam);
         return page;
     }
 
     @Override
-    public <ENTITY> PageData<ENTITY> findPage4Update(Predicate<ENTITY> predicate, PageParam pageParam) {
-        PageData<ENTITY> page = findPage(predicate, pageParam);
+    public <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam) {
+        PageData<ENTITY> page = findPageWithoutPersist(predicate, pageParam);
         if (page.getList() != null) {
             page.getList().forEach(unitOfWork::persist);
         }
