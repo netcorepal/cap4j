@@ -2,8 +2,18 @@ package org.netcorepal.cap4j.ddd.codegen;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
+import org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils;
+import org.netcorepal.cap4j.ddd.codegen.template.PathNode;
+import org.netcorepal.cap4j.ddd.codegen.template.Template;
+import org.netcorepal.cap4j.ddd.codegen.template.TemplateNode;
 
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -14,6 +24,14 @@ import java.util.stream.Collectors;
  * @date 2024/8/18
  */
 public abstract class MyAbstractMojo extends AbstractMojo {
+
+    public final String PATTERN_SPLITTER = "[\\,\\;]";
+    public final String PATTERN_DESIGN_PARAMS_SPLITTER = "[\\:]";
+    public final String PATTERN_LINE_BREAK = "\\r\\n|[\\r\\n]";
+    static final String AGGREGATE_REPOSITORY_PACKAGE = "adapter.domain.repositories";
+    static final String AGGREGATE_PACKAGE = "domain.aggregates";
+    static final String DOMAIN_EVENT_SUBSCRIBER_PACKAGE = "application.subscribers.domain";
+    static final String INTEGRATION_EVENT_SUBSCRIBER_PACKAGE = "application.subscribers.integration";
 
     /**
      * 代码模板配置文件地址
@@ -30,6 +48,14 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "archTemplateEncoding", defaultValue = "UTF-8")
     public String archTemplateEncoding = "UTF-8";
+
+    /**
+     * 生成代码文件编码，默认UFT-8
+     *
+     * @parameter expression="${outputEncoding}"
+     */
+    @Parameter(property = "outputEncoding", defaultValue = "UTF-8")
+    public String outputEncoding = "UTF-8";
 
     /**
      * 基础包路径
@@ -83,7 +109,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "designFile", defaultValue = "")
     public String designFile = "";
-
 
 
     /**
@@ -182,7 +207,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      * @parameter expression="${entityClassExtraImports}"
      */
     @Parameter(property = "entityClassExtraImports", defaultValue = "")
-    public List<String> entityClassExtraImports = new ArrayList<>();
+    public String entityClassExtraImports = "";
 
     public List<String> getEntityClassExtraImports() {
         List<String> importList = Arrays.asList(
@@ -201,25 +226,41 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 "javax.persistence.*"
         );
         List<String> imports = new ArrayList<>(importList);
-        imports.addAll(entityClassExtraImports);
+        imports.addAll(Arrays.stream(entityClassExtraImports.split(";"))
+                .map(i -> i.trim())
+                .collect(Collectors.toList()));
         return imports.stream().distinct().collect(Collectors.toList());
     }
 
     /**
      * 实体辅助类输出模式，绝对路径或相对路径，abs|ref
      *
-     * @parameter expression="${entityMetaInfoClassOutputMode}"
+     * @parameter expression="${entitySchemaOutputMode}"
      */
-    @Parameter(property = "entityMetaInfoClassOutputMode", defaultValue = "")
-    public String entityMetaInfoClassOutputMode = "abs";
+    @Parameter(property = "entitySchemaOutputMode", defaultValue = "")
+    public String entitySchemaOutputMode = "abs";
+
+    public String getEntitySchemaOutputMode() {
+        if (StringUtils.isBlank(entitySchemaOutputMode)) {
+            entitySchemaOutputMode = "abs";
+        }
+        return entitySchemaOutputMode;
+    }
 
     /**
      * 实体辅助类输出包
      *
-     * @parameter expression="${entityMetaInfoClassOutputPackage}"
+     * @parameter expression="${entitySchemaOutputPackage}"
      */
-    @Parameter(property = "entityMetaInfoClassOutputPackage", defaultValue = "domain._share.meta")
-    public String entityMetaInfoClassOutputPackage = "domain._share.meta";
+    @Parameter(property = "entitySchemaOutputPackage", defaultValue = "domain._share.meta")
+    public String entitySchemaOutputPackage = "domain._share.meta";
+
+    public String getEntitySchemaOutputPackage() {
+        if (StringUtils.isBlank(entitySchemaOutputPackage)) {
+            entitySchemaOutputPackage = "domain._share.meta";
+        }
+        return entitySchemaOutputPackage;
+    }
 
     /**
      * 关联实体加载模式 LAZY | EAGER
@@ -311,14 +352,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     public Boolean generateSchema = false;
 
     /**
-     * 是否生成EntitBuilder类
-     *
-     * @parameter expression="${generateBuild}"
-     */
-    @Parameter(property = "generateBuild", defaultValue = "false")
-    public Boolean generateBuild = false;
-
-    /**
      * 聚合根注解
      *
      * @parameter expression="${aggregateRootAnnotation}"
@@ -353,30 +386,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     }
 
     /**
-     * 聚合仓储自定义代码
-     *
-     * @parameter expression="${aggregateRepositoryCustomerCode}"
-     */
-    @Parameter(property = "aggregateRepositoryCustomerCode", defaultValue = "")
-    public String aggregateRepositoryCustomerCode = "";
-
-    public String getAggregateRepositoryCustomerCode() {
-        if (StringUtils.isBlank(aggregateRepositoryCustomerCode)) {
-            aggregateRepositoryCustomerCode =
-                    "@org.springframework.stereotype.Component\n" +
-                            "    @org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate(aggregate = \"${Aggregate}\", name = \"${EntityType}\", type = \"repository\", description = \"\")\n" +
-                            "    public static class ${EntityType}JpaRepositoryAdapter extends org.netcorepal.cap4j.ddd.domain.repo.AbstractJpaRepository<${EntityType}, ${IdentityType}>\n" +
-                            "    {\n" +
-                            "        public ${EntityType}JpaRepositoryAdapter(org.springframework.data.jpa.repository.JpaSpecificationExecutor<${EntityType}> jpaSpecificationExecutor, org.springframework.data.jpa.repository.JpaRepository<${EntityType}, ${IdentityType}> jpaRepository) {\n" +
-                            "            super(jpaSpecificationExecutor, jpaRepository);\n" +
-                            "        }\n" +
-                            "    }" +
-                            "";
-        }
-        return aggregateRepositoryCustomerCode;
-    }
-
-    /**
      * 跳过生成仓储的聚合根
      * 逗号','或分号';'分割
      *
@@ -384,4 +393,832 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "ignoreAggregateRoots", defaultValue = "")
     public String ignoreAggregateRoots = "";
+
+    public String getProjectDir() {
+        String projectDir = new File("").getAbsolutePath();
+        if (multiModule) {
+            projectDir = new File(new File(projectDir).getParent() + File.separator + "pom.xml").exists()
+                    ? new File(projectDir).getParent()
+                    : projectDir;
+        }
+        return projectDir;
+    }
+
+
+    public String getAdapterModulePath() {
+        String adapterModulePath = "";
+        if (multiModule) {
+            adapterModulePath = Arrays.stream(new File(getProjectDir()).listFiles())
+                    .filter(path -> path.getAbsolutePath().endsWith(moduleNameSuffix4Adapter))
+                    .findFirst().get().getAbsolutePath();
+        } else {
+            adapterModulePath = getProjectDir();
+        }
+        return adapterModulePath;
+    }
+
+    public String getDomainModulePath() {
+        String adapterModulePath = "";
+        if (multiModule) {
+            adapterModulePath = Arrays.stream(new File(getProjectDir()).listFiles())
+                    .filter(path -> path.getAbsolutePath().endsWith(moduleNameSuffix4Domain))
+                    .findFirst().get().getAbsolutePath();
+        } else {
+            adapterModulePath = getProjectDir();
+        }
+        return adapterModulePath;
+    }
+
+    public String getApplicationModulePath() {
+        String adapterModulePath = "";
+        if (multiModule) {
+            adapterModulePath = Arrays.stream(new File(getProjectDir()).listFiles())
+                    .filter(path -> path.getAbsolutePath().endsWith(moduleNameSuffix4Application))
+                    .findFirst().get().getAbsolutePath();
+        } else {
+            adapterModulePath = getProjectDir();
+        }
+        return adapterModulePath;
+    }
+
+
+    protected Template template = null;
+    boolean renderFileSwitch = false;
+
+    public String forceRender(PathNode pathNode, String parentPath) throws IOException {
+        boolean temp = renderFileSwitch;
+        renderFileSwitch = true;
+        String path = render(pathNode, parentPath);
+        renderFileSwitch = temp;
+        return path;
+    }
+
+    /**
+     * 构建路径节点
+     *
+     * @param pathNode
+     * @param parentPath
+     * @throws IOException
+     */
+    public String render(PathNode pathNode, String parentPath) throws IOException {
+        String path = parentPath;
+        switch (pathNode.getType()) {
+            case "file":
+                path = renderFile(pathNode, parentPath);
+                break;
+            case "dir":
+                path = renderDir(pathNode, parentPath);
+                if (pathNode.getChildren() != null) {
+                    for (PathNode childPathNode : pathNode.getChildren()) {
+                        render(childPathNode, path);
+                    }
+                }
+                break;
+            case "root":
+                if (pathNode.getChildren() != null) {
+                    for (PathNode childPathNode : pathNode.getChildren()) {
+                        render(childPathNode, parentPath);
+                    }
+                }
+                break;
+        }
+        return path;
+    }
+
+    /**
+     * @param pathNode
+     * @param parentPath
+     * @return
+     * @throws IOException
+     */
+    public String renderDir(PathNode pathNode, String parentPath) throws IOException {
+        if (!"dir".equalsIgnoreCase(pathNode.getType())) {
+            throw new RuntimeException("节点类型必须是目录");
+        }
+        if (pathNode.getName() == null || pathNode.getName().isEmpty()) {
+            return parentPath;
+        }
+        String path = StringUtils.isNotBlank(pathNode.getName())
+                ? parentPath + File.separator + pathNode.getName()
+                : parentPath;
+        if (FileUtils.fileExists(path)) {
+            switch (pathNode.getConflict()) {
+                case "warn":
+                    getLog().warn("目录存在：" + path);
+                    break;
+                case "overwrite":
+                    getLog().info("目录覆盖：" + path);
+                    FileUtils.deleteDirectory(path);
+                    FileUtils.mkdir(path);
+                    break;
+                case "skip":
+                    getLog().debug("目录存在：" + path);
+                    break;
+            }
+        } else {
+            getLog().info("目录创建：" + path);
+            FileUtils.mkdir(path);
+        }
+
+        if (StringUtils.isNotBlank(pathNode.getTag())) {
+            String[] tags = pathNode.getTag().split(PATTERN_SPLITTER);
+            for (String tag : tags) {
+                List<TemplateNode> templateNodes = template.select(tag);
+                if (null != templateNodes) {
+                    renderTemplate(templateNodes, path);
+                }
+            }
+        }
+
+        return path;
+    }
+
+    /**
+     * 生成设计框架代码
+     *
+     * @param templateNodes
+     * @param parentPath
+     * @throws IOException
+     */
+    public void renderTemplate(List<TemplateNode> templateNodes, String parentPath) throws IOException {
+
+    }
+
+    /**
+     * @param pathNode
+     * @param parentPath
+     * @return
+     */
+    public String renderFile(PathNode pathNode, String parentPath) throws IOException {
+        if (!"file".equalsIgnoreCase(pathNode.getType())) {
+            throw new RuntimeException("节点类型必须是文件");
+        }
+        if (pathNode.getName() == null || pathNode.getName().isEmpty()) {
+            throw new RuntimeException("模板节点配置 name 不得为空 parentPath = " + parentPath);
+        }
+        String path = parentPath + File.separator + pathNode.getName();
+        if (!renderFileSwitch) {
+            return path;
+        }
+
+        String content = pathNode.getData();
+        if (FileUtils.fileExists(path)) {
+            switch (pathNode.getConflict()) {
+                case "warn":
+                    getLog().warn("文件存在：" + path);
+                    break;
+                case "overwrite":
+                    getLog().info("文件覆盖：" + path);
+                    FileUtils.fileDelete(path);
+                    FileUtils.fileWrite(path, outputEncoding, content);
+                    break;
+                case "skip":
+                default:
+                    getLog().debug("文件跳过：" + path);
+                    break;
+            }
+        } else {
+            getLog().info("文件创建：" + path);
+            FileUtils.mkdir(FileUtils.getPath(path));
+            FileUtils.fileWrite(path, outputEncoding, content);
+        }
+        return path;
+    }
+
+    public String generateDomainEventName(String eventName) {
+        String domainEventClassName = NamingUtils.toUpperCamelCase(eventName);
+        if (!domainEventClassName.endsWith("Event") && !domainEventClassName.endsWith("Evt")) {
+            domainEventClassName += "DomainEvent";
+        }
+        return domainEventClassName;
+    }
+
+    public String generateDomainServiceName(String svcName) {
+        if (!svcName.endsWith("Svc") && !svcName.endsWith("Service")) {
+            svcName += "DomainService";
+        }
+        return svcName;
+    }
+
+    public List<String> alias4Template(String tag, String var) {
+        List<String> aliases = null;
+        switch (tag + "." + var) {
+            case "schema.Comment":
+            case "enum.Comment":
+            case "domain_event.Comment":
+            case "domain_event_handler.Comment":
+            case "specification.Comment":
+            case "factory.Comment":
+            case "domain_service.Comment":
+            case "integration_event.Comment":
+            case "integration_event_handler.Comment":
+            case "client.Comment":
+            case "query.Comment":
+            case "command.Comment":
+            case "client_handler.Comment":
+            case "query_handler.Comment":
+            case "command_handler.Comment":
+                aliases = Arrays.asList(
+                        var,
+                        "comment",
+                        "COMMENT"
+                );
+                break;
+            case "schema.CommentEscaped":
+            case "enum.CommentEscaped":
+            case "domain_event.CommentEscaped":
+            case "domain_event_handler.CommentEscaped":
+            case "specification.CommentEscaped":
+            case "factory.CommentEscaped":
+            case "domain_service.CommentEscaped":
+            case "integration_event.CommentEscaped":
+            case "integration_event_handler.CommentEscaped":
+            case "client.CommentEscaped":
+            case "query.CommentEscaped":
+            case "command.CommentEscaped":
+            case "client_handler.CommentEscaped":
+            case "query_handler.CommentEscaped":
+            case "command_handler.CommentEscaped":
+                aliases = Arrays.asList(
+                        var,
+                        "commentEscaped",
+                        "COMMENT_ESCAPED",
+                        "Comment_Escaped"
+                );
+                break;
+            case "schema.Aggregate":
+            case "enum.Aggregate":
+            case "domain_event.Aggregate":
+            case "domain_event_handler.Aggregate":
+            case "specification.Aggregate":
+            case "factory.Aggregate":
+                aliases = Arrays.asList(
+                        var,
+                        "aggregate",
+                        "AGGREGATE"
+                );
+                break;
+            case "schema.entityPackage":
+            case "enum.entityPackage":
+            case "domain_event.entityPackage":
+            case "domain_event_handler.entityPackage":
+            case "specification.entityPackage":
+            case "factory.entityPackage":
+                aliases = Arrays.asList(
+                        var,
+                        "EntityPackage",
+                        "ENTITY_PACKAGE",
+                        "entity_package",
+                        "Entity_Package"
+                );
+                break;
+            case "schema.templatePackage":
+            case "enum.templatePackage":
+            case "domain_event.templatePackage":
+            case "domain_event_handler.templatePackage":
+            case "specification.templatePackage":
+            case "factory.templatePackage":
+                aliases = Arrays.asList(
+                        var,
+                        "TemplatePackage",
+                        "TEMPLATE_PACKAGE",
+                        "template_package",
+                        "Template_Package"
+                );
+                break;
+            case "schema.Entity":
+            case "enum.Entity":
+            case "domain_event.Entity":
+            case "domain_event_handler.Entity":
+            case "specification.Entity":
+            case "factory.Entity":
+                aliases = Arrays.asList(
+                        var,
+                        "entity",
+                        "ENTITY",
+                        "entityType",
+                        "EntityType",
+                        "ENTITY_TYPE",
+                        "Entity_Type",
+                        "entity_type"
+                );
+                break;
+            case "schema.EntityVar":
+            case "enum.EntityVar":
+            case "domain_event.EntityVar":
+            case "domain_event_handler.EntityVar":
+            case "specification.EntityVar":
+            case "factory.EntityVar":
+                aliases = Arrays.asList(
+                        var,
+                        "entityVar",
+                        "ENTITY_VAR",
+                        "entity_var",
+                        "Entity_Var"
+                );
+                break;
+            case "schema_base.SchemaBase":
+            case "schema.SchemaBase":
+                aliases = Arrays.asList(
+                        var,
+                        "schema_base",
+                        "SCHEMA_BASE"
+                );
+                break;
+            case "schema.IdField":
+                aliases = Arrays.asList(
+                        var,
+                        "idField",
+                        "ID_FIELD",
+                        "id_field",
+                        "Id_Field"
+                );
+                break;
+            case "schema.FIELD_ITEMS":
+                aliases = Arrays.asList(
+                        var,
+                        "fieldItems",
+                        "field_items",
+                        "Field_Items"
+                );
+                break;
+            case "schema.JOIN_ITEMS":
+                aliases = Arrays.asList(
+                        var,
+                        "joinItems",
+                        "join_items",
+                        "Join_Items"
+                );
+                break;
+            case "schema_field.fieldType":
+                aliases = Arrays.asList(
+                        var,
+                        "FIELD_TYPE",
+                        "field_type",
+                        "Field_Type"
+                );
+                break;
+            case "schema_field.fieldName":
+                aliases = Arrays.asList(
+                        var,
+                        "FIELD_NAME",
+                        "field_name",
+                        "Field_Name"
+                );
+                break;
+            case "schema_field.fieldComment":
+                aliases = Arrays.asList(
+                        var,
+                        "FIELD_COMMENT",
+                        "field_comment",
+                        "Field_Comment"
+                );
+                break;
+            case "enum.Enum":
+                aliases = Arrays.asList(
+                        var,
+                        "enum",
+                        "ENUM",
+                        "EnumType",
+                        "enumType",
+                        "ENUM_TYPE",
+                        "enum_type",
+                        "Enum_Type"
+                );
+                break;
+            case "enum.EnumValueField":
+                aliases = Arrays.asList(
+                        var,
+                        "enumValueField",
+                        "ENUM_VALUE_FIELD",
+                        "enum_value_field",
+                        "Enum_Value_Field"
+                );
+                break;
+            case "enum.EnumNameField":
+                aliases = Arrays.asList(
+                        var,
+                        "enumNameField",
+                        "ENUM_NAME_FIELD",
+                        "enum_name_field",
+                        "Enum_Name_Field"
+                );
+                break;
+            case "enum.ENUM_ITEMS":
+                aliases = Arrays.asList(
+                        var,
+                        "enumItems",
+                        "enum_items",
+                        "Enum_Items"
+                );
+                break;
+            case "enum_item.itemName":
+                aliases = Arrays.asList(
+                        var,
+                        "ItemName",
+                        "ITEM_NAME",
+                        "item_name",
+                        "Item_Name"
+                );
+                break;
+            case "enum_item.itemValue":
+                aliases = Arrays.asList(
+                        var,
+                        "ItemValue",
+                        "ITEM_VALUE",
+                        "item_value",
+                        "Item_Value"
+                );
+                break;
+            case "enum_item.itemDesc":
+                aliases = Arrays.asList(
+                        var,
+                        "ItemDesc",
+                        "ITEM_DESC",
+                        "item_desc",
+                        "Item_Desc"
+                );
+                break;
+            case "domain_event.DomainEvent":
+            case "domain_event_handler.DomainEvent":
+                aliases = Arrays.asList(
+                        var,
+                        "domainEvent",
+                        "DOMAIN_EVENT",
+                        "domain_event",
+                        "Domain_Event",
+                        "Event",
+                        "EVENT",
+                        "event",
+                        "DE",
+                        "D_E",
+                        "de",
+                        "d_e"
+                );
+                break;
+            case "domain_event.persist":
+            case "domain_event_handler.persist":
+                aliases = Arrays.asList(
+                        var,
+                        "Persist",
+                        "PERSIST"
+                );
+                break;
+            case "domain_service.DomainService":
+                aliases = Arrays.asList(
+                        var,
+                        "domainService",
+                        "DOMAIN_SERVICE",
+                        "domain_service",
+                        "Domain_Service",
+                        "Service",
+                        "SERVICE",
+                        "service",
+                        "Svc",
+                        "SVC",
+                        "svc",
+                        "DS",
+                        "D_S",
+                        "ds",
+                        "d_s"
+                );
+                break;
+            case "specification.Specification":
+                aliases = Arrays.asList(
+                        var,
+                        "specification",
+                        "SPECIFICATION",
+                        "Spec",
+                        "SPEC",
+                        "spec"
+                );
+                break;
+            case "factory.Factory":
+                aliases = Arrays.asList(
+                        var,
+                        "factory",
+                        "FACTORY",
+                        "Fac",
+                        "FAC",
+                        "fac"
+                );
+                break;
+            case "integration_event.IntegrationEvent":
+            case "integration_event_handler.IntegrationEvent":
+                aliases = Arrays.asList(
+                        var,
+                        "integrationEvent",
+                        "integration_event",
+                        "INTEGRATION_EVENT",
+                        "Integration_Event",
+                        "Event",
+                        "EVENT",
+                        "event",
+                        "IE",
+                        "I_E",
+                        "ie",
+                        "i_e"
+                );
+                break;
+            case "specification.AggregateRoot":
+            case "factory.AggregateRoot":
+            case "domain_event.AggregateRoot":
+            case "domain_event_handler.AggregateRoot":
+                aliases = Arrays.asList(
+                        var,
+                        "aggregateRoot",
+                        "aggregate_root",
+                        "AGGREGATE_ROOT",
+                        "Aggregate_Root",
+                        "Root",
+                        "ROOT",
+                        "root",
+                        "AR",
+                        "A_R",
+                        "ar",
+                        "a_r"
+                );
+                break;
+            case "client.Client":
+            case "client_handler.Client":
+                aliases = Arrays.asList(
+                        var,
+                        "client",
+                        "CLIENT",
+                        "Cli",
+                        "CLI",
+                        "cli"
+                );
+                break;
+            case "query.Query":
+            case "query_handler.Query":
+                aliases = Arrays.asList(
+                        var,
+                        "query",
+                        "QUERY",
+                        "Qry",
+                        "QRY",
+                        "qry"
+                );
+                break;
+            case "command.Command":
+            case "command_handler.Command":
+                aliases = Arrays.asList(
+                        var,
+                        "command",
+                        "COMMAND",
+                        "Cmd",
+                        "CMD",
+                        "cmd"
+                );
+                break;
+            case "client.Request":
+            case "client_handler.Request":
+            case "query.Request":
+            case "query_handler.Request":
+            case "command.Request":
+            case "command_handler.Request":
+                aliases = Arrays.asList(
+                        var,
+                        "request",
+                        "REQUEST",
+                        "Req",
+                        "REQ",
+                        "req",
+                        "Param",
+                        "PARAM",
+                        "param"
+                );
+                break;
+            case "client.Response":
+            case "client_handler.Response":
+            case "query.Response":
+            case "query_handler.Response":
+            case "command.Response":
+            case "command_handler.Response":
+                aliases = Arrays.asList(
+                        var,
+                        "response",
+                        "RESPONSE",
+                        "Res",
+                        "RES",
+                        "res",
+                        "ReturnType",
+                        "returnType",
+                        "RETURN_TYPE",
+                        "return_type",
+                        "Return_Type",
+                        "Return",
+                        "RETURN",
+                        "return"
+                );
+                break;
+            default:
+                aliases = Arrays.asList(var);
+                break;
+        }
+        return aliases;
+    }
+
+    public void putContext(String tag, String var, String val, Map<String, String> context) {
+        List<String> aliases = alias4Template(tag, var);
+        for (String alias :
+                aliases) {
+            context.put(alias, val);
+        }
+    }
+
+    public String escape(String content) {
+        return content
+                .replace("\\\\", "${symbol_escape}")
+                .replace("\\:", "${symbol_colon}")
+                .replace("\\,", "${symbol_comma}")
+                .replace("\\;", "${symbol_semicolon}");
+    }
+
+    public String unescape(String escape) {
+        return escape
+                .replace("${symbol_escape}", "\\")
+                .replace("${symbol_colon}", ":")
+                .replace("${symbol_comma}", ",")
+                .replace("${symbol_semicolon}", ";");
+    }
+
+    protected String projectGroupId = "";
+    protected String projectArtifactId = "";
+    protected String projectVersion = "";
+
+    public Map<String, String> getEscapeContext() {
+        MavenProject mavenProject = ((MavenProject) getPluginContext().get("project"));
+        if (mavenProject != null) {
+            projectGroupId = mavenProject.getGroupId();
+            projectArtifactId = mavenProject.getArtifactId();
+            projectVersion = mavenProject.getVersion();
+        }
+        Map<String, String> context = new HashMap<>();
+        context.put("cap4jPluginConfiguration", stringfyCap4jPluginConfiguration());
+        context.put("groupId", projectGroupId);
+        context.put("artifactId", projectArtifactId);
+        context.put("version", projectVersion);
+        context.put("archTemplate", archTemplate);
+        context.put("archTemplateEncoding", archTemplateEncoding);
+        context.put("outputEncoding", outputEncoding);
+        context.put("designFile", designFile);
+        context.put("basePackage", basePackage);
+        context.put("basePackage__as_path", basePackage.replace(".", File.separator));
+        context.put("multiModule", multiModule ? "true" : "false");
+        context.put("moduleNameSuffix4Adapter", moduleNameSuffix4Adapter);
+        context.put("moduleNameSuffix4Domain", moduleNameSuffix4Domain);
+        context.put("moduleNameSuffix4Application", moduleNameSuffix4Application);
+        context.put("connectionString", connectionString);
+        context.put("user", user);
+        context.put("pwd", pwd);
+        context.put("schema", schema);
+        context.put("table", table);
+        context.put("ignoreTable", ignoreTable);
+        context.put("idField", idField);
+        context.put("versionField", versionField);
+        context.put("deletedField", deletedField);
+        context.put("readonlyFields", readonlyFields);
+        context.put("ignoreFields", ignoreFields);
+        context.put("entityBaseClass", entityBaseClass);
+        context.put("entityClassExtraImports", entityClassExtraImports);
+        context.put("entitySchemaOutputPackage", entitySchemaOutputPackage);
+        context.put("entitySchemaOutputMode", entitySchemaOutputMode);
+        context.put("idGenerator", idGenerator);
+        context.put("fetchType", fetchType);
+        context.put("fetchMode", fetchMode);
+        context.put("enumValueField", enumValueField);
+        context.put("enumNameField", enumNameField);
+        context.put("enumUnmatchedThrowException", enumUnmatchedThrowException ? "true" : "false");
+        context.put("datePackage4Java", datePackage4Java);
+        context.put("typeRemapping", stringfyTypeRemapping());
+        context.put("generateDefault", generateDefault ? "true" : "false");
+        context.put("generateDbType", generateDbType ? "true" : "false");
+        context.put("generateSchema", generateSchema ? "true" : "false");
+        context.put("aggregateRootAnnotation", aggregateRootAnnotation);
+        context.put("aggregateRepositoryBaseClass", aggregateRepositoryBaseClass);
+        context.put("ignoreAggregateRoots", ignoreAggregateRoots);
+        context.put("date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
+        context.put("SEPARATOR", File.separator);
+        context.put("separator", File.separator);
+        context.put("symbol_pound", "#");
+        context.put("symbol_escape", "\\");
+        context.put("symbol_dollar", "$");
+        return context;
+    }
+
+    protected String stringfyCap4jPluginConfiguration() {
+        return "<configuration>\n" +
+                "                    <basePackage>" + basePackage + "</basePackage>\n" +
+                "                    <archTemplate>" + archTemplate + "</archTemplate>\n" +
+                "                    <archTemplateEncoding>" + archTemplateEncoding + "</archTemplateEncoding>\n" +
+                "                    <outputEncoding>" + outputEncoding + "</outputEncoding>\n" +
+                "                    <designFile>" + designFile + "</designFile>\n" +
+                "                    <multiModule>" + multiModule + "</multiModule>\n" +
+                (StringUtils.equalsIgnoreCase("-adapter", moduleNameSuffix4Adapter)
+                        ? ""
+                        : "                    <moduleNameSuffix4Adapter>" + moduleNameSuffix4Adapter + "</moduleNameSuffix4Adapter>\n"
+                ) +
+                (StringUtils.equalsIgnoreCase("-domain", moduleNameSuffix4Domain)
+                        ? ""
+                        : "                    <moduleNameSuffix4Domain>" + moduleNameSuffix4Domain + "</moduleNameSuffix4Domain>\n"
+                ) +
+                (StringUtils.equalsIgnoreCase("-application", moduleNameSuffix4Application)
+                        ? ""
+                        : "                    <moduleNameSuffix4Application>" + moduleNameSuffix4Application + "</moduleNameSuffix4Application>\n"
+                ) +
+                "                    <connectionString>\n" +
+                "                        <![CDATA[" + connectionString + "]]>\n" +
+                "                    </connectionString>\n" +
+                "                    <user>" + user + "</user>\n" +
+                "                    <pwd>" + pwd + "</pwd>\n" +
+                "                    <schema>" + schema + "</schema>\n" +
+                "                    <table>" + table + "</table>\n" +
+                (StringUtils.isBlank(ignoreTable)
+                        ? ""
+                        : "                    <ignoreTable>" + ignoreTable + "</ignoreTable>\n") +
+                (StringUtils.isBlank(ignoreFields)
+                        ? ""
+                        : "                    <ignoreFields>" + ignoreFields + "</ignoreFields>\n") +
+                (StringUtils.isBlank(idField)
+                        ? ""
+                        : "                    <idField>" + idField + "</idField>\n") +
+                (StringUtils.isBlank(versionField)
+                        ? ""
+                        : "                    <versionField>" + versionField + "</versionField>\n") +
+                (StringUtils.isBlank(deletedField)
+                        ? ""
+                        : "                    <deletedField>" + deletedField + "</deletedField>\n") +
+                (StringUtils.isBlank(readonlyFields)
+                        ? ""
+                        : "                    <readonlyFields>" + readonlyFields + "</readonlyFields>\n") +
+                (StringUtils.isBlank(entityBaseClass)
+                        ? ""
+                        : "                    <entityBaseClass>" + entityBaseClass + "</entityBaseClass>\n") +
+                (StringUtils.isBlank(entityClassExtraImports)
+                        ? ""
+                        : "                    <entityClassExtraImports>" + entityClassExtraImports + "</entityClassExtraImports>\n") +
+                (StringUtils.equalsIgnoreCase("abs", entitySchemaOutputMode)
+                        ? ""
+                        : "                    <entitySchemaOutputMode>" + entitySchemaOutputMode + "</entitySchemaOutputMode>\n") +
+                (StringUtils.isBlank(entitySchemaOutputPackage)
+                        ? ""
+                        : "                    <entitySchemaOutputPackage>" + entitySchemaOutputPackage + "</entitySchemaOutputPackage>\n") +
+                (StringUtils.equalsIgnoreCase("SUBSELECT", fetchMode)
+                        ? ""
+                        : "                    <fetchMode>" + fetchMode + "</fetchMode>\n") +
+                (StringUtils.equalsIgnoreCase("EAGER", fetchType)
+                        ? ""
+                        : "                    <fetchType>" + fetchType + "</fetchType>\n") +
+                (StringUtils.isBlank(idGenerator)
+                        ? ""
+                        : "                    <idGenerator>" + idGenerator + "</idGenerator>\n") +
+                (StringUtils.equalsIgnoreCase("value", enumValueField)
+                        ? ""
+                        : "                    <enumValueField>" + enumValueField + "</enumValueField>\n") +
+                (StringUtils.equalsIgnoreCase("name", enumNameField)
+                        ? ""
+                        : "                    <enumNameField>" + enumNameField + "</enumNameField>\n") +
+                (enumUnmatchedThrowException
+                        ? ""
+                        : "                    <enumUnmatchedThrowException>" + enumUnmatchedThrowException + "</enumUnmatchedThrowException>\n") +
+                (StringUtils.equalsIgnoreCase("java.util", datePackage4Java)
+                        ? ""
+                        : "                    <datePackage4Java>" + datePackage4Java + "</datePackage4Java>\n") +
+                (typeRemapping.isEmpty()
+                        ? ""
+                        : "                    <typeRemapping>" + stringfyTypeRemapping() + "</typeRemapping>\n") +
+                (!generateDefault
+                        ? ""
+                        : "                    <generateDefault>" + generateDefault + "</generateDefault>\n") +
+                (!generateDbType
+                        ? ""
+                        : "                    <generateDbType>" + generateDbType + "</generateDbType>\n") +
+                (!generateSchema
+                        ? ""
+                        : "                    <generateSchema>" + generateSchema + "</generateSchema>\n") +
+                (StringUtils.isBlank(aggregateRootAnnotation)
+                        ? ""
+                        : "                    <aggregateRootAnnotation>" + aggregateRootAnnotation + "</aggregateRootAnnotation>\n") +
+                (StringUtils.isBlank(aggregateRepositoryBaseClass)
+                        ? ""
+                        : "                    <aggregateRepositoryBaseClass>" + aggregateRepositoryBaseClass + "</aggregateRepositoryBaseClass>\n") +
+                (StringUtils.isBlank(ignoreAggregateRoots)
+                        ? ""
+                        : "                    <ignoreAggregateRoots>" + ignoreAggregateRoots + "</ignoreAggregateRoots>\n") +
+                "                </configuration>";
+    }
+
+    protected String stringfyTypeRemapping() {
+        if (typeRemapping == null || typeRemapping.isEmpty()) {
+            return "";
+        }
+        String result = "";
+        for (Map.Entry<String, String> kv :
+                typeRemapping.entrySet()) {
+            result += "<" + kv.getKey() + ">" + kv.getValue() + "</" + kv.getKey() + ">";
+        }
+        return result;
+    }
 }

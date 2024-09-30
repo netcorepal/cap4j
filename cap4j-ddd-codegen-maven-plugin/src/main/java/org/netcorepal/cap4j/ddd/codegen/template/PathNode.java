@@ -17,7 +17,7 @@ import java.util.Map;
 @Data
 public class PathNode {
     /**
-     * 节点类型：root|dir|file
+     * 节点类型：root|dir|file|segment
      */
     String type;
     /**

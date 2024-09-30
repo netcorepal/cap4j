@@ -1,21 +1,29 @@
 package org.netcorepal.cap4j.ddd.codegen;
 
+import com.alibaba.fastjson.JSON;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
-import org.netcorepal.cap4j.ddd.codegen.misc.*;
+import org.netcorepal.cap4j.ddd.codegen.misc.Inflector;
+import org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils;
+import org.netcorepal.cap4j.ddd.codegen.misc.SqlSchemaUtils;
+import org.netcorepal.cap4j.ddd.codegen.misc.TextUtils;
+import org.netcorepal.cap4j.ddd.codegen.template.PathNode;
+import org.netcorepal.cap4j.ddd.codegen.template.TemplateNode;
 
-import java.io.*;
-import java.nio.charset.Charset;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.*;
-import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.writeLine;
+import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.*;
 import static org.netcorepal.cap4j.ddd.codegen.misc.SqlSchemaUtils.*;
 
 /**
@@ -25,7 +33,13 @@ import static org.netcorepal.cap4j.ddd.codegen.misc.SqlSchemaUtils.*;
  * @date 2022-02-16
  */
 @Mojo(name = "gen-entity")
-public class GenEntityMojo extends MyAbstractMojo {
+public class GenEntityMojo extends GenArchMojo {
+    static final String DEFAULT_SCHEMA_PACKAGE = "meta";
+    static final String DEFAULT_SPEC_PACKAGE = "specs";
+    static final String DEFAULT_FAC_PACKAGE = "factory";
+    static final String DEFAULT_ENUM_PACKAGE = "enums";
+    static final String DEFAULT_DOMAIN_EVENT_PACKAGE = "events";
+    static final String DEFAULT_SCHEMA_BASE_CLASS_NAME = "Schema";
 
     public Map<String, Map<String, Object>> TableMap = new HashMap<>();
     public Map<String, String> TableModuleMap = new HashMap<>();
@@ -42,12 +56,90 @@ public class GenEntityMojo extends MyAbstractMojo {
 
     public String dbType = "mysql";
 
-    public final String PATTERN_SPLITTER = "[\\,\\;]";
+    public String aggregatesPath = "";
+    public String schemaPath = "";
+    public String subscriberPath = "";
+
+    public Map<String, List<TemplateNode>> templateNodeMap = new HashMap<>();
 
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        getLog().info("当前默认编码：" + Charset.defaultCharset().name());
+        super.execute();
+        genEntity();
+    }
+
+    public String alias4Design(String name) {
+        switch (name.toLowerCase()) {
+            case "entity":
+            case "aggregate":
+            case "entities":
+            case "aggregates":
+                return "aggregate";
+            case "schema":
+            case "schemas":
+                return "schema";
+            case "enum":
+            case "enums":
+                return "enum";
+            case "enumitem":
+            case "enum_item":
+                return "enum_item";
+            case "factories":
+            case "factory":
+            case "fac":
+                return "factory";
+            case "specifications":
+            case "specification":
+            case "specs":
+            case "spec":
+            case "spe":
+                return "specification";
+            case "domain_events":
+            case "domain_event":
+            case "d_e":
+            case "de":
+                return "domain_event";
+            case "domain_event_handlers":
+            case "domain_event_handler":
+            case "d_e_h":
+            case "deh":
+            case "domain_event_subscribers":
+            case "domain_event_subscriber":
+            case "d_e_s":
+            case "des":
+                return "domain_event_handler";
+            case "domain_service":
+            case "service":
+            case "svc":
+                return "domain_service";
+            default:
+                return name;
+        }
+    }
+
+    @Override
+    public void renderTemplate(List<TemplateNode> templateNodes, String parentPath) throws IOException {
+
+        for (TemplateNode templateNode :
+                templateNodes) {
+            String alias = alias4Design(templateNode.getTag());
+            if ("aggregate".equals(alias)) {
+                aggregatesPath = parentPath;
+            } else if ("schema_base".equals(alias)) {
+                schemaPath = parentPath;
+            } else if ("domain_event_handler".equals(alias)) {
+                subscriberPath = parentPath;
+            }
+            if (!templateNodeMap.containsKey(alias)) {
+                templateNodeMap.put(alias, new ArrayList<>());
+            }
+            templateNodeMap.get(alias).add(templateNode);
+        }
+    }
+
+    public void genEntity() {
+        SqlSchemaUtils.mojo = this;
         getLog().info("数据库连接：" + connectionString);
         getLog().info("数据库账号：" + user);
         getLog().info("数据库密码：" + pwd);
@@ -60,7 +152,13 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("只读字段：" + readonlyFields);
         getLog().info("忽略字段：" + ignoreFields);
         getLog().info("");
-        getLog().info("主键ID生成器：" + idGenerator);
+        // 项目结构解析
+        this.basePackage = StringUtils.isNotBlank(this.basePackage)
+                ? this.basePackage
+                : SourceFileUtils.resolveDefaultBasePackage(getDomainModulePath());
+        getLog().info("实体基类：" + entityBaseClass);
+        getLog().info("聚合根标注注解：" + getAggregateRootAnnotation());
+        getLog().info("主键ID生成器：" + (StringUtils.isBlank(idGenerator) ? "自增" : idGenerator));
         getLog().info("日期类型映射Java包：" + datePackage4Java);
         getLog().info("枚举值Java字段名称：" + enumValueField);
         getLog().info("枚举名Java字段名称：" + enumNameField);
@@ -70,58 +168,28 @@ public class GenEntityMojo extends MyAbstractMojo {
                 typeRemapping.entrySet()) {
             getLog().info("  " + entry.getKey() + " <-> " + entry.getValue());
         }
+        getLog().info("生成Schema：" + (generateSchema ? "是" : "否"));
+        if (generateSchema) {
+            getLog().info("  输出模式：" + getEntitySchemaOutputMode());
+            getLog().info("  输出路径：" + getEntitySchemaOutputPackage());
+        }
         getLog().info("");
-        this.getLog().info("开始生成实体代码");
-        SqlSchemaUtils.mojo = this;
-        this.dbType = recognizeDbType(connectionString);
-        processSqlDialet(this.dbType);
-
-        // 项目结构解析
-        String absoluteCurrentDir, projectDir, domainModulePath, applicationModulePath, adapterModulePath;
-        absoluteCurrentDir = new File("").getAbsolutePath();
-        if (multiModule) {
-            projectDir = new File(absoluteCurrentDir + File.separator + "pom.xml").exists()
-                    ? absoluteCurrentDir
-                    : new File(absoluteCurrentDir).getParent();
-
-            domainModulePath = Arrays.stream(new File(projectDir).listFiles())
-                    .filter(path -> path.getAbsolutePath().endsWith(moduleNameSuffix4Domain))
-                    .findFirst().get().getAbsolutePath();
-            applicationModulePath = Arrays.stream(new File(projectDir).listFiles())
-                    .filter(path -> path.getAbsolutePath().endsWith(moduleNameSuffix4Application))
-                    .findFirst().get().getAbsolutePath();
-            adapterModulePath = Arrays.stream(new File(projectDir).listFiles())
-                    .filter(path -> path.getAbsolutePath().endsWith(moduleNameSuffix4Adapter))
-                    .findFirst().get().getAbsolutePath();
-        } else {
-            projectDir = absoluteCurrentDir;
-            domainModulePath = absoluteCurrentDir;
-            applicationModulePath = absoluteCurrentDir;
-            adapterModulePath = absoluteCurrentDir;
-        }
-        String basePackage = StringUtils.isNotBlank(this.basePackage)
-                ? this.basePackage
-                : SourceFileUtils.resolveDefaultBasePackage(domainModulePath);
-        getLog().info(multiModule ? "多模块项目" : "单模块项目");
-        getLog().info("项目目录：" + projectDir);
-        getLog().info("适配层目录：" + adapterModulePath);
-        getLog().info("应用层目录：" + applicationModulePath);
-        getLog().info("领域层目录：" + domainModulePath);
-        getLog().info("基础包名：" + basePackage);
-        getLog().info("实体基类：" + entityBaseClass);
-        getLog().info("聚合根标注注解：" + getAggregateRootAnnotation());
-
-        if (StringUtils.isBlank(entityMetaInfoClassOutputPackage)) {
-            entityMetaInfoClassOutputPackage = "domain._share.meta";
-        }
+        getLog().info("");
 
         // 数据库解析
+        this.dbType = recognizeDbType(connectionString);
+        processSqlDialet(this.dbType);
         List<Map<String, Object>> tables = resolveTables(connectionString, user, pwd);
         List<Map<String, Object>> columns = resolveColumns(connectionString, user, pwd);
         Map<String, Map<String, String>> relations = new HashMap<>();
         Map<String, String> tablePackageMap = new HashMap<>();
+        getLog().info("----------------解析数据库表----------------");
         getLog().info("");
-        getLog().info("待解析数据库表：");
+        getLog().info("数据库类型：" + this.dbType);
+        int maxTableNameLength = tables.stream()
+                .map(table -> getTableName(table).length())
+                .max(Comparator.naturalOrder())
+                .orElse(20);
         for (Map<String, Object> table :
                 tables) {
             List<Map<String, Object>> tableColumns = columns.stream().filter(column -> isColumnInTable(column, table))
@@ -129,8 +197,10 @@ public class GenEntityMojo extends MyAbstractMojo {
                     .collect(Collectors.toList());
             TableMap.put(getTableName(table), table);
             ColumnsMap.put(getTableName(table), tableColumns);
-
-            getLog().info(String.format("%20s : (%s)",
+            getLog().info(String.format("%" + maxTableNameLength + "s   %s",
+                    "",
+                    getComment(table)));
+            getLog().info(String.format("%" + maxTableNameLength + "s : (%s)",
                     getTableName(table),
                     String.join(", ", tableColumns.stream()
                             .map(column ->
@@ -161,7 +231,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                     relations.get(entry.getKey()).putAll(entry.getValue());
                 }
             }
-            tablePackageMap.put(getTableName(table), resolvePackage(table, basePackage, domainModulePath));
+            tablePackageMap.put(getTableName(table), resolveEntityFullPackage(table, basePackage, getDomainModulePath()));
             getLog().info("结束解析表关系:" + getTableName(table));
             getLog().info("");
         }
@@ -174,11 +244,17 @@ public class GenEntityMojo extends MyAbstractMojo {
             List<Map<String, Object>> tableColumns = ColumnsMap.get(getTableName(table));
             for (Map<String, Object> column :
                     tableColumns) {
-                if (hasEnum(column)) {
+                if (hasEnum(column) && !isIgnoreColumn(column)) {
                     Map<Integer, String[]> enumConfig = getEnum(column);
                     if (enumConfig.size() > 0) {
                         EnumConfigMap.put(getType(column), enumConfig);
-                        EnumPackageMap.put(getType(column), basePackage + "." + getEntityPackage(getTableName(table)) + ".enums");
+                        String enumPackage = templateNodeMap.containsKey("enum") && templateNodeMap.get("enum").size() > 0
+                                ? templateNodeMap.get("enum").get(0).getName()
+                                : "enums";
+                        if (StringUtils.isNotBlank(enumPackage)) {
+                            enumPackage = "." + enumPackage;
+                        }
+                        EnumPackageMap.put(getType(column), basePackage + "." + getEntityPackage(getTableName(table)) + enumPackage);
                         EnumTableNameMap.put(getType(column), getTableName(table));
                     }
                 }
@@ -193,7 +269,13 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("");
         for (Map.Entry<String, Map<Integer, String[]>> entry : EnumConfigMap.entrySet()) {
             try {
-                writeEnumSourceFile(entry.getValue(), entry.getKey(), EnumPackageMap.get(entry.getKey()), domainModulePath, enumValueField, enumNameField);
+                writeEnumSourceFile(
+                        entry.getValue(),
+                        entry.getKey(),
+                        enumValueField,
+                        enumNameField,
+                        tablePackageMap,
+                        getDomainModulePath());
             } catch (IOException e) {
                 e.printStackTrace();
                 getLog().error(e);
@@ -208,7 +290,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("");
         if (generateSchema) {
             try {
-                writeBaseSechemaSourceFile(basePackage, domainModulePath);
+                writeSchemaBaseSourceFile(getDomainModulePath());
             } catch (IOException e) {
                 e.printStackTrace();
                 getLog().error(e);
@@ -218,15 +300,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 TableMap.values()) {
             List<Map<String, Object>> tableColumns = ColumnsMap.get(getTableName(table));
             try {
-                writeEntitySourceFile(table, tableColumns, tablePackageMap, relations, basePackage, domainModulePath);
-            } catch (IOException e) {
-                e.printStackTrace();
-                getLog().error(e);
-            }
-        }
-        if (generateBuild) {
-            try {
-                writeEntityBuilderSourceFile(basePackage, applicationModulePath, tablePackageMap, relations);
+                buildEntitySourceFile(table, tableColumns, tablePackageMap, relations, basePackage, getDomainModulePath());
             } catch (IOException e) {
                 e.printStackTrace();
                 getLog().error(e);
@@ -236,6 +310,80 @@ public class GenEntityMojo extends MyAbstractMojo {
         getLog().info("");
     }
 
+    /**
+     * 获取聚合根文件目录
+     *
+     * @return
+     */
+    public String getAggregatesPath() {
+        if (StringUtils.isNotBlank(aggregatesPath)) {
+            return aggregatesPath;
+        }
+        return resolveDirectory(
+                getDomainModulePath(),
+                basePackage + "." + AGGREGATE_PACKAGE
+        );
+    }
+
+    /**
+     * 获取聚合根包名，不包含basePackage
+     *
+     * @return
+     */
+    public String getAggregatesPackage() {
+        return SourceFileUtils.resolvePackage(getAggregatesPath() + File.separator + "X.java")
+                .substring(basePackage.length() + 1);
+    }
+
+    /**
+     * 获取实体schema文件目录
+     *
+     * @return
+     */
+    public String getSchemaPath() {
+        if (StringUtils.isNotBlank(schemaPath)) {
+            return schemaPath;
+        }
+        return resolveDirectory(
+                getDomainModulePath(),
+                basePackage + "." + getEntitySchemaOutputPackage()
+        );
+    }
+
+    /**
+     * 获取schema包名，不包含basePackage
+     *
+     * @return
+     */
+    public String getSchemaPackage() {
+        return SourceFileUtils.resolvePackage(getSchemaPath() + File.separator + "X.java")
+                .substring(basePackage.length() + 1);
+    }
+
+    /**
+     * 获取领域事件订阅者文件目录
+     *
+     * @return
+     */
+    public String getSubscriberPath() {
+        if (StringUtils.isNotBlank(subscriberPath)) {
+            return subscriberPath;
+        }
+        return resolveDirectory(
+                getApplicationModulePath(),
+                basePackage + "." + DOMAIN_EVENT_SUBSCRIBER_PACKAGE
+        );
+    }
+
+    /**
+     * 获取领域事件订阅者包名，不包含basePackage
+     *
+     * @return
+     */
+    public String getSubscriberPackage() {
+        return SourceFileUtils.resolvePackage(getSubscriberPath() + File.separator + "X.java")
+                .substring(basePackage.length() + 1);
+    }
 
     /**
      * 获取模块
@@ -286,7 +434,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 getLog().info("尝试父表聚合:" + getTableName(table) + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
             }
             if (StringUtils.isBlank(aggregate)) {
-                aggregate =  toSnakeCase(getEntityJavaType(getTableName(table)));
+                aggregate = toSnakeCase(getEntityJavaType(getTableName(table)));
             }
             getLog().info("聚合解析结果:" + tableName + " " + (StringUtils.isBlank(aggregate) ? "[缺失]" : aggregate));
             return aggregate;
@@ -303,7 +451,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     public String getAggregateWithModule(String tableName) {
         String module = getModule(tableName);
         if (StringUtils.isNotBlank(module)) {
-            return module + "." + getAggregate(tableName);
+            return SourceFileUtils.concatPackage(module, getAggregate(tableName));
         } else {
             return getAggregate(tableName);
         }
@@ -333,7 +481,7 @@ public class GenEntityMojo extends MyAbstractMojo {
     }
 
     /**
-     * 获取实体类 package
+     * 获取实体类所在包，不包含basePackage
      *
      * @param tableName
      * @return
@@ -341,9 +489,10 @@ public class GenEntityMojo extends MyAbstractMojo {
     public String getEntityPackage(String tableName) {
         String module = getModule(tableName);
         String aggregate = getAggregate(tableName);
-        String packageName = ("domain.aggregates"
-                + (StringUtils.isNotBlank(module) ? "." + module : "")
-                + (StringUtils.isNotBlank(aggregate) ? "." + aggregate.toLowerCase() : "")
+        String packageName = SourceFileUtils.concatPackage(
+                getAggregatesPackage()
+                , module
+                , aggregate.toLowerCase()
         );
         return packageName;
     }
@@ -388,6 +537,115 @@ public class GenEntityMojo extends MyAbstractMojo {
             return true;
         }
         return false;
+    }
+
+    /**
+     * 判断是否需要生成实体字段
+     *
+     * @param table
+     * @param column
+     * @param relations
+     * @return
+     */
+    public boolean isColumnNeedGenerate(Map<String, Object> table, Map<String, Object> column, Map<String, Map<String, String>> relations) {
+
+        String tableName = getTableName(table);
+        String columnName = getColumnName(column);
+        if (isIgnoreColumn(column)) {
+            return false;
+        }
+        if (isReservedColumn(column)) {
+            return false;
+        }
+
+        if (!isAggregateRoot(table)) {
+            if (columnName.equalsIgnoreCase(getParent(table) + "_id")) {
+                return false;
+            }
+        }
+
+        if (relations.containsKey(tableName)) {
+            boolean skip = false;
+            for (Map.Entry<String, String> entry : relations.get(tableName).entrySet()) {
+                String[] refInfos = entry.getValue().split(";");
+                if (("ManyToOne".equalsIgnoreCase(refInfos[0]) || "OneToOne".equalsIgnoreCase(refInfos[0])) && columnName.equalsIgnoreCase(refInfos[1])) {
+                    skip = true;
+                    break;
+                }
+            }
+            if (skip) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 获取Id列
+     *
+     * @param columns
+     * @return
+     */
+    private Map<String, Object> getIdColumn(List<Map<String, Object>> columns) {
+        return columns.stream().filter(column -> Objects.equals(idField, getColumnName(column)))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * 生成字段注释
+     *
+     * @param column
+     * @return
+     */
+    public List<String> generateFieldComment(Map<String, Object> column) {
+        List<String> comments = new ArrayList<>();
+        String fieldName = getColumnName(column);
+        String fieldType = getColumnJavaType(column);
+        comments.add("/**");
+        for (String comment : getComment(column).split(PATTERN_LINE_BREAK)) {
+            if (StringUtils.isEmpty(comment)) {
+                continue;
+            }
+            comments.add(" * " + comment);
+            if (hasEnum(column)) {
+                getLog().info("获取枚举java类型：" + fieldName + " -> " + fieldType);
+                Map<Integer, String[]> enumMap = EnumConfigMap.get(fieldType);
+                if (enumMap == null) {
+                    enumMap = EnumConfigMap.get(getType(column));
+                }
+                if (enumMap != null) {
+                    comments.addAll(enumMap.entrySet().stream()
+                            .map(c -> " * " + c.getKey() + ":" + c.getValue()[0] + ":" + c.getValue()[1])
+                            .collect(Collectors.toList())
+                    );
+                }
+            }
+        }
+        if (generateDbType) {
+            comments.add(" * " + getColumnDbType(column));
+        }
+        comments.add(" */");
+        return comments;
+    }
+
+    /**
+     * 解析实体类全路径包名，含basePackage
+     *
+     * @param table
+     * @param basePackage
+     * @param baseDir
+     * @return
+     */
+    public String resolveEntityFullPackage(Map<String, Object> table, String basePackage, String baseDir) {
+        String tableName = getTableName(table);
+        String simpleClassName = getEntityJavaType(tableName);
+        String packageName = SourceFileUtils.concatPackage(basePackage, getEntityPackage(tableName));
+
+//        Optional<File> existFilePath = SourceFileUtils.findJavaFileBySimpleClassName(baseDir, simpleClassName);
+//        if (existFilePath.isPresent()) {
+//            packageName = SourceFileUtils.resolvePackage(existFilePath.get().getAbsolutePath());
+//        }
+        return packageName;
     }
 
     /**
@@ -487,9 +745,8 @@ public class GenEntityMojo extends MyAbstractMojo {
         return result;
     }
 
-    public boolean readCustomerSourceFile(String filePath, List<String> importLines, List<String> annotationLines, List<String> customerLines) throws IOException {
+    public boolean readEntityCustomerSourceFile(String filePath, List<String> importLines, List<String> annotationLines, List<String> customerLines) throws IOException {
         if (FileUtils.fileExists(filePath)) {
-            String simpleClassName = SourceFileUtils.resolveSimpleClassName(filePath);
             String content = FileUtils.fileRead(filePath);
             List<String> lines = Arrays.asList(content.replace("\r\n", "\n").split("\n"));
 
@@ -536,7 +793,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         return true;
     }
 
-    public void processImportLines(Map<String, Object> table, String basePackage, List<String> importLines, String content) {
+    public void processImportLines(Map<String, Object> table, List<String> importLines, String content) {
         boolean importEmpty = importLines.size() == 0;
         if (importEmpty) {
             importLines.add("");
@@ -544,8 +801,9 @@ public class GenEntityMojo extends MyAbstractMojo {
 
         List<String> entityClassExtraImports = getEntityClassExtraImports();
         if (isValueObject(table)) {
-            if (entityClassExtraImports.indexOf("org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate") > 0) {
-                entityClassExtraImports.add(entityClassExtraImports.indexOf("org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate"), "org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject");
+            int idx = entityClassExtraImports.indexOf("org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate");
+            if (idx > 0) {
+                entityClassExtraImports.add(idx, "org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject");
             } else {
                 entityClassExtraImports.add("org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject");
             }
@@ -561,14 +819,14 @@ public class GenEntityMojo extends MyAbstractMojo {
             }
             importLines.add("");
             importLines.add("/**");
-            for (String comment : getComment(table).split("[\\r\\n]")) {
+            for (String comment : getComment(table).split(PATTERN_LINE_BREAK)) {
                 if (StringUtils.isEmpty(comment)) {
                     continue;
                 }
                 importLines.add(" * " + comment);
             }
             importLines.add(" *");
-            // importLines.add(" * " + getComment(table).replaceAll("[\\r\\n]", " "));
+            // importLines.add(" * " + getComment(table).replaceAll(PATTERN_LINE_BREAK, " "));
             importLines.add(" * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
             importLines.add(" * 警告：请勿手工修改该文件的字段声明，重新生成会覆盖字段声明");
             importLines.add(" * @author cap4j-ddd-codegen");
@@ -614,7 +872,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "root = " + (isAggregateRoot(table) ? "true" : "false") + ", " +
                 "type = " + (isValueObject(table) ? "Aggregate.TYPE_VALUE_OBJECT" : "Aggregate.TYPE_ENTITY") + ", " +
                 (isAggregateRoot(table) ? "" : ("relevant = { \"" + getEntityJavaType(getParent(table)) + "\" }, ")) +
-                "description = \"" + getComment(table).replaceAll("[\\r\\n]", "\\\\n") + "\"" +
+                "description = \"" + getComment(table).replaceAll(PATTERN_LINE_BREAK, "\\\\n") + "\"" +
                 ")", (list, line) -> 0);
         if (StringUtils.isNotBlank(getAggregateRootAnnotation())) {
             if (isAggregateRoot(table)) {
@@ -624,13 +882,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 SourceFileUtils.removeText(annotationLines, "@AggregateRoot(\\(.*\\))?");
             }
         }
-//        else {
-//            if (isAggregateRoot(table)) {
-//                SourceFileUtils.addIfNone(annotationLines, "\\/\\* @AggregateRoot(\\(.*\\))? \\*\\/", "/* @AggregateRoot */");
-//            } else {
-//                SourceFileUtils.removeText(annotationLines, "\\/\\* @AggregateRoot(\\(.*\\))? \\*\\/");
-//            }
-//        }
+
         SourceFileUtils.addIfNone(annotationLines, "@Entity(\\(.*\\))?", "@Entity");
         SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicInsert(\\(.*\\))?", "@DynamicInsert");
@@ -661,19 +913,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         SourceFileUtils.removeText(annotationLines, "@lombok\\.Data(\\(.*\\))?");
     }
 
-    public String resolvePackage(Map<String, Object> table, String basePackage, String baseDir) {
-        String tableName = getTableName(table);
-        String simpleClassName = getEntityJavaType(tableName);
-        String packageName = basePackage + "." + getEntityPackage(tableName);
-
-        Optional<File> existFilePath = SourceFileUtils.findJavaFileBySimpleClassName(baseDir, simpleClassName);
-        if (existFilePath.isPresent()) {
-            packageName = SourceFileUtils.resolvePackage(existFilePath.get().getAbsolutePath());
-        }
-        return packageName;
-    }
-
-    public void writeEntitySourceFile(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, String basePackage, String baseDir) throws IOException {
+    public void buildEntitySourceFile(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, String basePackage, String baseDir) throws IOException {
         String tableName = getTableName(table);
         if (isIgnoreTable(table)) {
             getLog().info("跳过忽略表：" + tableName);
@@ -686,21 +926,41 @@ public class GenEntityMojo extends MyAbstractMojo {
             return;
         }
 
-        String simpleClassName = getEntityJavaType(tableName);
-        String packageName = tablePackageMap.get(tableName);
+        String entityType = getEntityJavaType(tableName);
+        String entityFullPackage = tablePackageMap.get(tableName);
 
-        new File(SourceFileUtils.resolveDirectory(baseDir, packageName)).mkdirs();
+        FileUtils.mkdir(SourceFileUtils.resolveDirectory(baseDir, entityFullPackage));
+
+        String filePath = SourceFileUtils.resolveSourceFile(baseDir, entityFullPackage, entityType);
+
+        List<String> enums = new ArrayList<>();
+        List<String> importLines = new ArrayList<>();
+        List<String> annotationLines = new ArrayList<>();
+        List<String> customerLines = new ArrayList<>();
+        if (!readEntityCustomerSourceFile(filePath, importLines, annotationLines, customerLines)) {
+            getLog().warn("文件被改动，无法自动更新！" + filePath);
+            return;
+        }
+
+        processAnnotationLines(table, columns, annotationLines);
+        String mainSource = writeEntityClass(table, columns, tablePackageMap, relations, enums, annotationLines, customerLines);
+        processImportLines(table, importLines, mainSource);
+
+        getLog().info("开始生成实体文件：" + filePath);
+        FileUtils.fileWrite(filePath, outputEncoding,
+                "package " + entityFullPackage + ";\n" +
+                        String.join("\n", importLines) + "\n" +
+                        mainSource + "\n"
+        );
+        if (generateSchema) {
+            writeSchemaSourceFile(table, columns, tablePackageMap, relations, basePackage, baseDir);
+        }
         if (isAggregateRoot(table)) {
-            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".enums")).mkdirs();
-            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".events")).mkdirs();
-            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".schemas")).mkdirs();
-            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".specs")).mkdirs();
-            new File(SourceFileUtils.resolveDirectory(baseDir, packageName + ".factory")).mkdirs();
             if (hasFactory(table)) {
-                writeFactorySourceFile(table, baseDir);
+                writeFactorySourceFile(table, tablePackageMap, baseDir);
             }
             if (hasSpecification(table)) {
-                writeSpecificationSourceFile(table, baseDir);
+                writeSpecificationSourceFile(table, tablePackageMap, baseDir);
             }
             if (hasDomainEvent(table)) {
                 List<String> domainEvents = getDomainEvent(table);
@@ -709,58 +969,23 @@ public class GenEntityMojo extends MyAbstractMojo {
                         continue;
                     }
                     String[] segments = TextUtils.splitWithTrim(domainEvent, ":");
-                    String domainEventClassName = NamingUtils.toUpperCamelCase(segments[0]);
-                    if (!domainEventClassName.endsWith("Event") && !domainEventClassName.endsWith("Evt")) {
-                        domainEventClassName += "DomainEvent";
-                    }
+                    String domainEventClassName = generateDomainEventName(segments[0]);
                     String domainEventDescription = segments.length > 1 ? segments[1] : "todo: 领域事件说明";
-                    try {
-                        writeDomainEventSourceFile(table, domainEventClassName, domainEventDescription, baseDir);
-                    } catch (IOException ex) {
-                        getLog().error("领域事件" + domainEventClassName + "代码生成异常");
-                        throw ex;
-                    }
+                    writeDomainEventSourceFile(table, tablePackageMap, domainEventClassName, domainEventDescription, baseDir);
                 }
             }
         }
-        String filePath = SourceFileUtils.resolveSourceFile(baseDir, packageName, simpleClassName);
-
-        List<String> enums = new ArrayList<>();
-        List<String> importLines = new ArrayList<>();
-        List<String> annotationLines = new ArrayList<>();
-        List<String> customerLines = new ArrayList<>();
-        if (!readCustomerSourceFile(filePath, importLines, annotationLines, customerLines)) {
-            getLog().warn("文件被改动，无法自动更新！" + filePath);
-            return;
-        }
-
-        getLog().info("开始生成实体文件：" + filePath);
-        processAnnotationLines(table, columns, annotationLines);
-        String mainSource = generateEntityClassMainSource(table, columns, tablePackageMap, relations, enums, annotationLines, customerLines);
-        processImportLines(table, basePackage, importLines, mainSource);
-
-        BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-        writeLine(out, "package " + packageName + ";");
-        importLines.forEach(line -> writeLine(out, line));
-        writeLine(out, mainSource);
-        out.close();
-        if (generateSchema) {
-            writeSchemaSourceFile(table, columns, tablePackageMap, relations, basePackage, baseDir);
-        }
     }
 
-    private Map<String, Object> getIdColumn(List<Map<String, Object>> columns) {
-        return columns.stream().filter(column -> Objects.equals(idField, getColumnName(column)))
-                .findFirst().orElse(null);
-    }
-
-    private String generateEntityClassMainSource(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, List<String> enums, List<String> annotationLines, List<String> customerLines) throws IOException {
+    private String writeEntityClass(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, List<String> enums, List<String> annotationLines, List<String> customerLines) throws IOException {
         String tableName = getTableName(table);
-        String simpleClassName = getEntityJavaType(tableName);
+        String entityType = getEntityJavaType(tableName);
         StringWriter stringWriter = new StringWriter();
         BufferedWriter out = new BufferedWriter(stringWriter);
         annotationLines.forEach(line -> writeLine(out, line));
-        writeLine(out, "public class " + simpleClassName + (StringUtils.isNotBlank(entityBaseClass) ? " extends " + entityBaseClass : "") + (isValueObject(table) ? " implements ValueObject" : "") + " {");
+        writeLine(out, "public class " + entityType +
+                (StringUtils.isNotBlank(entityBaseClass) ? " extends " + entityBaseClass : "") +
+                (isValueObject(table) ? " implements ValueObject" : "") + " {");
         if (customerLines.size() > 0) {
             customerLines.forEach(line -> writeLine(out, line));
         } else {
@@ -784,18 +1009,19 @@ public class GenEntityMojo extends MyAbstractMojo {
             if (StringUtils.isNotBlank(idGenerator4ValueObject)) {
                 entityIdGenerator = idGenerator4ValueObject;
             } else {
+                // ValueObject 值对象 默认使用MD5
                 entityIdGenerator = "org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator";
             }
         } else {
             if (StringUtils.isNotBlank(idGenerator)) {
                 entityIdGenerator = idGenerator;
-            } else {
             }
         }
         if (null != entityIdGenerator) {
             writeLine(out, "    @GeneratedValue(generator = \"" + entityIdGenerator + "\")");
             writeLine(out, "    @GenericGenerator(name = \"" + entityIdGenerator + "\", strategy = \"" + entityIdGenerator + "\")");
         } else {
+            // 无ID生成器 使用数据库自增
             writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
         }
         writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
@@ -835,127 +1061,11 @@ public class GenEntityMojo extends MyAbstractMojo {
         return stringWriter.toString();
     }
 
-    public boolean needGenerateField(Map<String, Object> table, Map<String, Object> column, Map<String, Map<String, String>> relations) {
-
-        String tableName = getTableName(table);
-        String columnName = getColumnName(column);
-        if (isIgnoreColumn(column)) {
-            return false;
-        }
-        if (isReservedColumn(column)) {
-            return false;
-        }
-
-        if (!isAggregateRoot(table)) {
-            if (columnName.equalsIgnoreCase(getParent(table) + "_id")) {
-                return false;
-            }
-        }
-
-        if (relations.containsKey(tableName)) {
-            boolean skip = false;
-            for (Map.Entry<String, String> entry : relations.get(tableName).entrySet()) {
-                String[] refInfos = entry.getValue().split(";");
-                if (("ManyToOne".equalsIgnoreCase(refInfos[0]) || "OneToOne".equalsIgnoreCase(refInfos[0])) && columnName.equalsIgnoreCase(refInfos[1])) {
-                    skip = true;
-                    break;
-                }
-            }
-            if (skip) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public void writeEntityBuilderSourceFile(String basePackage, String baseDir, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations) throws IOException {
-        String packageName = basePackage + "." + entityMetaInfoClassOutputPackage;
-
-        new File(SourceFileUtils.resolveDirectory(baseDir, packageName)).mkdirs();
-        String filePath = SourceFileUtils.resolveSourceFile(baseDir, packageName, "EntityBuilder");
-
-        BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-        writeLine(out, "package " + packageName + ";");
-        for (Map.Entry<String, Map<String, Object>> tableEntry : TableMap.entrySet()) {
-            Map<String, Object> table = tableEntry.getValue();
-            if (isIgnoreTable(table)) {
-                continue;
-            }
-            if (hasRelation(table)) {
-                continue;
-            }
-            String tableName = getTableName(table);
-            String simpleClassName = getEntityJavaType(tableName);
-            writeLine(out, "import " + tablePackageMap.get(tableName) + "." + simpleClassName + ";");
-        }
-        writeLine(out, "");
-        writeLine(out, "/**");
-        writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
-        writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
-        writeLine(out, " * @author cap4j-ddd-codegen");
-        writeLine(out, " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
-        writeLine(out, " */");
-        writeLine(out, "public class EntityBuilder {");
-        for (Map.Entry<String, Map<String, Object>> tableEntry : TableMap.entrySet()) {
-            Map<String, Object> table = tableEntry.getValue();
-            if (isIgnoreTable(table)) {
-                continue;
-            }
-            if (hasRelation(table)) {
-                continue;
-            }
-            writeBuildEntityMethod(out, table, ColumnsMap.get(tableEntry.getKey()), relations);
-        }
-        writeLine(out, "");
-        writeLine(out, "}");
-        out.flush();
-        out.close();
-    }
-
-    public void writeBuildEntityMethod(BufferedWriter out, Map<String, Object> table, List<Map<String, Object>> columns, Map<String, Map<String, String>> relations) {
-
-        String tableName = getTableName(table);
-        String simpleClassName = getEntityJavaType(tableName);
-        writeLine(out, "");
-        writeLine(out, "    /**");
-        for (String comment : getComment(table).split("[\\r\\n]")) {
-            if (StringUtils.isEmpty(comment)) {
-                continue;
-            }
-            writeLine(out, " * " + comment);
-        }
-        writeLine(out, "     * @param fieldFillNull 字段默认值是否为空");
-        writeLine(out, "     * @return");
-        writeLine(out, "     */");
-        writeLine(out, "    public static " + simpleClassName + "." + simpleClassName + "Builder build" + simpleClassName + "(boolean fieldFillNull) {");
-        writeLine(out, "        return " + simpleClassName + ".builder()");
-        writeLine(out, "                ." + idField + "(null)");
-        for (Map<String, Object> column : columns) {
-            if (!needGenerateField(table, column, relations)) {
-                continue;
-            }
-            String defaultJavaLiteral = getColumnDefaultJavaLiteral(column);
-            if (StringUtils.isBlank(defaultJavaLiteral)) {
-                defaultJavaLiteral = "null";
-            }
-            if ("Byte".equalsIgnoreCase(getColumnJavaType(column))) {
-                defaultJavaLiteral = "(byte)" + defaultJavaLiteral;
-            }
-            writeLine(out, "                ." + toLowerCamelCase(getColumnName(column)) + "(fieldFillNull ? null : " + defaultJavaLiteral + ")");
-
-        }
-        if (hasColumn(versionField, columns)) {
-            writeLine(out, "                ." + toLowerCamelCase(versionField) + "(fieldFillNull ? null : 0)");
-        }
-        writeLine(out, "                ;");
-        writeLine(out, "    }");
-    }
-
     public void writeColumnProperty(BufferedWriter out, Map<String, Object> table, Map<String, Object> column, Map<String, Map<String, String>> relations, List<String> enums) {
         String columnName = getColumnName(column);
         String columnJavaType = getColumnJavaType(column);
 
-        if (!needGenerateField(table, column, relations)) {
+        if (!isColumnNeedGenerate(table, column, relations)) {
             return;
         }
 
@@ -977,7 +1087,7 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
 
         writeLine(out, "");
-        writeColumnComment(out, column);
+        writeFieldComment(out, column);
         if (hasEnum(column)) {
             enums.add(columnJavaType);
             writeLine(out, "    @Convert(converter = " + columnJavaType + ".Converter.class)");
@@ -998,31 +1108,10 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
     }
 
-    public void writeColumnComment(BufferedWriter out, Map<String, Object> column) {
-        String columnName = getColumnName(column);
-        String columnJavaType = getColumnJavaType(column);
-        writeLine(out, "    /**");
-        for (String comment : getComment(column).split("[\\r\\n]")) {
-            if (StringUtils.isEmpty(comment)) {
-                continue;
-            }
-            writeLine(out, "     * " + comment);
-            if (hasEnum(column)) {
-                getLog().info("获取枚举java类型：" + columnName + " -> " + columnJavaType);
-                Map<Integer, String[]> enumMap = EnumConfigMap.get(columnJavaType);
-                if (enumMap == null) {
-                    enumMap = EnumConfigMap.get(getType(column));
-                }
-                if (enumMap != null) {
-                    writeLine(out, "     * " + String.join(";", enumMap.entrySet().stream()
-                            .map(c -> c.getKey() + ":" + c.getValue()[0] + ":" + c.getValue()[1]).collect(Collectors.toList())));
-                }
-            }
+    public void writeFieldComment(BufferedWriter out, Map<String, Object> column) {
+        for (String line : generateFieldComment(column)) {
+            writeLine(out, "    " + line);
         }
-        if (generateDbType) {
-            writeLine(out, "     * " + getColumnDbType(column));
-        }
-        writeLine(out, "     */");
     }
 
     public void writeRelationProperty(BufferedWriter out, Map<String, Object> table, Map<String, Map<String, String>> relations, Map<String, String> tablePackageMap) {
@@ -1149,298 +1238,673 @@ public class GenEntityMojo extends MyAbstractMojo {
         }
     }
 
-    public void writeFactorySourceFile(Map<String, Object> table, String baseDir) throws IOException {
+    public void writeFactorySourceFile(Map<String, Object> table, Map<String, String> tablePackageMap, String baseDir) throws IOException {
+        String tag = "factory";
         String tableName = getTableName(table);
-        String entityPackage = basePackage + "." + getEntityPackage(tableName);
-        String simpleClassName = getEntityJavaType(tableName);
-        String filePath = SourceFileUtils.resolveSourceFile(baseDir, entityPackage + ".factory", simpleClassName + "Payload");
-        if (!FileUtils.fileExists(filePath)) {
-            getLog().info("开始生成工厂负载：" + filePath);
-            BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-            writeLine(out,
-                    "package " + entityPackage + ".factory;\n" +
-                            "\n" +
-                            "import " + entityPackage + "." + simpleClassName + ";\n" +
-                            "import lombok.AllArgsConstructor;\n" +
-                            "import lombok.Builder;\n" +
-                            "import lombok.Data;\n" +
-                            "import lombok.NoArgsConstructor;\n" +
-                            "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
-                            "import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n" +
-                            "\n" +
-                            "/**\n" +
-                            " * " + simpleClassName + "工厂负载\n" +
-                            " * todo: 工厂负载描述\n" +
-                            " *\n" +
-                            " * @author cap4j-ddd-codegen\n" +
-                            " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) + "\n" +
-                            " */\n" +
-                            "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + simpleClassName + "Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n" +
-                            "@Data\n" +
-                            "@Builder\n" +
-                            "@NoArgsConstructor\n" +
-                            "@AllArgsConstructor\n" +
-                            "public class " + simpleClassName + "Payload implements AggregatePayload<" + simpleClassName + "> {\n" +
-                            "    private Long id;\n" +
-                            "}"
-            );
-            out.flush();
-            out.close();
-        }
+        String aggregate = getAggregateWithModule(tableName);
 
-        filePath = SourceFileUtils.resolveSourceFile(baseDir, entityPackage + ".factory", simpleClassName + "Factory");
-        if (!FileUtils.fileExists(filePath)) {
-            getLog().info("开始生成聚合工厂：" + filePath);
-            BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-            writeLine(out,
-                    "package " + entityPackage + ".factory;\n" +
-                            "\n" +
-                            "import " + entityPackage + "." + simpleClassName + ";\n" +
-                            "import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;\n" +
-                            "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
-                            "import org.springframework.stereotype.Service;\n" +
-                            "\n" +
-                            "/**\n" +
-                            " * " + simpleClassName + "聚合工厂\n" +
-                            " * todo: 聚合工厂描述\n" +
-                            " *\n" +
-                            " * @author cap4j-ddd-codegen\n" +
-                            " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) + "\n" +
-                            " */\n" +
-                            "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + simpleClassName + "Factory\", type = Aggregate.TYPE_FACTORY, description = \"\")\n" +
-                            "@Service\n" +
-                            "public class " + simpleClassName + "Factory implements AggregateFactory<" + simpleClassName + "Payload, " + simpleClassName + "> {\n" +
-                            "\n" +
-                            "    @Override\n" +
-                            "    public " + simpleClassName + " create(" + simpleClassName + "Payload payload) {\n" +
-                            "\n" +
-                            "        return " + simpleClassName + ".builder()\n" +
-                            "\n" +
-                            "                .build();\n" +
-                            "    }\n" +
-                            "}"
-            );
-            out.flush();
-            out.close();
+        String entityFullPackage = tablePackageMap.get(tableName);
+        String entityType = getEntityJavaType(tableName);
+        String entityVar = toLowerCamelCase(entityType);
+
+
+        Map<String, String> context = getEscapeContext();
+        putContext(tag, "Name", entityType + "Factory", context);
+        putContext(tag, "Factory", context.get("Name"), context);
+        putContext(tag, "templatePackage", refPackage(getAggregatesPackage()), context);
+        putContext(tag, "package", refPackage(aggregate), context);
+        putContext(tag, "path", aggregate.replace(".", File.separator), context);
+        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Comment", "", context);
+        putContext(tag, "CommentEscaped", "", context);
+        putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
+        putContext(tag, "Entity", entityType, context);
+        putContext(tag, "AggregateRoot", context.get("Entity"), context);
+        putContext(tag, "EntityVar", entityVar, context);
+
+        List<TemplateNode> factoryTemplateNodes = templateNodeMap.containsKey(tag)
+                ? templateNodeMap.get(tag)
+                : Arrays.asList(getDefaultFactoryPayloadTemplateNode(), getDefaultFactoryTemplateNode());
+        try {
+            for (TemplateNode templateNode : factoryTemplateNodes) {
+                PathNode pathNode = templateNode.clone().resolve(context);
+                String path = forceRender(
+                        pathNode,
+                        SourceFileUtils.resolveDirectory(
+                                baseDir,
+                                concatPackage(basePackage, context.get("templatePackage"))
+                        )
+                );
+                getLog().info(SourceFileUtils.resolveDirectory(
+                        baseDir,
+                        concatPackage(basePackage, context.get("templatePackage"))
+                ));
+                getLog().info("开始生成聚合工厂：" + path);
+            }
+        } catch (IOException e) {
+            getLog().error("聚合工厂模板文件写入失败！", e);
         }
     }
 
-    public void writeSpecificationSourceFile(Map<String, Object> table, String baseDir) throws IOException {
+    public void writeSpecificationSourceFile(Map<String, Object> table, Map<String, String> tablePackageMap, String baseDir) throws IOException {
+        String tag = "specification";
         String tableName = getTableName(table);
-        String entityPackage = basePackage + "." + getEntityPackage(tableName);
-        String simpleClassName = getEntityJavaType(tableName);
-        String filePath = SourceFileUtils.resolveSourceFile(baseDir, entityPackage + ".specs", simpleClassName + "Specification");
-        if (FileUtils.fileExists(filePath)) {
-            return;
-        }
-        getLog().info("开始生成实体规约：" + filePath);
-        BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-        writeLine(out,
-                "package " + entityPackage + ".specs;\n" +
-                        "\n" +
-                        "import " + entityPackage + "." + simpleClassName + ";\n" +
-                        "import org.netcorepal.cap4j.ddd.domain.aggregate.Specification;\n" +
-                        "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
-                        "import org.springframework.stereotype.Service;\n" +
-                        "\n" +
-                        "/**\n" +
-                        " * " + simpleClassName + "规格约束\n" +
-                        " * todo: 规格约束描述\n" +
-                        " *\n" +
-                        " * @author cap4j-ddd-codegen\n" +
-                        " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) + "\n" +
-                        " */\n" +
-                        "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + simpleClassName + "Specification\", type = Aggregate.TYPE_SPECIFICATION, description = \"\")\n" +
-                        "@Service\n" +
-                        "public class " + simpleClassName + "Specification implements Specification<" + simpleClassName + "> {\n" +
-                        "    @Override\n" +
-                        "    public Result specify(" + simpleClassName + " entity) {\n" +
-                        "        return Result.fail(\"未实现\");\n" +
-                        "    }\n" +
-                        "}"
-        );
+        String aggregate = getAggregateWithModule(tableName);
 
-        out.flush();
-        out.close();
+        String entityFullPackage = tablePackageMap.get(tableName);
+        String entityType = getEntityJavaType(tableName);
+        String entityVar = toLowerCamelCase(entityType);
+
+
+        Map<String, String> context = getEscapeContext();
+        putContext(tag, "Name", entityType + "Specification", context);
+        putContext(tag, "Specification", context.get("Name"), context);
+        putContext(tag, "templatePackage", refPackage(getAggregatesPackage()), context);
+        putContext(tag, "package", refPackage(aggregate), context);
+        putContext(tag, "path", aggregate.replace(".", File.separator), context);
+        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Comment", "", context);
+        putContext(tag, "CommentEscaped", "", context);
+        putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
+        putContext(tag, "Entity", entityType, context);
+        putContext(tag, "AggregateRoot", context.get("Entity"), context);
+        putContext(tag, "EntityVar", entityVar, context);
+
+        List<TemplateNode> domainEventTemplateNodes = templateNodeMap.containsKey(tag)
+                ? templateNodeMap.get(tag)
+                : Arrays.asList(getDefaultSpecificationTemplateNode());
+        try {
+            for (TemplateNode templateNode : domainEventTemplateNodes) {
+                PathNode pathNode = templateNode.clone().resolve(context);
+                String path = forceRender(
+                        pathNode,
+                        SourceFileUtils.resolveDirectory(
+                                baseDir,
+                                concatPackage(basePackage, context.get("templatePackage"))
+                        )
+                );
+                getLog().info("开始生成实体规约：" + path);
+            }
+        } catch (IOException e) {
+            getLog().error("实体规约模板文件写入失败！", e);
+        }
+
     }
 
-    public void writeDomainEventSourceFile(Map<String, Object> table, String domainEventClassName, String domainEventDescription, String baseDir) throws IOException {
+    public void writeDomainEventSourceFile(Map<String, Object> table, Map<String, String> tablePackageMap, String domainEventClassName, String domainEventDesc, String baseDir) {
+        String tag = "domain_event";
+        String handlerTag = "domain_event_handler";
         String tableName = getTableName(table);
-        String entityPackage = basePackage + "." + getEntityPackage(tableName);
-        String simpleClassName = getEntityJavaType(tableName);
-        String filePath = SourceFileUtils.resolveSourceFile(baseDir, entityPackage + ".events", domainEventClassName);
-        if (!FileUtils.fileExists(filePath)) {
-            getLog().info("开始生成领域事件：" + filePath);
-            BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-            writeLine(out,
-                    "package " + entityPackage + ".events;\n" +
-                            "\n" +
-//                        "import " + entityPackage + "." + simpleClassName + ";\n" +
-                            "import lombok.AllArgsConstructor;\n" +
-                            "import lombok.Builder;\n" +
-                            "import lombok.Data;\n" +
-                            "import lombok.NoArgsConstructor;\n" +
-                            "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
-                            "import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;\n" +
-                            "\n" +
-                            "/**\n" +
-                            " * " + simpleClassName + "领域事件\n" +
-                            " * " + domainEventDescription + "\n" +
-                            " *\n" +
-                            " * @author cap4j-ddd-codegen\n" +
-                            " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) + "\n" +
-                            " */\n" +
-                            "@DomainEvent(persist = false)\n" +
-                            "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + domainEventClassName + "\", type = Aggregate.TYPE_DOMAIN_EVENT, description = \"" + domainEventDescription.replaceAll("(\\r\\n)|(\\r)|(\\n)", "\\n") + "\")\n" +
-                            "@Data\n" +
-                            "@Builder\n" +
-                            "@AllArgsConstructor\n" +
-                            "@NoArgsConstructor\n" +
-                            "public class " + domainEventClassName + " {\n" +
-                            "    Long id;\n" +
-                            "}"
-            );
-            out.flush();
-            out.close();
+        String aggregate = getAggregateWithModule(tableName);
+
+        String entityFullPackage = tablePackageMap.get(tableName);
+        String entityType = getEntityJavaType(tableName);
+        String entityVar = toLowerCamelCase(entityType);
+
+        String domainEventDescEscaped = domainEventDesc.replaceAll("(\\r\\n)|(\\r)|(\\n)", "\\n");
+
+        Map<String, String> context = getEscapeContext();
+        putContext(tag, "Name", domainEventClassName, context);
+        putContext(tag, "DomainEvent", context.get("Name"), context);
+        putContext(tag, "domainEventPackage", refPackage(getAggregatesPackage()), context);
+        putContext(tag, "domainEventHandlerPackage", refPackage(getSubscriberPackage()), context);
+        putContext(tag, "package", refPackage(aggregate), context);
+        putContext(tag, "path", aggregate.replace(".", File.separator), context);
+        putContext(tag, "persist", "false", context);
+        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Comment", domainEventDescEscaped, context);
+        putContext(tag, "CommentEscaped", domainEventDescEscaped, context);
+        putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
+        putContext(tag, "Entity", entityType, context);
+        putContext(tag, "AggregateRoot", context.get("Entity"), context);
+        putContext(tag, "EntityVar", entityVar, context);
+
+        putContext(tag, "templatePackage", context.get("domainEventPackage"), context);
+        List<TemplateNode> domainEventTemplateNodes = templateNodeMap.containsKey(tag)
+                ? templateNodeMap.get(tag)
+                : Arrays.asList(getDefaultDomainEventTemplateNode());
+        try {
+            for (TemplateNode templateNode : domainEventTemplateNodes) {
+                PathNode pathNode = templateNode.clone().resolve(context);
+                String path = forceRender(
+                        pathNode,
+                        SourceFileUtils.resolveDirectory(
+                                baseDir,
+                                concatPackage(basePackage, context.get("templatePackage"))
+                        )
+                );
+                getLog().info("开始生成领域事件文件：" + path);
+            }
+        } catch (IOException e) {
+            getLog().error("领域事件模板文件写入失败！", e);
         }
 
-        String subscriberPackage = basePackage + ".application.subscribers.domain";
-        filePath = SourceFileUtils.resolveSourceFile(baseDir, subscriberPackage, domainEventClassName + "Subscriber");
-        if (!FileUtils.fileExists(filePath)) {
-
-            getLog().info("开始生成领域事件订阅：" + filePath);
-            BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-            writeLine(out,
-                    "package  " + subscriberPackage + ";\n" +
-                            "\n" +
-                            "import  " + entityPackage + ".events." + domainEventClassName + ";\n" +
-                            "import lombok.RequiredArgsConstructor;\n" +
-                            "import org.springframework.context.event.EventListener;\n" +
-                            "import org.springframework.stereotype.Service;\n" +
-                            "\n" +
-                            "/**\n" +
-                            " * " + simpleClassName + "领域事件订阅\n" +
-                            " * todo: 领域事件订阅描述\n" +
-                            " */\n" +
-                            "@Service\n" +
-                            "@RequiredArgsConstructor\n" +
-                            "public class " + domainEventClassName + "Subscriber {\n" +
-                            "\n" +
-                            "    @EventListener(" + domainEventClassName + ".class)\n" +
-                            "    public void on(" + domainEventClassName + " event) {\n" +
-                            "\n" +
-                            "    }\n" +
-                            "\n" +
-                            "}"
-            );
-            out.flush();
-            out.close();
+        putContext(tag, "templatePackage", context.get("domainEventHandlerPackage"), context);
+        List<TemplateNode> domainEventHandlerTemplateNodes = templateNodeMap.containsKey(handlerTag)
+                ? templateNodeMap.get(handlerTag)
+                : Arrays.asList(getDefaultDomainEventHandlerTemplateNode());
+        try {
+            for (TemplateNode templateNode : domainEventHandlerTemplateNodes) {
+                PathNode pathNode = templateNode.clone().resolve(context);
+                String path = forceRender(
+                        pathNode,
+                        SourceFileUtils.resolveDirectory(
+                                baseDir,
+                                concatPackage(basePackage, context.get("templatePackage"))
+                        )
+                );
+                getLog().info("开始生成领域事件订阅：" + path);
+            }
+        } catch (IOException e) {
+            getLog().error("领域事件订阅模板文件写入失败！", e);
         }
     }
 
-    public void writeEnumSourceFile(Map<Integer, String[]> enumConfigs, String enumType, String enumPackage, String baseDir, String enumValueField, String enumNameField) throws IOException {
-        String tableName = EnumTableNameMap.get(enumType);
+    public void writeEnumSourceFile(Map<Integer, String[]> enumConfigs, String enumClassName, String enumValueField, String enumNameField, Map<String, String> tablePackageMap, String baseDir) throws IOException {
+        String tag = "enum";
+        String itemTag = "enum_item";
+        String tableName = EnumTableNameMap.get(enumClassName);
+        String aggregate = getAggregateWithModule(tableName);
 
-        new File(SourceFileUtils.resolveDirectory(baseDir, enumPackage)).mkdirs();
-        String filePath = SourceFileUtils.resolveSourceFile(baseDir, enumPackage, enumType);
+        String entityFullPackage = tablePackageMap.get(tableName);
+        String entityType = getEntityJavaType(tableName);
+        String entityVar = toLowerCamelCase(entityType);
 
-        BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-        getLog().info("开始生成枚举文件：" + filePath);
-
-        writeLine(out, "package " + enumPackage + ";");
-        writeLine(out, "");
-        writeLine(out, "import lombok.Getter;");
-        writeLine(out, "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;");
-        writeLine(out, "");
-        writeLine(out, "import javax.persistence.*;");
-        writeLine(out, "import java.util.HashMap;");
-        writeLine(out, "import java.util.Map;");
-        writeLine(out, "");
-        writeLine(out, "/**");
-        writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
-        writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
-        writeLine(out, " * @author cap4j-ddd-codegen");
-        writeLine(out, " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
-        writeLine(out, " */");
-        writeLine(out, "@Aggregate(aggregate = \"" + getAggregateWithModule(tableName) + "\", name = \"" + enumType + "\", type = \"enum\", description = \"\")");
-        writeLine(out, "public enum " + enumType + " {");
-        writeLine(out, "");
+        Map<String, String> context = getEscapeContext();
+        putContext(tag, "templatePackage", refPackage(getAggregatesPackage()), context);
+        putContext(tag, "package", refPackage(aggregate), context);
+        putContext(tag, "path", aggregate.replace(".", File.separator), context);
+        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Comment", "", context);
+        putContext(tag, "CommentEscaped", "", context);
+        putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
+        putContext(tag, "Entity", entityType, context);
+        putContext(tag, "AggregateRoot", context.get("Entity"), context);
+        putContext(tag, "EntityVar", entityVar, context);
+        putContext(tag, "Enum", enumClassName, context);
+        putContext(tag, "EnumValueField", enumValueField, context);
+        putContext(tag, "EnumNameField", enumNameField, context);
+        String enumItems = "";
         for (Map.Entry<Integer, String[]> entry : enumConfigs.entrySet()) {
-            getLog().info("  " + entry.getValue()[1] + " : " + entry.getValue()[0] + " = " + entry.getKey());
-            writeLine(out, "    /**");
-            writeLine(out, "     * " + entry.getValue()[1]);
-            writeLine(out, "     */");
-            writeLine(out, "    " + entry.getValue()[0] + "(" + entry.getKey() + ", \"" + entry.getValue()[1] + "\"),");
+            String itemValue = entry.getKey().toString();
+            String itemName = entry.getValue()[0];
+            String itemDesc = entry.getValue()[1];
+            getLog().info("  " + itemDesc + " : " + itemName + " = " + entry.getKey());
+            Map<String, String> itemContext = new HashMap<>(context);
+            putContext(itemTag, "itemName", itemName, itemContext);
+            putContext(itemTag, "itemValue", itemValue, itemContext);
+            putContext(itemTag, "itemDesc", itemDesc, itemContext);
+            PathNode enumItemsPathNode = ((templateNodeMap.containsKey(itemTag) && templateNodeMap.get(itemTag).size() > 0)
+                    ? templateNodeMap.get(itemTag).get(templateNodeMap.get(itemTag).size() - 1)
+                    : getDefaultEnumItemTemplateNode()
+            ).clone().resolve(itemContext);
+            enumItems += enumItemsPathNode.getData();
         }
-        writeLine(out, ";");
-        writeLine(out, "    @Getter");
-        writeLine(out, "    private int " + enumValueField + ";");
-        writeLine(out, "    @Getter");
-        writeLine(out, "    private String " + enumNameField + ";");
-        writeLine(out, "");
-        writeLine(out, "    " + enumType + "(Integer " + enumValueField + ", String " + enumNameField + "){");
-        writeLine(out, "        this." + enumValueField + " = " + enumValueField + ";");
-        writeLine(out, "        this." + enumNameField + " = " + enumNameField + ";");
-        writeLine(out, "    }");
-        writeLine(out, "");
-        writeLine(out, "" +
-                "    private static Map<Integer, " + enumType + "> enums = null;\n" +
-                "    public static " + enumType + " valueOf(Integer " + enumValueField + ") {\n" +
-                "        if(enums == null) {\n" +
-                "            enums = new HashMap<>();\n" +
-                "            for (" + enumType + " val : " + enumType + ".values()) {\n" +
-                "                enums.put(val." + enumValueField + ", val);\n" +
-                "            }\n" +
-                "        }\n" +
-                "        if(enums.containsKey(" + enumValueField + ")){\n" +
-                "            return enums.get(" + enumValueField + ");\n" +
-                "        }\n" +
-                (this.enumUnmatchedThrowException
-                        ? "        throw new RuntimeException(\"枚举类型" + enumType + "枚举值转换异常，不存在的值\" + " + enumValueField + ");\n"
-                        : "        return null;") +
-                "    }");
-        writeLine(out, "");
-        writeLine(out, "    /**");
-        writeLine(out, "     * JPA转换器");
-        writeLine(out, "     */");
-        writeLine(out, "    public static class Converter implements AttributeConverter<" + enumType + ", Integer>{");
-        writeLine(out, "" +
-                "        @Override\n" +
-                "        public Integer convertToDatabaseColumn(" + enumType + "  val) {\n" +
-                "            return val." + enumValueField + ";\n" +
-                "        }\n" +
-                "\n" +
-                "        @Override\n" +
-                "        public " + enumType + " convertToEntityAttribute(Integer " + enumValueField + ") {\n" +
-                "            return " + enumType + ".valueOf(" + enumValueField + ");\n" +
-                "        }");
-        writeLine(out, "    }");
-        writeLine(out, "}");
-        writeLine(out, "");
-        out.flush();
-        out.close();
+        putContext(tag, "ENUM_ITEMS", enumItems, context);
+        List<TemplateNode> enumTemplateNodes = templateNodeMap.containsKey(tag)
+                ? templateNodeMap.get(tag)
+                : Arrays.asList(getDefaultEnumTemplateNode());
+        try {
+            for (TemplateNode templateNode : enumTemplateNodes) {
+                PathNode pathNode = templateNode.clone().resolve(context);
+                String path = forceRender(
+                        pathNode,
+                        SourceFileUtils.resolveDirectory(
+                                baseDir,
+                                concatPackage(basePackage, context.get("templatePackage"))
+                        )
+                );
+                getLog().info(JSON.toJSONString(context));
+                getLog().info("开始生成枚举文件：" + path);
+            }
+        } catch (IOException e) {
+            getLog().error("枚举模板文件写入失败！", e);
+        }
     }
 
     public void writeSchemaSourceFile(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, String basePackage, String baseDir) throws IOException {
+        String tag = "schema";
+        String fieldTag = "schema_field";
+        String joinTag = "schema_join";
         String tableName = getTableName(table);
-        String packageName = null;
-        if ("abs".equalsIgnoreCase(entityMetaInfoClassOutputMode)) {
-            packageName = basePackage + "." + entityMetaInfoClassOutputPackage + ".schemas";
+        String aggregate = getAggregateWithModule(tableName);
+        String schemaPackage = null;
+        if ("abs".equalsIgnoreCase(entitySchemaOutputMode)) {
+            schemaPackage = getSchemaPackage();
         } else {
-            packageName = tablePackageMap.get(tableName) + ".schemas";
+            schemaPackage = getAggregatesPackage();
         }
-        String simpleClassName = getEntityJavaType(tableName);
 
-        new File(SourceFileUtils.resolveDirectory(baseDir, packageName)).mkdirs();
-        String filePath = SourceFileUtils.resolveSourceFile(baseDir, packageName, simpleClassName + "Schema");
+        String entityFullPackage = tablePackageMap.get(tableName);
+        String entityType = getEntityJavaType(tableName);
+        String entityVar = toLowerCamelCase(entityType);
 
-        BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-        getLog().info("开始生成Schema文件：" + filePath);
+        String comment = getComment(table).replaceAll(PATTERN_LINE_BREAK, " ");
 
-        writeLine(out, "package " + packageName + ";");
-        writeLine(out, "\n" +
-                "import " + basePackage + "." + entityMetaInfoClassOutputPackage + ".Schema;\n" +
-                "import " + tablePackageMap.get(tableName) + "." + simpleClassName + ";\n" +
+        String schemaBaseFullPackage = StringUtils.isNotBlank(schemaPath)
+                ? SourceFileUtils.resolvePackage(schemaPath)
+                : SourceFileUtils.concatPackage(basePackage, entitySchemaOutputPackage);
+
+        Map<String, String> context = getEscapeContext();
+
+        putContext(tag, "templatePackage", refPackage(schemaPackage), context);
+        putContext(tag, "package", refPackage(aggregate), context);
+        putContext(tag, "path", aggregate.replace(".", File.separator), context);
+        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Comment", comment, context);
+        putContext(tag, "CommentEscaped", comment.replaceAll(PATTERN_LINE_BREAK, " "), context);
+        putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
+        putContext(tag, "Entity", entityType, context);
+        putContext(tag, "EntityVar", entityVar, context);
+        putContext(tag, "schemaBasePackage", SourceFileUtils.refPackage(schemaBaseFullPackage, basePackage), context);
+        putContext(tag, "SchemaBase", DEFAULT_SCHEMA_BASE_CLASS_NAME, context);
+        putContext(tag, "IdField", idField, context);
+
+        String fieldItems = "";
+        for (Map<String, Object> column : columns) {
+            if (!isColumnNeedGenerate(table, column, relations)) {
+                continue;
+            }
+            String fieldType = getColumnJavaType(column);
+            String fieldName = toLowerCamelCase(getColumnName(column));
+            String fieldComment = generateFieldComment(column).stream().reduce((a, b) -> a + "\n    " + b).orElse("");
+            Map<String, String> itemContext = new HashMap<>(context);
+            putContext(fieldTag, "fieldType", fieldType, itemContext);
+            putContext(fieldTag, "fieldName", fieldName, itemContext);
+            putContext(fieldTag, "fieldComment", fieldComment, itemContext);
+            fieldItems += (
+                    templateNodeMap.containsKey(fieldTag) && templateNodeMap.get(fieldTag).size() > 0
+                            ? templateNodeMap.get(fieldTag).get(templateNodeMap.get(fieldTag).size() - 1)
+                            : getDefaultSchemaFieldTemplateNode().clone()
+            ).resolve(itemContext).getData();
+        }
+        putContext(tag, "FIELD_ITEMS", fieldItems, context);
+
+        String joinItems = "";
+        if (relations.containsKey(tableName)) {
+            for (Map.Entry<String, String> entry : relations.get(tableName).entrySet()) {
+                String[] refInfos = entry.getValue().split(";");
+                switch (refInfos[0]) {
+                    case "OneToMany":
+                    case "*OneToMany":
+                        Map<String, String> joinContext = new HashMap<>(context);
+                        putContext(joinTag, "joinEntityPackage", tablePackageMap.get(entry.getKey()), joinContext);
+                        putContext(joinTag, "joinEntityType", getEntityJavaType(entry.getKey()), joinContext);
+                        putContext(joinTag, "joinEntityVars", Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))), joinContext);
+                        PathNode joinItemTemplateNode = (
+                                (templateNodeMap.containsKey(joinTag) && templateNodeMap.get(joinTag).size() > 0)
+                                        ? templateNodeMap.get(joinTag).get(templateNodeMap.get(joinTag).size() - 1)
+                                        : getDefaultSchemaJoinTemplateNode()
+                        ).clone().resolve(joinContext);
+                        joinItems += joinItemTemplateNode.getData();
+                        break;
+                    default:
+                        // 暂不支持
+                        break;
+                }
+
+            }
+        }
+        putContext(tag, "JOIN_ITEMS", joinItems, context);
+
+        List<TemplateNode> schemaTemplateNodes = templateNodeMap.containsKey(tag)
+                ? templateNodeMap.get(tag)
+                : Arrays.asList(getDefaultSchemaTemplateNode());
+        try {
+            for (TemplateNode templateNode : schemaTemplateNodes) {
+                PathNode pathNode = templateNode.clone().resolve(context);
+                String path = forceRender(
+                        pathNode,
+                        SourceFileUtils.resolveDirectory(
+                                baseDir,
+                                concatPackage(basePackage, context.get("templatePackage"))
+                        )
+                );
+                getLog().info("开始生成Schema文件：" + path);
+            }
+        } catch (IOException e) {
+            getLog().error("Schema模板文件写入失败！", e);
+        }
+    }
+
+    public void writeSchemaBaseSourceFile(String baseDir) throws IOException {
+        String tag = "schema_base";
+        String schemaFullPackage = concatPackage(basePackage, getSchemaPackage());
+
+        List<TemplateNode> schemaBaseTemplateNodes = templateNodeMap.containsKey(tag)
+                ? templateNodeMap.get(tag)
+                : Arrays.asList(getDefaultSchemaBaseTemplateNode());
+        Map<String, String> context = getEscapeContext();
+        putContext(tag, "templatePackage", SourceFileUtils.refPackage(schemaFullPackage, basePackage), context);
+        putContext(tag, "SchemaBase", DEFAULT_SCHEMA_BASE_CLASS_NAME, context);
+        try {
+            for (TemplateNode templateNode : schemaBaseTemplateNodes) {
+                PathNode pathNode = templateNode.clone().resolve(context);
+                forceRender(
+                        pathNode,
+                        SourceFileUtils.resolveDirectory(
+                                baseDir,
+                                concatPackage(basePackage, context.get("templatePackage"))
+                        )
+                );
+            }
+        } catch (IOException e) {
+            getLog().error("模板文件写入失败！", e);
+        }
+    }
+
+    public TemplateNode getDefaultFactoryTemplateNode() {
+        String template = "package ${basePackage}${templatePackage}${package}.factory;\n" +
+                "\n" +
+                "import ${basePackage}${entityPackage}${package}.${Entity};\n" +
+                "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
+                "import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;\n" +
+                "import org.springframework.stereotype.Service;\n" +
+                "\n" +
+                "/**\n" +
+                " * ${Entity}聚合工厂\n" +
+                " * ${Comment}\n" +
+                " *\n" +
+                " * @author cap4j-ddd-codegen\n" +
+                " * @date ${date}\n" +
+                " */\n" +
+                "@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Factory\", type = Aggregate.TYPE_FACTORY, description = \"${CommentEscaped}\")\n" +
+                "@Service\n" +
+                "public class ${Entity}Factory implements AggregateFactory<${Entity}Payload, ${Entity}> {\n" +
+                "\n" +
+                "    @Override\n" +
+                "    public ${Entity} create(${Entity}Payload payload) {\n" +
+                "\n" +
+                "        return ${Entity}.builder()\n" +
+                "\n" +
+                "                .build();\n" +
+                "    }\n" +
+                "}\n";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("file");
+        templateNode.setTag("factory");
+        templateNode.setName("${path}${SEPARATOR}factory${SEPARATOR}${Entity}Factory.java");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultFactoryPayloadTemplateNode() {
+        String template = "package ${basePackage}${templatePackage}${package}.factory;\n" +
+                "\n" +
+                "import ${basePackage}${entityPackage}${package}.${Entity};\n" +
+                "import lombok.AllArgsConstructor;\n" +
+                "import lombok.Builder;\n" +
+                "import lombok.Data;\n" +
+                "import lombok.NoArgsConstructor;\n" +
+                "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
+                "import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n" +
+                "\n" +
+                "/**\n" +
+                " * ${Entity}工厂负载\n" +
+                " * ${Comment}\n" +
+                " *\n" +
+                " * @author cap4j-ddd-codegen\n" +
+                " * @date ${date}\n" +
+                " */\n" +
+                "@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"${CommentEscaped}\")\n" +
+                "@Data\n" +
+                "@Builder\n" +
+                "@NoArgsConstructor\n" +
+                "@AllArgsConstructor\n" +
+                "public class ${Entity}Payload implements AggregatePayload<${Entity}> {\n" +
+                "    String name;\n" +
+                "}\n";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("file");
+        templateNode.setTag("factory");
+        templateNode.setName("${path}${SEPARATOR}factory${SEPARATOR}${Entity}Payload.java");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultSpecificationTemplateNode() {
+        String template = "package ${basePackage}${templatePackage}${package}.specs;\n" +
+                "\n" +
+                "import ${basePackage}${entityPackage}${package}.${Entity};\n" +
+                "import org.netcorepal.cap4j.ddd.domain.aggregate.Specification;\n" +
+                "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
+                "import org.springframework.stereotype.Service;\n" +
+                "\n" +
+                "/**\n" +
+                " * ${Entity}规格约束\n" +
+                " * ${Comment}\n" +
+                " *\n" +
+                " * @author cap4j-ddd-codegen\n" +
+                " * @date ${date}\n" +
+                " */\n" +
+                "@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Specification\", type = Aggregate.TYPE_SPECIFICATION, description = \"${CommentEscaped}\")\n" +
+                "@Service\n" +
+                "public class ${Entity}Specification implements Specification<${Entity}> {\n" +
+                "    @Override\n" +
+                "    public Result specify(${Entity} entity) {\n" +
+                "        return Result.fail(\"未实现\");\n" +
+                "    }\n" +
+                "}";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("file");
+        templateNode.setTag("specification");
+        templateNode.setName("${path}${SEPARATOR}specs${SEPARATOR}${Entity}Specification.java");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultDomainEventHandlerTemplateNode() {
+        String template = "package ${basePackage}${templatePackage};\n" +
+                "\n" +
+                "import ${basePackage}${domainEventPackage}${package}.${DomainEvent};\n" +
+                "import lombok.RequiredArgsConstructor;\n" +
+                "import org.springframework.context.event.EventListener;\n" +
+                "import org.springframework.stereotype.Service;\n" +
+                "\n" +
+                "/**\n" +
+                " * ${Entity}.${DomainEvent}领域事件订阅\n" +
+                " * todo: 领域事件订阅描述\n" +
+                " */\n" +
+                "@Service\n" +
+                "@RequiredArgsConstructor\n" +
+                "public class ${DomainEvent}Subscriber {\n" +
+                "\n" +
+                "    @EventListener(${DomainEvent}.class)\n" +
+                "    public void on(${DomainEvent} event) {\n" +
+                "\n" +
+                "    }\n" +
+                "\n" +
+                "}";
+
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("file");
+        templateNode.setTag("domain_event_handler");
+        templateNode.setName("${DomainEvent}Subscriber.java");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultDomainEventTemplateNode() {
+        String template = "package ${basePackage}${templatePackage}${package}.events;\n" +
+                "\n" +
+                "import lombok.AllArgsConstructor;\n" +
+                "import lombok.Builder;\n" +
+                "import lombok.Data;\n" +
+                "import lombok.NoArgsConstructor;\n" +
+                "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
+                "import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;\n" +
+                "\n" +
+                "/**\n" +
+                " * ${Entity}.${DomainEvent}领域事件\n" +
+                " * ${Comment}\n" +
+                " *\n" +
+                " * @author cap4j-ddd-codegen\n" +
+                " * @date ${date}\n" +
+                " */\n" +
+                "@DomainEvent(persist = false)\n" +
+                "@Aggregate(aggregate = \"${Aggregate}\", name = \"${DomainEvent}\", type = Aggregate.TYPE_DOMAIN_EVENT, description = \"${CommentEscaped}\")\n" +
+                "@Data\n" +
+                "@Builder\n" +
+                "@AllArgsConstructor\n" +
+                "@NoArgsConstructor\n" +
+                "public class ${DomainEvent} {\n" +
+                "    Long id;\n" +
+                "}";
+
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("file");
+        templateNode.setTag("domain_event");
+        templateNode.setName("${path}${SEPARATOR}events${SEPARATOR}${DomainEvent}.java");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultEnumTemplateNode() {
+        String template =
+                "package ${basePackage}${templatePackage}${package}.enums;\n" +
+                        "\n" +
+                        "import lombok.Getter;\n" +
+                        "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
+                        "\n" +
+                        "import javax.persistence.*;\n" +
+                        "import java.util.HashMap;\n" +
+                        "import java.util.Map;\n" +
+                        "\n" +
+                        "/**\n" +
+                        " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成\n" +
+                        " * 警告：请勿手工修改该文件，重新生成会覆盖该文件\n" +
+                        " * @author cap4j-ddd-codegen\n" +
+                        " * @date ${date}\n" +
+                        " */\n" +
+                        "@Aggregate(aggregate = \"${Aggregate}\", name = \"${EnumType}\", type = \"enum\", description = \"${CommentEscaped}\")\n" +
+                        "public enum ${EnumType} {\n" +
+                        "\n" +
+                        "${ENUM_ITEMS}\n" +
+                        ";\n" +
+                        "    @Getter\n" +
+                        "    private int ${EnumValueField};\n" +
+                        "    @Getter\n" +
+                        "    private String ${EnumNameField};\n" +
+                        "\n" +
+                        "    ${EnumType}(Integer ${EnumValueField}, String ${EnumNameField}){\n" +
+                        "        this.${EnumValueField} = ${EnumValueField};\n" +
+                        "        this.${EnumNameField} = ${EnumNameField};\n" +
+                        "    }\n" +
+                        "\n" +
+                        "\n" +
+                        "    private static Map<Integer, ${EnumType}> enums = null;\n" +
+                        "    public static ${EnumType} valueOf(Integer ${EnumValueField}) {\n" +
+                        "        if(enums == null) {\n" +
+                        "            enums = new HashMap<>();\n" +
+                        "            for (${EnumType} val : ${EnumType}.values()) {\n" +
+                        "                enums.put(val.${EnumValueField}, val);\n" +
+                        "            }\n" +
+                        "        }\n" +
+                        "        if(enums.containsKey(${EnumValueField})){\n" +
+                        "            return enums.get(${EnumValueField});\n" +
+                        "        }\n" +
+                        (this.enumUnmatchedThrowException
+                                ? "        throw new RuntimeException(\"枚举类型${EnumType}枚举值转换异常，不存在的值\" + ${EnumValueField});\n"
+                                : "        return null;\n"
+                        ) +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * JPA转换器\n" +
+                        "     */\n" +
+                        "    public static class Converter implements AttributeConverter<${EnumType}, Integer>{\n" +
+                        "\n" +
+                        "        @Override\n" +
+                        "        public Integer convertToDatabaseColumn(${EnumType}  val) {\n" +
+                        "            return val.${EnumValueField};\n" +
+                        "        }\n" +
+                        "\n" +
+                        "        @Override\n" +
+                        "        public ${EnumType} convertToEntityAttribute(Integer ${EnumValueField}) {\n" +
+                        "            return ${EnumType}.valueOf(${EnumValueField});\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "}\n";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("file");
+        templateNode.setTag("enum");
+        templateNode.setName("${path}${SEPARATOR}enums${SEPARATOR}${EnumType}.java");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultEnumItemTemplateNode() {
+        String template = "    /**\n" +
+                "     * ${itemDesc}\n" +
+                "     */\n" +
+                "    ${itemName}(${itemValue}, \"${itemDesc}\"),\n";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("segment");
+        templateNode.setTag("enum_item");
+        templateNode.setName("");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultSchemaFieldTemplateNode() {
+        String template = "\n" +
+                "    ${fieldComment}\n" +
+                "    public ${SchemaBase}.Field<${fieldType}> ${fieldName}() {\n" +
+                "        return root == null ? new ${SchemaBase}.Field<>(\"${fieldName}\") : new ${SchemaBase}.Field<>(root.get(\"${fieldName}\"));\n" +
+                "    }\n";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("segment");
+        templateNode.setTag("schema_field");
+        templateNode.setName("");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultSchemaJoinTemplateNode() {
+        String template = "\n" +
+                "    /**\n" +
+                "     * ${joinEntityType} 关联查询条件定义\n" +
+                "     *\n" +
+                "     * @param joinType\n" +
+                "     * @return\n" +
+                "     */\n" +
+                "    public ${joinEntityType}Schema join${joinEntityType}(${SchemaBase}.JoinType joinType) {\n" +
+                "        JoinType type = joinType.toJpaJoinType();\n" +
+                "        Join<${Entity}, ${joinEntityPackage}.${joinEntityType}> join = ((Root<${Entity}>) root).join(\"${joinEntityVars}\", type);\n" +
+                "        ${joinEntityType}Schema schema = new ${joinEntityType}Schema(join, criteriaBuilder);\n" +
+                "        return schema;\n" +
+                "    }";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("segment");
+        templateNode.setTag("schema_join");
+        templateNode.setName("");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultSchemaTemplateNode() {
+        String template = "package ${basePackage}${templatePackage}${package}.meta;\n" +
+                "\n" +
+                "import ${basePackage}${schemaBasePackage}.${SchemaBase};\n" +
+                "import ${basePackage}${entityPackage}.${Entity};\n" +
                 "import lombok.RequiredArgsConstructor;\n" +
                 "import org.springframework.data.domain.Sort;\n" +
                 "import org.springframework.data.jpa.domain.Specification;\n" +
@@ -1448,39 +1912,29 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "import javax.persistence.criteria.*;\n" +
                 "import java.util.Arrays;\n" +
                 "import java.util.Collection;\n" +
-                "import java.util.stream.Collectors;");
-        writeLine(out, "");
-        writeLine(out, "/**");
-        writeLine(out, " * " + getComment(table).replaceAll("[\\r\\n]", " "));
-        writeLine(out, " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成");
-        writeLine(out, " * 警告：请勿手工修改该文件，重新生成会覆盖该文件");
-        writeLine(out, " * @author cap4j-ddd-codegen");
-        writeLine(out, " * @date " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
-        writeLine(out, " */");
-        writeLine(out, "@RequiredArgsConstructor");
-        writeLine(out, "public class " + simpleClassName + "Schema {");
-        writeLine(out, "    private final Path<" + simpleClassName + "> root;");
-        writeLine(out, "    private final CriteriaBuilder criteriaBuilder;\n" +
+                "import java.util.stream.Collectors;\n" +
+                "\n" +
+                "/**\n" +
+                " * ${Comment}\n" +
+                " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成\n" +
+                " * 警告：请勿手工修改该文件，重新生成会覆盖该文件\n" +
+                " * @author cap4j-ddd-codegen\n" +
+                " * @date ${date}\n" +
+                " */\n" +
+                "@RequiredArgsConstructor\n" +
+                "public class ${Entity}Schema {\n" +
+                "    private final Path<${Entity}> root;\n" +
+                "    private final CriteriaBuilder criteriaBuilder;\n" +
                 "\n" +
                 "    public CriteriaBuilder criteriaBuilder() {\n" +
                 "        return criteriaBuilder;\n" +
-                "    }");
-        writeLine(out, "\n" +
-                "    public Schema.Field<Long> " + idField + "() {\n" +
-                "        return root == null ? new Schema.Field<>(\"" + idField + "\") : new Schema.Field<>(root.get(\"" + idField + "\"));\n" +
-                "    }");
-        for (Map<String, Object> column : columns) {
-            if (!needGenerateField(table, column, relations)) {
-                continue;
-            }
-            writeLine(out, "");
-            writeColumnComment(out, column);
-            writeLine(out, "    public Schema.Field<" + getColumnJavaType(column) + "> " + toLowerCamelCase(getColumnName(column)) + "() {\n" +
-                    "        return root == null ? new Schema.Field<>(\"" + toLowerCamelCase(getColumnName(column)) + "\") : new Schema.Field<>(root.get(\"" + toLowerCamelCase(getColumnName(column)) + "\"));\n" +
-                    "    }");
-        }
-        writeLine(out, "");
-        writeLine(out, "" +
+                "    }\n" +
+                "\n" +
+                "    public ${SchemaBase}.Field<Long> ${IdField}() {\n" +
+                "        return root == null ? new ${SchemaBase}.Field<>(\"${IdField}\") : new ${SchemaBase}.Field<>(root.get(\"${IdField}\"));\n" +
+                "    }\n" +
+                "${FIELD_ITEMS}\n" +
+                "\n" +
                 "    /**\n" +
                 "     * 满足所有条件\n" +
                 "     * @param restrictions\n" +
@@ -1504,21 +1958,21 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "     * @param builder\n" +
                 "     * @return\n" +
                 "     */\n" +
-                "    public Predicate spec(Schema.PredicateBuilder<" + simpleClassName + "Schema> builder){\n" +
+                "    public Predicate spec(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder){\n" +
                 "        return builder.build(this);\n" +
-                "    }");
-        writeJoinEntities(out, table, relations, tablePackageMap);
-        writeLine(out, "");
-        writeLine(out, "    /**\n" +
+                "    }\n" +
+                "${JOIN_ITEMS}\n" +
+                "\n" +
+                "    /**\n" +
                 "     * 构建查询条件\n" +
                 "     * @param builder\n" +
                 "     * @param distinct\n" +
                 "     * @return\n" +
                 "     */\n" +
-                "    public static Specification<" + simpleClassName + "> specify(Schema.PredicateBuilder<" + simpleClassName + "Schema> builder, boolean distinct) {\n" +
+                "    public static Specification<${Entity}> specify(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, boolean distinct) {\n" +
                 "        return (root, criteriaQuery, criteriaBuilder) -> {\n" +
-                "            " + simpleClassName + "Schema " + toLowerCamelCase(simpleClassName) + " = new " + simpleClassName + "Schema(root, criteriaBuilder);\n" +
-                "            criteriaQuery.where(builder.build(" + toLowerCamelCase(simpleClassName) + "));\n" +
+                "            ${Entity}Schema ${EntityVar} = new ${Entity}Schema(root, criteriaBuilder);\n" +
+                "            criteriaQuery.where(builder.build(${EntityVar}));\n" +
                 "            criteriaQuery.distinct(distinct);\n" +
                 "            return null;\n" +
                 "        };\n" +
@@ -1529,10 +1983,10 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "     * @param builder\n" +
                 "     * @return\n" +
                 "     */\n" +
-                "    public static Specification<" + simpleClassName + "> specify(Schema.PredicateBuilder<" + simpleClassName + "Schema> builder) {\n" +
+                "    public static Specification<${Entity}> specify(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder) {\n" +
                 "        return (root, criteriaQuery, criteriaBuilder) -> {\n" +
-                "            " + simpleClassName + "Schema " + toLowerCamelCase(simpleClassName) + " = new " + simpleClassName + "Schema(root, criteriaBuilder);\n" +
-                "            criteriaQuery.where(builder.build(" + toLowerCamelCase(simpleClassName) + "));\n" +
+                "            ${Entity}Schema ${EntityVar} = new ${Entity}Schema(root, criteriaBuilder);\n" +
+                "            criteriaQuery.where(builder.build(${EntityVar}));\n" +
                 "            return null;\n" +
                 "        };\n" +
                 "    }\n" +
@@ -1542,7 +1996,7 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "     * @param builders\n" +
                 "     * @return\n" +
                 "     */\n" +
-                "    public static Sort orderBy(Schema.OrderBuilder<" + simpleClassName + "Schema>... builders) {\n" +
+                "    public static Sort orderBy(${SchemaBase}.OrderBuilder<${Entity}Schema>... builders) {\n" +
                 "        return orderBy(Arrays.asList(builders));\n" +
                 "    }\n" +
                 "\n" +
@@ -1552,80 +2006,30 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "     * @param builders\n" +
                 "     * @return\n" +
                 "     */\n" +
-                "    public static Sort orderBy(Collection<Schema.OrderBuilder<" + simpleClassName + "Schema>> builders) {\n" +
+                "    public static Sort orderBy(Collection<${SchemaBase}.OrderBuilder<${Entity}Schema>> builders) {\n" +
                 "        if(null == builders || builders.isEmpty()) {\n" +
                 "            return Sort.unsorted();\n" +
                 "        }\n" +
                 "        return Sort.by(builders.stream()\n" +
-                "                .map(builder -> builder.build(new " + simpleClassName + "Schema(null, null)))\n" +
+                "                .map(builder -> builder.build(new ${Entity}Schema(null, null)))\n" +
                 "                .collect(Collectors.toList())\n" +
                 "        );\n" +
-                "    }");
-        writeLine(out, "");
-        writeLine(out, "}");
-        out.flush();
-        out.close();
+                "    }\n" +
+                "\n" +
+                "}\n";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("file");
+        templateNode.setTag("schema");
+        templateNode.setName("${path}${SEPARATOR}meta${SEPARATOR}${Entity}Schema.java");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
     }
 
-    public void writeJoinEntities(BufferedWriter out, Map<String, Object> table, Map<String, Map<String, String>> relations, Map<String, String> tablePackageMap) {
-        String tableName = getTableName(table);
-        int count = 0;
-        if (relations.containsKey(tableName)) {
-            for (Map.Entry<String, String> entry : relations.get(tableName).entrySet()) {
-                String[] refInfos = entry.getValue().split(";");
-                switch (refInfos[0]) {
-                    case "OneToMany":
-                    case "*OneToMany":
-                        writeLine(out,
-                                "\n" +
-                                        "    /**\n" +
-                                        "     * " + getEntityJavaType(entry.getKey()) + " 关联查询条件定义\n" +
-                                        "     *\n" +
-                                        "     * @param joinType\n" +
-                                        "     * @return\n" +
-                                        "     */\n" +
-                                        "    public " + getEntityJavaType(entry.getKey()) + "Schema join" + getEntityJavaType(entry.getKey()) + "(Schema.JoinType joinType) {\n" +
-                                        "        JoinType type = transformJoinType(joinType);\n" +
-                                        "        Join<" + getEntityJavaType(tableName) + ", " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> join = ((Root<" + getEntityJavaType(tableName) + ">) root).join(\"" + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + "\", type);\n" +
-                                        "        " + getEntityJavaType(entry.getKey()) + "Schema schema = new " + getEntityJavaType(entry.getKey()) + "Schema(join, criteriaBuilder);\n" +
-                                        "        return schema;\n" +
-                                        "    }");
-                        count++;
-                        break;
-                    default:
-                        // 暂不支持
-                        break;
-                }
-
-            }
-
-            if (count > 0) {
-                writeLine(out, "\n" +
-                        "\n" +
-                        "    private JoinType transformJoinType(Schema.JoinType joinType){\n" +
-                        "        if(joinType == Schema.JoinType.INNER){\n" +
-                        "            return JoinType.INNER;\n" +
-                        "        } else if(joinType == Schema.JoinType.LEFT){\n" +
-                        "            return JoinType.LEFT;\n" +
-                        "        } else if(joinType == Schema.JoinType.RIGHT){\n" +
-                        "            return JoinType.RIGHT;\n" +
-                        "        }\n" +
-                        "        return JoinType.LEFT;\n" +
-                        "    }");
-            }
-        }
-    }
-
-    public void writeBaseSechemaSourceFile(String basePackage, String baseDir) throws IOException {
-        String packageName = basePackage + "." + entityMetaInfoClassOutputPackage;
-        String simpleClassName = "Schema";
-
-        new File(SourceFileUtils.resolveDirectory(baseDir, packageName)).mkdirs();
-        String filePath = SourceFileUtils.resolveSourceFile(baseDir, packageName, simpleClassName);
-
-        BufferedWriter out = new BufferedWriter(new FileWriter(filePath));
-        writeLine(out, "package " + packageName + ";");
-        writeLine(out, "\n" +
+    public TemplateNode getDefaultSchemaBaseTemplateNode() {
+        String template = "package ${basePackage}${templatePackage};\n" +
+                "\n" +
                 "import com.google.common.collect.Lists;\n" +
                 "import org.hibernate.query.criteria.internal.path.SingularAttributePath;\n" +
                 "import org.springframework.data.domain.Sort;\n" +
@@ -1639,10 +2043,9 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "/**\n" +
                 " * Schema\n" +
                 " *\n" +
-                " * @author <template>\n" +
-                " * @date \n" +
+                " * @author cap4j-ddd-codegen\n" +
                 " */\n" +
-                "public class " + simpleClassName + " {\n" +
+                "public class ${SchemaBase} {\n" +
                 "\n" +
                 "    /**\n" +
                 "     * 断言构建器\n" +
@@ -1661,7 +2064,18 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "    public enum JoinType {\n" +
                 "        INNER,\n" +
                 "        LEFT,\n" +
-                "        RIGHT\n" +
+                "        RIGHT;\n" +
+                "\n" +
+                "        public javax.persistence.criteria.JoinType toJpaJoinType(){\n" +
+                "            if(this == ${SchemaBase}.JoinType.INNER){\n" +
+                "                return javax.persistence.criteria.JoinType.INNER;\n" +
+                "            } else if(this == ${SchemaBase}.JoinType.LEFT){\n" +
+                "                return javax.persistence.criteria.JoinType.LEFT;\n" +
+                "            } else if(this == ${SchemaBase}.JoinType.RIGHT){\n" +
+                "                return javax.persistence.criteria.JoinType.RIGHT;\n" +
+                "            }\n" +
+                "            return javax.persistence.criteria.JoinType.LEFT;\n" +
+                "        }\n" +
                 "    }\n" +
                 "\n" +
                 "    /**\n" +
@@ -1859,8 +2273,14 @@ public class GenEntityMojo extends MyAbstractMojo {
                 "            return lessThanOrEqualTo(val);\n" +
                 "        }\n" +
                 "    }\n" +
-                "}\n");
-        out.flush();
-        out.close();
+                "}\n";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("file");
+        templateNode.setTag("schema_base");
+        templateNode.setName("${SchemaBase}.java");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
     }
 }

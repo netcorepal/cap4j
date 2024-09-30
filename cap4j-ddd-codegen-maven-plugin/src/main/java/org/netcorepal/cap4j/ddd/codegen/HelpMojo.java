@@ -32,7 +32,9 @@ public class HelpMojo extends AbstractMojo {
                 "                    <!-- [gen-arch]代码模板配置文件地址 -->\n" +
                 "                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/main/cap4j-ddd-codegen-template.json</archTemplate>\n" +
                 "                    <!-- [gen-arch]代码模板配置文件编码 -->\n" +
-                "                    <archTemplateEncoding>UTF-8</archTemplateEncoding>\n" +
+                "                    <archTemplateEncoding>UTF-8</archTemplateEncoding>\n" +                "                    <!-- [gen-arch]代码模板配置文件编码 -->\n" +
+                "                    <!-- [gen-arch]生成代码文件编码，默认UFT-8 -->\n" +
+                "                    <outputEncoding>UTF-8</outputEncoding>\n" +
                 "                    <!-- [gen-entity][gen-repository]是否多模块项目 -->\n" +
                 "                    <multiModule>false</multiModule>\n" +
                 "                    <!-- [gen-entity][gen-repository]adapter模块名称后缀 -->\n" +
@@ -71,9 +73,9 @@ public class HelpMojo extends AbstractMojo {
                 "                    <!-- [gen-entity]实体基类 -->\n" +
                 "                    <entityBaseClass></entityBaseClass>\n" +
                 "                    <!-- [gen-entity]实体辅助类输出模式，绝对路径或相对路径，abs | ref -->\n" +
-                "                    <entityMetaInfoClassOutputMode>abs</entityMetaInfoClassOutputMode>\n" +
+                "                    <entitySchemaOutputMode>abs</entitySchemaOutputMode>\n" +
                 "                    <!-- [gen-entity]实体辅助类输出包 -->\n" +
-                "                    <entityMetaInfoClassOutputPackage>domain._share.meta</entityMetaInfoClassOutputPackage>\n" +
+                "                    <entitySchemaOutputPackage>domain._share.meta</entitySchemaOutputPackage>\n" +
                 "                    <!-- [gen-entity]关联实体加载模式 LAZY | EAGER -->\n" +
                 "                    <fetchMode>SUBSELECT</fetchMode>\n" +
                 "                    <!-- [gen-entity]关联实体加载模式 SUBSELECT | JOIN | SELECT -->\n" +
@@ -98,8 +100,6 @@ public class HelpMojo extends AbstractMojo {
                 "                    <generateDbType>true</generateDbType>\n" +
                 "                    <!-- [gen-entity]是否生成Schema类，辅助Jpa查询 -->\n" +
                 "                    <generateSchema>true</generateSchema>\n" +
-                "                    <!-- [gen-entity]是否生成EntitBuilder类 -->\n" +
-                "                    <generateBuild>false</generateBuild>\n" +
                 "                    <!-- [gen-entity]聚合唯一标识类型 -->\n" +
                 "                    <aggregateIdentityClass>Long</aggregateIdentityClass>\n" +
                 "                    <!-- [gen-entity]聚合根注解 -->\n" +
@@ -109,8 +109,6 @@ public class HelpMojo extends AbstractMojo {
                 "                    <ignoreAggregateRoots></ignoreAggregateRoots>\n" +
                 "                    <!-- [gen-repository]聚合仓储基类型 -->\n" +
                 "                    <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>\n" +
-                "                    <!-- [gen-repository]聚合仓储自定义代码 -->\n" +
-                "                    <aggregateRepositoryCustomerCode></aggregateRepositoryCustomerCode>\n" +
                 "                    <!-- [gen-design]应用架构设计，通常通过命令行参数 -Ddesign= 传入-->\n" +
                 "                    <design></design>\n" +
                 "                    <!-- [gen-design]应用架构设计文件，每行一个LiteralDesign-->\n" +

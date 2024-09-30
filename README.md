@@ -69,11 +69,9 @@ Mediator中介者模式、
                     <deletedField>db_deleted</deletedField>
                     <readonlyFields>db_created_at,db_updated_at</readonlyFields>
                     <entityBaseClass></entityBaseClass>
-                    <entityClassExtraImports>
-                        <import>static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events</import>
-                    </entityClassExtraImports>
-                    <entityMetaInfoClassOutputMode>ref</entityMetaInfoClassOutputMode>
-                    <entityMetaInfoClassOutputPackage>domain._share.meta</entityMetaInfoClassOutputPackage>
+                    <entityClassExtraImports>static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events</entityClassExtraImports>
+                    <entitySchemaOutputMode>ref</entitySchemaOutputMode>
+                    <entitySchemaOutputPackage>domain._share.meta</entitySchemaOutputPackage>
                     <fetchMode>SUBSELECT</fetchMode>
                     <fetchType>EAGER</fetchType>
                     <idGenerator>org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator</idGenerator>
@@ -85,10 +83,8 @@ Mediator中介者模式、
                     <generateDefault>false</generateDefault>
                     <generateDbType>true</generateDbType>
                     <generateSchema>true</generateSchema>
-                    <generateBuild>false</generateBuild>
                     <aggregateRootAnnotation></aggregateRootAnnotation>
                     <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>
-                    <aggregateRepositoryCustomerCode></aggregateRepositoryCustomerCode>
                     <ignoreAggregateRoots></ignoreAggregateRoots>
                 </configuration>
             </plugin>
