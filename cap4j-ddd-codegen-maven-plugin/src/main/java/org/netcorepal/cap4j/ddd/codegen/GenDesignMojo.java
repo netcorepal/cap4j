@@ -17,8 +17,6 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.refPackage;
-
 /**
  * 生成设计框架代码
  *
