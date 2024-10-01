@@ -385,15 +385,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         return aggregateRepositoryBaseClass;
     }
 
-    /**
-     * 跳过生成仓储的聚合根
-     * 逗号','或分号';'分割
-     *
-     * @parameter expression="${ignoreAggregateRoots}"
-     */
-    @Parameter(property = "ignoreAggregateRoots", defaultValue = "")
-    public String ignoreAggregateRoots = "";
-
     public String getProjectDir() {
         String projectDir = new File("").getAbsolutePath();
         if (multiModule) {
@@ -1098,7 +1089,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         context.put("generateSchema", generateSchema ? "true" : "false");
         context.put("aggregateRootAnnotation", aggregateRootAnnotation);
         context.put("aggregateRepositoryBaseClass", aggregateRepositoryBaseClass);
-        context.put("ignoreAggregateRoots", ignoreAggregateRoots);
         context.put("date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
         context.put("SEPARATOR", File.separator);
         context.put("separator", File.separator);
@@ -1204,9 +1194,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.isBlank(aggregateRepositoryBaseClass)
                         ? ""
                         : "                    <aggregateRepositoryBaseClass>" + aggregateRepositoryBaseClass + "</aggregateRepositoryBaseClass>\n") +
-                (StringUtils.isBlank(ignoreAggregateRoots)
-                        ? ""
-                        : "                    <ignoreAggregateRoots>" + ignoreAggregateRoots + "</ignoreAggregateRoots>\n") +
                 "                </configuration>";
     }
 

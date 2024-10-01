@@ -39,7 +39,7 @@ public class GenRepositoryMojo extends GenArchMojo {
         if (!hasRepositoryTemplate) {
             String repositoriesDir = resolveDirectory(getAdapterModulePath(), basePackage + "." + AGGREGATE_REPOSITORY_PACKAGE);
             List<TemplateNode> repositoryTemplateNodes = template.select("repository");
-            if(null == repositoryTemplateNodes || repositoryTemplateNodes.isEmpty()){
+            if (null == repositoryTemplateNodes || repositoryTemplateNodes.isEmpty()) {
                 repositoryTemplateNodes = Arrays.asList(getDefaultRepositoryTemplate());
             }
             try {
@@ -96,7 +96,6 @@ public class GenRepositoryMojo extends GenArchMojo {
                 getLog().info("开始生成仓储代码");
                 getLog().info("聚合根标注注解：" + getAggregateRootAnnotation());
                 getLog().info("聚合根基类：" + getAggregateRepositoryBaseClass());
-                getLog().info("跳过生成仓储的聚合根：" + ignoreAggregateRoots);
                 getLog().info("");
 
                 List<File> files = SourceFileUtils.loadFiles(
@@ -123,13 +122,12 @@ public class GenRepositoryMojo extends GenArchMojo {
                         this.getLog().info("发现聚合根: " + fullClassName);
 
                         String simpleClassName = resolveSimpleClassName(file.getAbsolutePath());
-
                         String identityClass = getIdentityType(content);
+                        String aggregate = AggregateRoot2AggregateNameMap.containsKey(simpleClassName)
+                                ? AggregateRoot2AggregateNameMap.get(simpleClassName)
+                                : toSnakeCase(simpleClassName);
                         this.getLog().info("聚合根ID类型: " + identityClass);
-                        if (Arrays.stream(ignoreAggregateRoots.split("[\\,\\;]"))
-                                .anyMatch(i -> i.equalsIgnoreCase(simpleClassName))) {
-                            return;
-                        }
+
                         if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(fullClassName)) {
                             try {
                                 Map<String, String> context = getEscapeContext();
@@ -139,9 +137,7 @@ public class GenRepositoryMojo extends GenArchMojo {
                                 context.put("IdentityClass", identityClass);
                                 context.put("IdentityType", identityClass);
                                 context.put("Identity", identityClass);
-                                context.put("Aggregate", AggregateRoot2AggregateNameMap.containsKey(simpleClassName)
-                                        ? AggregateRoot2AggregateNameMap.get(simpleClassName)
-                                        : toSnakeCase(simpleClassName));
+                                context.put("Aggregate", aggregate);
                                 PathNode pathNode = templateNode.clone().resolve(context);
                                 forceRender(pathNode, parentPath);
                             } catch (IOException e) {

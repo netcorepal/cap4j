@@ -100,13 +100,8 @@ public class HelpMojo extends AbstractMojo {
                 "                    <generateDbType>true</generateDbType>\n" +
                 "                    <!-- [gen-entity]是否生成Schema类，辅助Jpa查询 -->\n" +
                 "                    <generateSchema>true</generateSchema>\n" +
-                "                    <!-- [gen-entity]聚合唯一标识类型 -->\n" +
-                "                    <aggregateIdentityClass>Long</aggregateIdentityClass>\n" +
                 "                    <!-- [gen-entity]聚合根注解 -->\n" +
                 "                    <aggregateRootAnnotation></aggregateRootAnnotation>\n" +
-                "                    <!-- [gen-repository]跳过生成仓储的聚合根 -->\n" +
-                "                    <!-- 逗号','或分号';'分割 -->\n" +
-                "                    <ignoreAggregateRoots></ignoreAggregateRoots>\n" +
                 "                    <!-- [gen-repository]聚合仓储基类型 -->\n" +
                 "                    <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>\n" +
                 "                    <!-- [gen-design]应用架构设计，通常通过命令行参数 -Ddesign= 传入-->\n" +

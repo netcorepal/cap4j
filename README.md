@@ -85,7 +85,6 @@ Mediator中介者模式、
                     <generateSchema>true</generateSchema>
                     <aggregateRootAnnotation></aggregateRootAnnotation>
                     <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>
-                    <ignoreAggregateRoots></ignoreAggregateRoots>
                 </configuration>
             </plugin>
         </plugins>
