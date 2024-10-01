@@ -250,7 +250,7 @@ public class GenEntityMojo extends GenArchMojo {
                         EnumConfigMap.put(getType(column), enumConfig);
                         String enumPackage = templateNodeMap.containsKey("enum") && templateNodeMap.get("enum").size() > 0
                                 ? templateNodeMap.get("enum").get(0).getName()
-                                : "enums";
+                                : DEFAULT_ENUM_PACKAGE;
                         if (StringUtils.isNotBlank(enumPackage)) {
                             enumPackage = "." + enumPackage;
                         }
@@ -1594,7 +1594,7 @@ public class GenEntityMojo extends GenArchMojo {
     }
 
     public TemplateNode getDefaultFactoryTemplateNode() {
-        String template = "package ${basePackage}${templatePackage}${package}.factory;\n" +
+        String template = "package ${basePackage}${templatePackage}${package}." + DEFAULT_FAC_PACKAGE + ";\n" +
                 "\n" +
                 "import ${basePackage}${entityPackage}${package}.${Entity};\n" +
                 "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
@@ -1623,7 +1623,7 @@ public class GenEntityMojo extends GenArchMojo {
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("file");
         templateNode.setTag("factory");
-        templateNode.setName("${path}${SEPARATOR}factory${SEPARATOR}${Entity}Factory.java");
+        templateNode.setName("${path}${SEPARATOR}" + DEFAULT_FAC_PACKAGE + "${SEPARATOR}${Entity}Factory.java");
         templateNode.setFormat("raw");
         templateNode.setData(template);
         templateNode.setConflict("skip");
@@ -1631,7 +1631,7 @@ public class GenEntityMojo extends GenArchMojo {
     }
 
     public TemplateNode getDefaultFactoryPayloadTemplateNode() {
-        String template = "package ${basePackage}${templatePackage}${package}.factory;\n" +
+        String template = "package ${basePackage}${templatePackage}${package}." + DEFAULT_FAC_PACKAGE + ";\n" +
                 "\n" +
                 "import ${basePackage}${entityPackage}${package}.${Entity};\n" +
                 "import lombok.AllArgsConstructor;\n" +
@@ -1659,7 +1659,7 @@ public class GenEntityMojo extends GenArchMojo {
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("file");
         templateNode.setTag("factory");
-        templateNode.setName("${path}${SEPARATOR}factory${SEPARATOR}${Entity}Payload.java");
+        templateNode.setName("${path}${SEPARATOR}" + DEFAULT_FAC_PACKAGE + "${SEPARATOR}${Entity}Payload.java");
         templateNode.setFormat("raw");
         templateNode.setData(template);
         templateNode.setConflict("skip");
@@ -1667,7 +1667,7 @@ public class GenEntityMojo extends GenArchMojo {
     }
 
     public TemplateNode getDefaultSpecificationTemplateNode() {
-        String template = "package ${basePackage}${templatePackage}${package}.specs;\n" +
+        String template = "package ${basePackage}${templatePackage}${package}." + DEFAULT_SPEC_PACKAGE + ";\n" +
                 "\n" +
                 "import ${basePackage}${entityPackage}${package}.${Entity};\n" +
                 "import org.netcorepal.cap4j.ddd.domain.aggregate.Specification;\n" +
@@ -1692,7 +1692,7 @@ public class GenEntityMojo extends GenArchMojo {
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("file");
         templateNode.setTag("specification");
-        templateNode.setName("${path}${SEPARATOR}specs${SEPARATOR}${Entity}Specification.java");
+        templateNode.setName("${path}${SEPARATOR}" + DEFAULT_SPEC_PACKAGE + "${SEPARATOR}${Entity}Specification.java");
         templateNode.setFormat("raw");
         templateNode.setData(template);
         templateNode.setConflict("skip");
@@ -1733,7 +1733,7 @@ public class GenEntityMojo extends GenArchMojo {
     }
 
     public TemplateNode getDefaultDomainEventTemplateNode() {
-        String template = "package ${basePackage}${templatePackage}${package}.events;\n" +
+        String template = "package ${basePackage}${templatePackage}${package}." + DEFAULT_DOMAIN_EVENT_PACKAGE + ";\n" +
                 "\n" +
                 "import lombok.AllArgsConstructor;\n" +
                 "import lombok.Builder;\n" +
@@ -1762,7 +1762,7 @@ public class GenEntityMojo extends GenArchMojo {
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("file");
         templateNode.setTag("domain_event");
-        templateNode.setName("${path}${SEPARATOR}events${SEPARATOR}${DomainEvent}.java");
+        templateNode.setName("${path}${SEPARATOR}" + DEFAULT_DOMAIN_EVENT_PACKAGE + "${SEPARATOR}${DomainEvent}.java");
         templateNode.setFormat("raw");
         templateNode.setData(template);
         templateNode.setConflict("skip");
@@ -1771,7 +1771,7 @@ public class GenEntityMojo extends GenArchMojo {
 
     public TemplateNode getDefaultEnumTemplateNode() {
         String template =
-                "package ${basePackage}${templatePackage}${package}.enums;\n" +
+                "package ${basePackage}${templatePackage}${package}." + DEFAULT_ENUM_PACKAGE + ";\n" +
                         "\n" +
                         "import lombok.Getter;\n" +
                         "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
@@ -1838,7 +1838,7 @@ public class GenEntityMojo extends GenArchMojo {
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("file");
         templateNode.setTag("enum");
-        templateNode.setName("${path}${SEPARATOR}enums${SEPARATOR}${EnumType}.java");
+        templateNode.setName("${path}${SEPARATOR}" + DEFAULT_ENUM_PACKAGE + "${SEPARATOR}${EnumType}.java");
         templateNode.setFormat("raw");
         templateNode.setData(template);
         templateNode.setConflict("skip");
@@ -1901,7 +1901,7 @@ public class GenEntityMojo extends GenArchMojo {
     }
 
     public TemplateNode getDefaultSchemaTemplateNode() {
-        String template = "package ${basePackage}${templatePackage}${package}.meta;\n" +
+        String template = "package ${basePackage}${templatePackage}${package}." + DEFAULT_SCHEMA_PACKAGE + ";\n" +
                 "\n" +
                 "import ${basePackage}${schemaBasePackage}.${SchemaBase};\n" +
                 "import ${basePackage}${entityPackage}.${Entity};\n" +
@@ -2020,7 +2020,7 @@ public class GenEntityMojo extends GenArchMojo {
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("file");
         templateNode.setTag("schema");
-        templateNode.setName("${path}${SEPARATOR}meta${SEPARATOR}${Entity}Schema.java");
+        templateNode.setName("${path}${SEPARATOR}" + DEFAULT_SCHEMA_PACKAGE + "${SEPARATOR}${Entity}Schema.java");
         templateNode.setFormat("raw");
         templateNode.setData(template);
         templateNode.setConflict("skip");
