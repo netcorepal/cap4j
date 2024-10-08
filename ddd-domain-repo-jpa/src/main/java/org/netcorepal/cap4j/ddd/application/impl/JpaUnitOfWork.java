@@ -8,7 +8,7 @@ import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventManager;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Specification;
 import org.netcorepal.cap4j.ddd.domain.aggregate.SpecificationManager;
-import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;
+import org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject;
 import org.netcorepal.cap4j.ddd.domain.event.DomainEventManager;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistListenerManager;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistType;
@@ -61,6 +61,7 @@ public class JpaUnitOfWork implements UnitOfWork {
     private static ThreadLocal<EntityPersisttedEvent> entityPersisttedEventThreadLocal = new ThreadLocal<>();
 
 
+    @Override
     public void persist(Object entity) {
         if (persistedEntitiesThreadLocal.get() == null) {
             persistedEntitiesThreadLocal.set(new HashSet<>());
@@ -70,6 +71,33 @@ public class JpaUnitOfWork implements UnitOfWork {
         persistedEntitiesThreadLocal.get().add(entity);
     }
 
+    @Override
+    public boolean persistIfNotExist(Object entity) {
+        if (getEntityManager().contains(entity)) {
+            return false;
+        }
+        if (entity instanceof ValueObject) {
+            Object hash = ((ValueObject) entity).hash();
+            boolean exists = null != getEntityManager().find(entity.getClass(), hash);
+            if (!exists) {
+                persist(entity);
+            }
+            return !exists;
+        }
+        EntityInformation entityInformation = JpaEntityInformationSupport.getEntityInformation(entity.getClass(), getEntityManager());
+        if (entityInformation.isNew(entity)) {
+            persist(entity);
+            return true;
+        }
+        Object id = entityInformation.getId(entity);
+        if (id == null || null == getEntityManager().find(entity.getClass(), id)) {
+            persist(entity);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public void remove(Object entity) {
         if (removedEntitiesThreadLocal.get() == null) {
             removedEntitiesThreadLocal.set(new HashSet<>());
@@ -79,6 +107,7 @@ public class JpaUnitOfWork implements UnitOfWork {
         removedEntitiesThreadLocal.get().add(entity);
     }
 
+    @Override
     public void save() {
         save(Propagation.REQUIRED);
     }
@@ -107,30 +136,31 @@ public class JpaUnitOfWork implements UnitOfWork {
         return true;
     }
 
+    @Override
     public void save(Propagation propagation) {
         Set<Object> currentProcessedEntities = new HashSet<>();
 
-        Set<Object> persistEntityList = null;
+        Set<Object> persistEntitySet = null;
         if (persistedEntitiesThreadLocal.get() != null) {
-            persistEntityList = new HashSet<>(persistedEntitiesThreadLocal.get());
+            persistEntitySet = new HashSet<>(persistedEntitiesThreadLocal.get());
             persistedEntitiesThreadLocal.get().clear();
-            persistEntityList.forEach(e -> pushProcessingEntities(e, currentProcessedEntities));
+            persistEntitySet.forEach(e -> pushProcessingEntities(e, currentProcessedEntities));
         } else {
-            persistEntityList = new HashSet<>();
+            persistEntitySet = new HashSet<>();
         }
-        Set<Object> deleteEntityList = null;
+        Set<Object> deleteEntitySet = null;
         if (removedEntitiesThreadLocal.get() != null) {
-            deleteEntityList = new HashSet<>(removedEntitiesThreadLocal.get());
+            deleteEntitySet = new HashSet<>(removedEntitiesThreadLocal.get());
             removedEntitiesThreadLocal.get().clear();
-            deleteEntityList.forEach(e -> pushProcessingEntities(e, currentProcessedEntities));
+            deleteEntitySet.forEach(e -> pushProcessingEntities(e, currentProcessedEntities));
         } else {
-            deleteEntityList = new HashSet<>();
+            deleteEntitySet = new HashSet<>();
         }
         if (null == entityPersisttedEventThreadLocal.get()) {
             entityPersisttedEventThreadLocal.set(new EntityPersisttedEvent(this, new HashSet<>(), new HashSet<>(), new HashSet<>()));
         }
-        specifyEntitesBeforeTransaction(persistEntityList);
-        Set<Object>[] saveAndDeleteEntityList = new Set[]{persistEntityList, deleteEntityList, currentProcessedEntities};
+        specifyEntitesBeforeTransaction(persistEntitySet);
+        Set<Object>[] saveAndDeleteEntityList = new Set[]{persistEntitySet, deleteEntitySet, currentProcessedEntities};
         save(input -> {
             Set<Object> persistEntities = input[0];
             Set<Object> deleteEntities = input[1];

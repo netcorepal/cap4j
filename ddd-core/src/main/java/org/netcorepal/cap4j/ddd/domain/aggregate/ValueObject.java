@@ -9,7 +9,10 @@ package org.netcorepal.cap4j.ddd.domain.aggregate;
 public interface ValueObject {
     /**
      * 值对象哈希码
+     *
      * @return
      */
-    String hash();
+    default Object hash() {
+        return null;
+    }
 }

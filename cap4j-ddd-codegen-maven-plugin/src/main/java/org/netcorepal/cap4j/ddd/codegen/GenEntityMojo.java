@@ -670,7 +670,7 @@ public class GenEntityMojo extends GenArchMojo {
         if (!isAggregateRoot(table)) {
             String parent = getParent(table);
             result.putIfAbsent(parent, new HashMap<>());
-            boolean rewrited = false;
+            boolean rewrited = false;// 是否显式声明引用字段
             for (Map<String, Object> column : columns) {
                 if (hasReference(column)) {
                     if (parent.equalsIgnoreCase(getReference(column))) {
@@ -980,28 +980,7 @@ public class GenEntityMojo extends GenArchMojo {
     private String writeEntityClass(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, List<String> enums, List<String> annotationLines, List<String> customerLines) throws IOException {
         String tableName = getTableName(table);
         String entityType = getEntityJavaType(tableName);
-        StringWriter stringWriter = new StringWriter();
-        BufferedWriter out = new BufferedWriter(stringWriter);
-        annotationLines.forEach(line -> writeLine(out, line));
-        writeLine(out, "public class " + entityType +
-                (StringUtils.isNotBlank(entityBaseClass) ? " extends " + entityBaseClass : "") +
-                (isValueObject(table) ? " implements ValueObject" : "") + " {");
-        if (customerLines.size() > 0) {
-            customerLines.forEach(line -> writeLine(out, line));
-        } else {
-            writeLine(out, "");
-            writeLine(out, "    // 【行为方法开始】");
-            writeLine(out, "");
-            writeLine(out, "");
-            writeLine(out, "");
-            writeLine(out, "    // 【行为方法结束】");
-            writeLine(out, "");
-            writeLine(out, "");
-            writeLine(out, "");
-        }
-        writeLine(out, "    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
-        writeLine(out, "");
-        writeLine(out, "    @Id");
+
         String entityIdGenerator = null;
         if (hasIdGenerator(table)) {
             entityIdGenerator = getIdGenerator(table);
@@ -1017,6 +996,40 @@ public class GenEntityMojo extends GenArchMojo {
                 entityIdGenerator = idGenerator;
             }
         }
+
+        StringWriter stringWriter = new StringWriter();
+        BufferedWriter out = new BufferedWriter(stringWriter);
+        annotationLines.forEach(line -> writeLine(out, line));
+        writeLine(out, "public class " + entityType +
+                (StringUtils.isNotBlank(entityBaseClass) ? " extends " + entityBaseClass : "") +
+                (isValueObject(table) ? " implements ValueObject" : "") + " {");
+        if (customerLines.size() > 0) {
+            customerLines.forEach(line -> writeLine(out, line));
+        } else {
+            writeLine(out, "");
+            writeLine(out, "    // 【行为方法开始】");
+            writeLine(out, "");
+            if (isValueObject(table)) {
+                writeLine(out, "");
+                writeLine(out, "    @Override\n" +
+                        "    public Object hash() {\n" +
+                        "        if(null == " + idField + ") {\n" +
+                        "            " + idField + " = " + entityIdGenerator + ".hash(this, \"" + idField + "\", " + getColumnJavaType(getIdColumn(columns)) + ".class);\n" +
+                        "        }\n" +
+                        "        return " + idField + ";\n" +
+                        "    }");
+                writeLine(out, "");
+            }
+            writeLine(out, "");
+            writeLine(out, "");
+            writeLine(out, "    // 【行为方法结束】");
+            writeLine(out, "");
+            writeLine(out, "");
+            writeLine(out, "");
+        }
+        writeLine(out, "    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
+        writeLine(out, "");
+        writeLine(out, "    @Id");
         if (null != entityIdGenerator) {
             writeLine(out, "    @GeneratedValue(generator = \"" + entityIdGenerator + "\")");
             writeLine(out, "    @GenericGenerator(name = \"" + entityIdGenerator + "\", strategy = \"" + entityIdGenerator + "\")");
@@ -1026,14 +1039,6 @@ public class GenEntityMojo extends GenArchMojo {
         }
         writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
         writeLine(out, "    " + getColumnJavaType(getIdColumn(columns)) + " " + idField + ";");
-        writeLine(out, "");
-        if (isValueObject(table)) {
-            writeLine(out, "    @Override\n" +
-                    "    public String hash() {\n" +
-                    "        return (String) new " + entityIdGenerator + "().generate(null, this);\n" +
-                    "    }");
-            writeLine(out, "");
-        }
         for (Map<String, Object> column : columns) {
             writeColumnProperty(out, table, column, relations, enums);
         }

@@ -21,6 +21,13 @@ public interface UnitOfWork {
     void persist(Object entity);
 
     /**
+     * 提交新增实体持久化记录意图到UnitOfWork上下文，如果实体已存在则不提交
+     * @param entity
+     * @return 是否提交
+     */
+    boolean persistIfNotExist(Object entity);
+
+    /**
      * 提交移除实体持久化记录意图到UnitOfWork上下文
      *
      * @param entity 实体对象

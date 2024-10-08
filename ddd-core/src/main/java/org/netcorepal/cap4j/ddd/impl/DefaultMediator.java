@@ -94,6 +94,11 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
+    public boolean persistIfNotExist(Object entity) {
+        return UnitOfWork.getInstance().persistIfNotExist(entity);
+    }
+
+    @Override
     public void remove(Object entity) {
         UnitOfWork.getInstance().remove(entity);
     }
