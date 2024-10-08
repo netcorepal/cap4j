@@ -269,13 +269,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "fetchType", defaultValue = "EAGER")
     public String fetchType = "EAGER";
-    /**
-     * 关联实体加载模式 SUBSELECT | JOIN | SELECT
-     *
-     * @parameter expression="${fetchMode}"
-     */
-    @Parameter(property = "fetchMode", defaultValue = "SUBSELECT")
-    public String fetchMode = "SUBSELECT";
 
     /**
      * 主键生成器 默认自增策略
@@ -350,6 +343,13 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "generateSchema", defaultValue = "false")
     public Boolean generateSchema = false;
+    /**
+     * 是否生成关联父实体字段
+     *
+     * @parameter expression="${generateParent}"
+     */
+    @Parameter(property = "generateParent", defaultValue = "false")
+    public Boolean generateParent = false;
 
     /**
      * 聚合根注解
@@ -1078,7 +1078,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         context.put("entitySchemaOutputMode", entitySchemaOutputMode);
         context.put("idGenerator", idGenerator);
         context.put("fetchType", fetchType);
-        context.put("fetchMode", fetchMode);
         context.put("enumValueField", enumValueField);
         context.put("enumNameField", enumNameField);
         context.put("enumUnmatchedThrowException", enumUnmatchedThrowException ? "true" : "false");
@@ -1087,6 +1086,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         context.put("generateDefault", generateDefault ? "true" : "false");
         context.put("generateDbType", generateDbType ? "true" : "false");
         context.put("generateSchema", generateSchema ? "true" : "false");
+        context.put("generateParent", generateParent ? "true" : "false");
         context.put("aggregateRootAnnotation", aggregateRootAnnotation);
         context.put("aggregateRepositoryBaseClass", aggregateRepositoryBaseClass);
         context.put("date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
@@ -1155,9 +1155,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.isBlank(entitySchemaOutputPackage)
                         ? ""
                         : "                    <entitySchemaOutputPackage>" + entitySchemaOutputPackage + "</entitySchemaOutputPackage>\n") +
-                (StringUtils.equalsIgnoreCase("SUBSELECT", fetchMode)
-                        ? ""
-                        : "                    <fetchMode>" + fetchMode + "</fetchMode>\n") +
                 (StringUtils.equalsIgnoreCase("EAGER", fetchType)
                         ? ""
                         : "                    <fetchType>" + fetchType + "</fetchType>\n") +
@@ -1188,6 +1185,9 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (!generateSchema
                         ? ""
                         : "                    <generateSchema>" + generateSchema + "</generateSchema>\n") +
+                (!generateParent
+                        ? ""
+                        : "                    <generateParent>" + generateParent + "</generateParent>\n") +
                 (StringUtils.isBlank(aggregateRootAnnotation)
                         ? ""
                         : "                    <aggregateRootAnnotation>" + aggregateRootAnnotation + "</aggregateRootAnnotation>\n") +

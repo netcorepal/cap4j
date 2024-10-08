@@ -179,11 +179,11 @@ public class JpaUnitOfWork implements UnitOfWork {
                     } else {
                         if (!getEntityManager().contains(entity)) {
                             getEntityManager().persist(entity);
-                            if (refreshEntityList == null) {
-                                refreshEntityList = new ArrayList<>();
-                            }
-                            refreshEntityList.add(entity);
                         }
+                        if (refreshEntityList == null) {
+                            refreshEntityList = new ArrayList<>();
+                        }
+                        refreshEntityList.add(entity);
                         entityPersisttedEventThreadLocal.get().getCreatedEntities().add(entity);
                     }
                 }

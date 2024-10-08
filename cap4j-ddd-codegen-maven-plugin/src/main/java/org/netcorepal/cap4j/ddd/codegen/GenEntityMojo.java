@@ -565,16 +565,19 @@ public class GenEntityMojo extends GenArchMojo {
         }
 
         if (relations.containsKey(tableName)) {
-            boolean skip = false;
             for (Map.Entry<String, String> entry : relations.get(tableName).entrySet()) {
                 String[] refInfos = entry.getValue().split(";");
-                if (("ManyToOne".equalsIgnoreCase(refInfos[0]) || "OneToOne".equalsIgnoreCase(refInfos[0])) && columnName.equalsIgnoreCase(refInfos[1])) {
-                    skip = true;
-                    break;
+                switch (refInfos[0]) {
+                    case "ManyToOne":
+                    case "OneToOne":
+                        if (columnName.equalsIgnoreCase(refInfos[1])) {
+                            return false;
+                        }
+                        break;
+                    default:
+                        // 暂不支持
+                        break;
                 }
-            }
-            if (skip) {
-                return false;
             }
         }
         return true;
@@ -667,6 +670,7 @@ public class GenEntityMojo extends GenArchMojo {
             return result;
         }
         // 聚合内部关系 OneToMany
+        // OneToOne关系也用OneToMany实现，避免持久化存储结构变更
         if (!isAggregateRoot(table)) {
             String parent = getParent(table);
             result.putIfAbsent(parent, new HashMap<>());
@@ -676,6 +680,10 @@ public class GenEntityMojo extends GenArchMojo {
                     if (parent.equalsIgnoreCase(getReference(column))) {
                         boolean lazy = isLazy(column, "LAZY".equalsIgnoreCase(this.fetchType));
                         result.get(parent).putIfAbsent(tableName, "OneToMany;" + getColumnName(column) + (lazy ? ";LAZY" : ""));
+                        if (generateParent) {
+                            result.putIfAbsent(tableName, new HashMap<>());
+                            result.get(tableName).putIfAbsent(parent, "*ManyToOne;" + getColumnName(column) + (lazy ? ";LAZY" : ""));
+                        }
                         rewrited = true;
                     }
                 }
@@ -684,7 +692,11 @@ public class GenEntityMojo extends GenArchMojo {
                 Map<String, Object> column = columns.stream().filter(c -> getColumnName(c).equals(parent + "_id")).findFirst().orElseGet(() -> null);
                 if (column != null) {
                     boolean lazy = isLazy(column, "LAZY".equalsIgnoreCase(this.fetchType));
-                    result.get(parent).putIfAbsent(tableName, "OneToMany;" + parent + "_id" + (lazy ? ";LAZY" : ""));
+                    result.get(parent).putIfAbsent(tableName, "OneToMany;" + getColumnName(column) + (lazy ? ";LAZY" : ""));
+                    if (generateParent) {
+                        result.putIfAbsent(tableName, new HashMap<>());
+                        result.get(tableName).putIfAbsent(parent, "*ManyToOne;" + getColumnName(column) + (lazy ? ";LAZY" : ""));
+                    }
                 }
             }
         }
@@ -720,24 +732,25 @@ public class GenEntityMojo extends GenArchMojo {
             String colRel = getRelation(column);
             String colName = getColumnName(column);
             String refTableName = null;
-            if (StringUtils.isNotBlank(colRel) || hasRelation(column)) {
+            boolean lazy = isLazy(column, "LAZY".equalsIgnoreCase(this.fetchType));
+            if (StringUtils.isNotBlank(colRel) || hasReference(column)) {
                 switch (colRel) {
                     case "OneToOne":
                     case "1:1":
                         refTableName = getReference(column);
                         result.putIfAbsent(tableName, new HashMap<>());
-                        result.get(tableName).putIfAbsent(refTableName, "OneToOne;" + colName);
+                        result.get(tableName).putIfAbsent(refTableName, "OneToOne;" + colName + (lazy ? ";LAZY" : ""));
                         result.putIfAbsent(refTableName, new HashMap<>());
-                        result.get(refTableName).putIfAbsent(tableName, "*OneToOne;" + colName);
+                        result.get(refTableName).putIfAbsent(tableName, "*OneToOne;" + colName + (lazy ? ";LAZY" : ""));
                         break;
                     case "ManyToOne":
                     case "*:1":
                     default:
                         refTableName = getReference(column);
                         result.putIfAbsent(tableName, new HashMap<>());
-                        result.get(tableName).putIfAbsent(refTableName, "ManyToOne;" + colName);
-                        result.putIfAbsent(refTableName, new HashMap<>());
-                        result.get(refTableName).putIfAbsent(tableName, "*OneToMany;" + colName);
+                        result.get(tableName).putIfAbsent(refTableName, "ManyToOne;" + colName + (lazy ? ";LAZY" : ""));
+//                        result.putIfAbsent(refTableName, new HashMap<>());
+//                        result.get(refTableName).putIfAbsent(tableName, "*OneToMany;" + colName + (lazy ? ";LAZY" : ""));
                         break;
                 }
             }
@@ -1133,112 +1146,72 @@ public class GenEntityMojo extends GenArchMojo {
                 }
                 if (hasLazy(navTable)) {
                     fetchType = isLazy(navTable) ? "LAZY" : "EAGER";
-                    getLog().warn(tableName + ":" + entry.getKey() + ":" + fetchType);
+                    getLog().info(tableName + ":" + entry.getKey() + ":" + fetchType);
                 }
-                if ("ManyToOne".equals(refInfos[0])) {
-                    continue;
-                }
+
+                String relation = refInfos[0];
+                String fetchAnnotation = ""; // fetchType.equals("LAZY") ? "" : (" @Fetch(FetchMode." + this.fetchMode + ")");
+
                 writeLine(out, "");
-                if (fetchType.equals("LAZY")) {
-                    switch (refInfos[0]) {
-                        case "OneToMany":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY, orphanRemoval = true)");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
-                            boolean countIsOne = countIsOne(navTable);
-                            if (countIsOne) {
-                                writeLine(out, "    @Getter(lombok.AccessLevel.PROTECTED)");
-                            }
-                            String fieldName = Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey())));
-                            writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + fieldName + ";");
-                            if (countIsOne) {
-                                writeLine(out, "");
-                                writeLine(out, "    public " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " get" + getEntityJavaType(entry.getKey()) + "() {\n" +
-                                        "        return " + fieldName + " == null || " + fieldName + ".size() == 0 ? null : " + fieldName + ".get(0);\n" +
-                                        "    }");
-                            }
-                            break;
-                        case "ManyToOne":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
-                            writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
-                            break;
-                        case "OneToOne":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
-                            writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
-                            break;
-                        case "*OneToMany":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(mappedBy = \"" + toLowerCamelCase(getEntityJavaType(tableName)) + "\", cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
-                            break;
-                        case "*OneToOne":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(mappedBy = \"" + toLowerCamelCase(getEntityJavaType(tableName)) + "\", cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
-                            break;
-                        case "ManyToMany":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")}, inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")})");
-                            writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
-                            break;
-                        case "*ManyToMany":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(mappedBy = \"" + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(tableName))) + "\", cascade = { CascadeType.ALL }, fetch = FetchType.LAZY)");
-                            writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
-                            break;
-                        default:
+                switch (relation) {
+                    case "OneToMany":// 专属聚合内关系
+                        writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType." + fetchType + ", orphanRemoval = true)" + fetchAnnotation);
+                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
+                        boolean countIsOne = countIsOne(navTable);
+                        if (countIsOne) {
+                            writeLine(out, "    @Getter(lombok.AccessLevel.PROTECTED)");
+                        }
+                        String fieldName = Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey())));
+                        writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + fieldName + ";");
+                        if (countIsOne) {
+                            writeLine(out, "");
+                            writeLine(out, "    public " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " get" + getEntityJavaType(entry.getKey()) + "() {\n" +
+                                    "        return " + fieldName + " == null || " + fieldName + ".size() == 0 ? null : " + fieldName + ".get(0);\n" +
+                                    "    }");
+                        }
+                        break;
+                    case "*ManyToOne":
+                        writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false, insertable = false, updatable = false)");
+                        writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
+                        break;
+                    case "ManyToOne":
+                        writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
+                        writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
+                        break;
+                    case "*OneToMany":// 当前不会用到，无法控制集合数量规模
+                        writeLine(out, "    @" + relation.replace("*", "") + "(mappedBy = \"" + toLowerCamelCase(getEntityJavaType(tableName)) + "\"" +
+                                ", cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
+                        break;
+                    case "OneToOne":
+                        writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
+                        writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
+                        break;
+                    case "*OneToOne":
+                        writeLine(out, "    @" + relation.replace("*", "") + "(mappedBy = \"" + toLowerCamelCase(getEntityJavaType(tableName)) + "\"" +
+                                ", cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
+                        break;
+                    case "ManyToMany":
+                        writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\"" +
+                                ", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)}" +
+                                ", inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)})");
+                        writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
+                        break;
+                    case "*ManyToMany":
+                        writeLine(out, "    @" + relation.replace("*", "") + "(mappedBy = \"" + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(tableName))) + "\"" +
+                                ", cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
+                        break;
+                    default:
 
-                            break;
-                    }
-                } else if (fetchType.equals("EAGER")) {
-                    String fetchMode = this.fetchMode;
-                    switch (refInfos[0]) {
-                        case "OneToMany":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER, orphanRemoval = true) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
-                            boolean countIsOne = countIsOne(navTable);
-                            if (countIsOne) {
-                                writeLine(out, "    @Getter(lombok.AccessLevel.PROTECTED)");
-                            }
-                            String fieldName = Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey())));
-                            writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + fieldName + ";");
-                            if (countIsOne) {
-                                writeLine(out, "");
-                                writeLine(out, "    public " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " get" + getEntityJavaType(entry.getKey()) + "() {\n" +
-                                        "        return " + fieldName + " == null || " + fieldName + ".size() == 0 ? null : " + fieldName + ".get(0);\n" +
-                                        "    }");
-                            }
-                            break;
-                        case "ManyToOne":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
-                            writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
-                            break;
-                        case "OneToOne":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
-                            writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
-                            break;
-                        case "*OneToMany":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(mappedBy = \"" + toLowerCamelCase(getEntityJavaType(tableName)) + "\", cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
-                            break;
-                        case "*OneToOne":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(mappedBy = \"" + toLowerCamelCase(getEntityJavaType(tableName)) + "\", cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
-                            break;
-                        case "ManyToMany":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")}, inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")})");
-                            writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
-                            break;
-                        case "*ManyToMany":
-                            writeLine(out, "    @" + refInfos[0].replace("*", "") + "(mappedBy = \"" + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(tableName))) + "\", cascade = { CascadeType.ALL }, fetch = FetchType.EAGER) @Fetch(FetchMode." + fetchMode + ")");
-                            writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
-                            break;
-                        default:
-
-                            break;
-                    }
+                        break;
                 }
+
             }
         }
     }

@@ -77,8 +77,6 @@ public class HelpMojo extends AbstractMojo {
                 "                    <!-- [gen-entity]实体辅助类输出包 -->\n" +
                 "                    <entitySchemaOutputPackage>domain._share.meta</entitySchemaOutputPackage>\n" +
                 "                    <!-- [gen-entity]关联实体加载模式 LAZY | EAGER -->\n" +
-                "                    <fetchMode>SUBSELECT</fetchMode>\n" +
-                "                    <!-- [gen-entity]关联实体加载模式 SUBSELECT | JOIN | SELECT -->\n" +
                 "                    <fetchType>EAGER</fetchType>\n" +
                 "                    <!-- [gen-entity]主键生成器 默认自增策略 -->\n" +
                 "                    <idGenerator></idGenerator>\n" +
@@ -100,6 +98,8 @@ public class HelpMojo extends AbstractMojo {
                 "                    <generateDbType>true</generateDbType>\n" +
                 "                    <!-- [gen-entity]是否生成Schema类，辅助Jpa查询 -->\n" +
                 "                    <generateSchema>true</generateSchema>\n" +
+                "                    <!-- [gen-entity]是否生成关联父实体字段 -->\n" +
+                "                    <generateParent>false</generateParent>\n" +
                 "                    <!-- [gen-entity]聚合根注解 -->\n" +
                 "                    <aggregateRootAnnotation></aggregateRootAnnotation>\n" +
                 "                    <!-- [gen-repository]聚合仓储基类型 -->\n" +

@@ -72,7 +72,6 @@ Mediator中介者模式、
                     <entityClassExtraImports>static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events</entityClassExtraImports>
                     <entitySchemaOutputMode>ref</entitySchemaOutputMode>
                     <entitySchemaOutputPackage>domain._share.meta</entitySchemaOutputPackage>
-                    <fetchMode>SUBSELECT</fetchMode>
                     <fetchType>EAGER</fetchType>
                     <idGenerator>org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator</idGenerator>
                     <enumValueField>code</enumValueField>
@@ -83,6 +82,7 @@ Mediator中介者模式、
                     <generateDefault>false</generateDefault>
                     <generateDbType>true</generateDbType>
                     <generateSchema>true</generateSchema>
+                    <generateParent>false</generateParent>
                     <aggregateRootAnnotation></aggregateRootAnnotation>
                     <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>
                 </configuration>
