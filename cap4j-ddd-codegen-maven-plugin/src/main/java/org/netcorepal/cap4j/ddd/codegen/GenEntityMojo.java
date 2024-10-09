@@ -357,7 +357,7 @@ public class GenEntityMojo extends GenArchMojo {
      */
     public String getSchemaPackage() {
         return SourceFileUtils.resolvePackage(getSchemaPath() + File.separator + "X.java")
-                .substring(basePackage.length() + 1);
+                .substring(StringUtils.isBlank(basePackage) ? 0 : (basePackage.length() + 1));
     }
 
     /**
@@ -595,6 +595,18 @@ public class GenEntityMojo extends GenArchMojo {
     }
 
     /**
+     * 获取指定列
+     *
+     * @param columns
+     * @param columnName
+     * @return
+     */
+    private Map<String, Object> getColumn(List<Map<String, Object>> columns, String columnName) {
+        return columns.stream().filter(column -> Objects.equals(columnName, getColumnName(column)))
+                .findFirst().orElse(null);
+    }
+
+    /**
      * 生成字段注释
      *
      * @param column
@@ -740,8 +752,8 @@ public class GenEntityMojo extends GenArchMojo {
                         refTableName = getReference(column);
                         result.putIfAbsent(tableName, new HashMap<>());
                         result.get(tableName).putIfAbsent(refTableName, "OneToOne;" + colName + (lazy ? ";LAZY" : ""));
-                        result.putIfAbsent(refTableName, new HashMap<>());
-                        result.get(refTableName).putIfAbsent(tableName, "*OneToOne;" + colName + (lazy ? ";LAZY" : ""));
+//                        result.putIfAbsent(refTableName, new HashMap<>());
+//                        result.get(refTableName).putIfAbsent(tableName, "*OneToOne;" + colName + (lazy ? ";LAZY" : ""));
                         break;
                     case "ManyToOne":
                     case "*:1":
@@ -1150,13 +1162,15 @@ public class GenEntityMojo extends GenArchMojo {
                 }
 
                 String relation = refInfos[0];
+                String joinColumn = refInfos[1];
                 String fetchAnnotation = ""; // fetchType.equals("LAZY") ? "" : (" @Fetch(FetchMode." + this.fetchMode + ")");
+
 
                 writeLine(out, "");
                 switch (relation) {
                     case "OneToMany":// 专属聚合内关系
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType." + fetchType + ", orphanRemoval = true)" + fetchAnnotation);
-                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
+                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
                         boolean countIsOne = countIsOne(navTable);
                         if (countIsOne) {
                             writeLine(out, "    @Getter(lombok.AccessLevel.PROTECTED)");
@@ -1172,12 +1186,12 @@ public class GenEntityMojo extends GenArchMojo {
                         break;
                     case "*ManyToOne":
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
-                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false, insertable = false, updatable = false)");
+                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false, insertable = false, updatable = false)");
                         writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                         break;
                     case "ManyToOne":
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
-                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
+                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
                         writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                         break;
                     case "*OneToMany":// 当前不会用到，无法控制集合数量规模
@@ -1187,7 +1201,7 @@ public class GenEntityMojo extends GenArchMojo {
                         break;
                     case "OneToOne":
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
-                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
+                        writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
                         writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                         break;
                     case "*OneToOne":
@@ -1198,7 +1212,7 @@ public class GenEntityMojo extends GenArchMojo {
                     case "ManyToMany":
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
                         writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\"" +
-                                ", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[1] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)}" +
+                                ", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)}" +
                                 ", inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)})");
                         writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                         break;
@@ -1496,25 +1510,53 @@ public class GenEntityMojo extends GenArchMojo {
                             : getDefaultSchemaFieldTemplateNode().clone()
             ).resolve(itemContext).getData();
         }
-        putContext(tag, "FIELD_ITEMS", fieldItems, context);
 
         String joinItems = "";
         if (relations.containsKey(tableName)) {
             for (Map.Entry<String, String> entry : relations.get(tableName).entrySet()) {
                 String[] refInfos = entry.getValue().split(";");
+                Map<String, String> joinContext = new HashMap<>(context);
                 switch (refInfos[0]) {
                     case "OneToMany":
                     case "*OneToMany":
-                        Map<String, String> joinContext = new HashMap<>(context);
                         putContext(joinTag, "joinEntityPackage", tablePackageMap.get(entry.getKey()), joinContext);
                         putContext(joinTag, "joinEntityType", getEntityJavaType(entry.getKey()), joinContext);
                         putContext(joinTag, "joinEntityVars", Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))), joinContext);
-                        PathNode joinItemTemplateNode = (
+                        if (!("abs".equalsIgnoreCase(entitySchemaOutputMode))) {
+                            putContext(joinTag, "joinEntitySchemaPackage", concatPackage(tablePackageMap.get(entry.getKey()), DEFAULT_SCHEMA_PACKAGE) + ".", joinContext);
+                        }
+                        joinItems += (
                                 (templateNodeMap.containsKey(joinTag) && templateNodeMap.get(joinTag).size() > 0)
                                         ? templateNodeMap.get(joinTag).get(templateNodeMap.get(joinTag).size() - 1)
                                         : getDefaultSchemaJoinTemplateNode()
-                        ).clone().resolve(joinContext);
-                        joinItems += joinItemTemplateNode.getData();
+                        ).clone().resolve(joinContext).getData();
+                        break;
+                    case "OneToOne":
+                    case "ManyToOne":
+                        putContext(joinTag, "joinEntityPackage", tablePackageMap.get(entry.getKey()), joinContext);
+                        putContext(joinTag, "joinEntityType", getEntityJavaType(entry.getKey()), joinContext);
+                        putContext(joinTag, "joinEntityVars", toLowerCamelCase(getEntityJavaType(entry.getKey())), joinContext);
+                        if (!("abs".equalsIgnoreCase(entitySchemaOutputMode))) {
+                            putContext(joinTag, "joinEntitySchemaPackage", concatPackage(tablePackageMap.get(entry.getKey()), DEFAULT_SCHEMA_PACKAGE) + ".", joinContext);
+                        }
+                        joinItems += (
+                                (templateNodeMap.containsKey(joinTag) && templateNodeMap.get(joinTag).size() > 0)
+                                        ? templateNodeMap.get(joinTag).get(templateNodeMap.get(joinTag).size() - 1)
+                                        : getDefaultSchemaJoinTemplateNode()
+                        ).clone().resolve(joinContext).getData();
+
+                        String fieldType = tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey());
+                        String fieldName = toLowerCamelCase(getEntityJavaType(entry.getKey()));
+                        String fieldComment = generateFieldComment(getColumn(columns, refInfos[1])).stream().reduce((a, b) -> a + "\n    " + b).orElse("");
+                        Map<String, String> itemContext = new HashMap<>(context);
+                        putContext(fieldTag, "fieldType", fieldType, itemContext);
+                        putContext(fieldTag, "fieldName", fieldName, itemContext);
+                        putContext(fieldTag, "fieldComment", fieldComment, itemContext);
+                        fieldItems += (
+                                templateNodeMap.containsKey(fieldTag) && templateNodeMap.get(fieldTag).size() > 0
+                                        ? templateNodeMap.get(fieldTag).get(templateNodeMap.get(fieldTag).size() - 1)
+                                        : getDefaultSchemaFieldTemplateNode().clone()
+                        ).resolve(itemContext).getData();
                         break;
                     default:
                         // 暂不支持
@@ -1523,6 +1565,8 @@ public class GenEntityMojo extends GenArchMojo {
 
             }
         }
+
+        putContext(tag, "FIELD_ITEMS", fieldItems, context);
         putContext(tag, "JOIN_ITEMS", joinItems, context);
 
         List<TemplateNode> schemaTemplateNodes = templateNodeMap.containsKey(tag)
@@ -1862,10 +1906,10 @@ public class GenEntityMojo extends GenArchMojo {
                 "     * @param joinType\n" +
                 "     * @return\n" +
                 "     */\n" +
-                "    public ${joinEntityType}Schema join${joinEntityType}(${SchemaBase}.JoinType joinType) {\n" +
+                "    public ${joinEntitySchemaPackage}${joinEntityType}Schema join${joinEntityType}(${SchemaBase}.JoinType joinType) {\n" +
                 "        JoinType type = joinType.toJpaJoinType();\n" +
                 "        Join<${Entity}, ${joinEntityPackage}.${joinEntityType}> join = ((Root<${Entity}>) root).join(\"${joinEntityVars}\", type);\n" +
-                "        ${joinEntityType}Schema schema = new ${joinEntityType}Schema(join, criteriaBuilder);\n" +
+                "        ${joinEntitySchemaPackage}${joinEntityType}Schema schema = new ${joinEntitySchemaPackage}${joinEntityType}Schema(join, criteriaBuilder);\n" +
                 "        return schema;\n" +
                 "    }";
         TemplateNode templateNode = new TemplateNode();
@@ -2001,7 +2045,7 @@ public class GenEntityMojo extends GenArchMojo {
         templateNode.setName("${path}${SEPARATOR}" + DEFAULT_SCHEMA_PACKAGE + "${SEPARATOR}${Entity}Schema.java");
         templateNode.setFormat("raw");
         templateNode.setData(template);
-        templateNode.setConflict("skip");
+        templateNode.setConflict("overwrite");
         return templateNode;
     }
 
@@ -2258,7 +2302,7 @@ public class GenEntityMojo extends GenArchMojo {
         templateNode.setName("${SchemaBase}.java");
         templateNode.setFormat("raw");
         templateNode.setData(template);
-        templateNode.setConflict("skip");
+        templateNode.setConflict("overwrite");
         return templateNode;
     }
 }
