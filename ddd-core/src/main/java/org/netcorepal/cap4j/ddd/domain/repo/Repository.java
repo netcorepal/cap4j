@@ -1,7 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.repo;
 
-import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
+import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 
 import java.util.List;
@@ -16,57 +16,61 @@ import java.util.Optional;
 public interface Repository<Entity> {
 
     /**
-     * 通过ID判断实体是否存在
-     * @param id
+     * 根据条件获取实体列表
+     *
+     * @param predicate
      * @return
      */
-    boolean existsById(Object id);
-    /**
-     * 通过ID获取实体
-     * @param id
-     * @return
-     */
-    Optional<Entity> getById(Object id);
+    default List<Entity> find(Predicate<Entity> predicate) {
+        return find(predicate, null);
+    }
 
-    /**
-     * 通过ID获取实体
-     * @param ids
-     * @return
-     */
-    List<Entity> listByIds(Iterable<Object> ids);
-
-    /**
-     * 根据条件获取实体
-     * @param condition
-     * @return
-     */
-    Optional<Entity> getBy(Object condition);
     /**
      * 根据条件获取实体列表
-     * @param condition
+     *
+     * @param predicate
      * @param orders
      * @return
      */
-    List<Entity> listBy(Object condition, List<OrderInfo> orders);
+    List<Entity> find(Predicate<Entity> predicate, List<OrderInfo> orders);
+
+    /**
+     * 根据条件获取实体
+     *
+     * @param predicate
+     * @return
+     */
+    Optional<Entity> findOne(Predicate<Entity> predicate);
+
     /**
      * 根据条件获取实体分页列表
-     * @param condition
+     *
+     * @param predicate
      * @param pageParam
      * @return
      */
-    PageData<Entity> pageBy(Object condition, PageParam pageParam);
+    PageData<Entity> findPage(Predicate<Entity> predicate, PageParam pageParam);
 
     /**
      * 根据条件获取实体计数
-     * @param condition
+     *
+     * @param predicate
      * @return
      */
-    long count(Object condition);
+    long count(Predicate<Entity> predicate);
 
     /**
      * 根据条件判断实体是否存在
-     * @param condition
+     *
+     * @param predicate
      * @return
      */
-    boolean exists(Object condition);
+    boolean exists(Predicate<Entity> predicate);
+
+//    /**
+//     * 通过ID判断实体是否存在
+//     * @param id
+//     * @return
+//     */
+//    boolean existsById(Object id);
 }

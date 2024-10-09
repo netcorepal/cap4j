@@ -1,5 +1,7 @@
 package org.netcorepal.cap4j.ddd.application.query;
 
+import org.netcorepal.cap4j.ddd.application.RequestParam;
+
 import java.util.List;
 
 /**
@@ -8,5 +10,5 @@ import java.util.List;
  * @author binking338
  * @date
  */
-public interface ListQuery<PARAM,ITEM> extends Query<PARAM, List<ITEM>> {
+public interface ListQuery<PARAM extends RequestParam<List<ITEM>>,ITEM> extends Query<PARAM, List<ITEM>> {
 }

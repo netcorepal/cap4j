@@ -9,4 +9,5 @@ package org.netcorepal.cap4j.ddd.domain.event;
 public interface EventRecordRepository {
     public EventRecord create();
     public void save(EventRecord event);
+    public EventRecord getById(String id);
 }

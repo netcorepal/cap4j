@@ -1,6 +1,15 @@
 package org.netcorepal.cap4j.ddd.domain.event.impl;
 
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisor;
+import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
+import org.netcorepal.cap4j.ddd.domain.event.EventPublisher;
+import org.netcorepal.cap4j.ddd.domain.event.*;
+import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
+import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionCommittingEvent;
+import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionCommittedEvent;
+import org.netcorepal.cap4j.ddd.share.DomainException;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -12,47 +21,35 @@ import java.util.*;
  * @author binking338
  * @date 2023/8/13
  */
-public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
-    public static DomainEventSupervisor instance = new DefaultDomainEventSupervisor();
-    private static final ThreadLocal<Set<Object>> TL_EVENT_PAYLOADS = new ThreadLocal<Set<Object>>();
+@RequiredArgsConstructor
+public class DefaultDomainEventSupervisor implements DomainEventSupervisor, DomainEventManager {
+    private final EventRecordRepository eventRecordRepository;
+    private final DomainEventInterceptorManager domainEventInterceptorManager;
+    private final EventPublisher eventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final String svcName;
+
     private static final ThreadLocal<Map<Object, Set<Object>>> TL_ENTITY_EVENT_PAYLOADS = new ThreadLocal<Map<Object, Set<Object>>>();
     private static final ThreadLocal<Map<Object, LocalDateTime>> TL_EVENT_SCHEDULE_MAP = new ThreadLocal<Map<Object, LocalDateTime>>();
     private static final Set<Object> EMPTY_EVENT_PAYLOADS = Collections.emptySet();
-
-    @Override
-    public void attach(Object eventPayload) {
-        attach(eventPayload, LocalDateTime.now());
-    }
-
-    @Override
-    public void attach(Object eventPayload, Duration delay) {
-        attach(eventPayload, LocalDateTime.now().plus(delay));
-    }
-
-    @Override
-    public void attach(Object eventPayload, LocalDateTime schedule) {
-        Set<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
-        if (eventPayloads == null) {
-            eventPayloads = new HashSet<>();
-            TL_EVENT_PAYLOADS.set(eventPayloads);
-        }
-        eventPayloads.add(eventPayload);
-
-        putDeliverTime(eventPayload, schedule);
-    }
-
-    @Override
-    public void attach(Object eventPayload, Object entity) {
-        attach(eventPayload, entity, LocalDateTime.now());
-    }
-
-    @Override
-    public void attach(Object eventPayload, Object entity, Duration delay) {
-        attach(eventPayload, entity, LocalDateTime.now().plus(delay));
-    }
+    /**
+     * 默认事件过期时间（分钟）
+     */
+    private static final int DEFAULT_EVENT_EXPIRE_MINUTES = 30;
+    /**
+     * 默认事件重试次数
+     */
+    private static final int DEFAULT_EVENT_RETRY_TIMES = 16;
 
     @Override
     public void attach(Object eventPayload, Object entity, LocalDateTime schedule) {
+        // 判断领域事件，不支持集成事件。
+        if (eventPayload == null) {
+            throw new DomainException("事件负载不能为空");
+        }
+        if (eventPayload.getClass().isAnnotationPresent(IntegrationEvent.class)) {
+            throw new DomainException("事件类型不能为集成事件");
+        }
         Map<Object, Set<Object>> entityEventPayloads = TL_ENTITY_EVENT_PAYLOADS.get();
         if (entityEventPayloads == null) {
             entityEventPayloads = new HashMap<>();
@@ -64,15 +61,7 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
         entityEventPayloads.get(entity).add(eventPayload);
 
         putDeliverTime(eventPayload, schedule);
-    }
-
-    @Override
-    public void detach(Object eventPayload) {
-        Set<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
-        if (eventPayloads == null) {
-            return;
-        }
-        eventPayloads.remove(eventPayload);
+        domainEventInterceptorManager.getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onAttach(eventPayload, entity, schedule));
     }
 
     @Override
@@ -87,24 +76,91 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
         }
 
         eventPayloads.remove(eventPayload);
+        domainEventInterceptorManager.getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onDetach(eventPayload, entity));
     }
 
     @Override
-    public void reset() {
-        TL_EVENT_PAYLOADS.remove();
+    public void release(Set<Object> entities) {
+        Set<Object> eventPayloads = new HashSet<>();
+        if(null != entities && !entities.isEmpty()) {
+            for (Object entity : entities) {
+                eventPayloads.addAll(this.popEvents(entity));
+            }
+        }
+        List<EventRecord> persistedEvents = new ArrayList<>(eventPayloads.size());
+        List<EventRecord> transientEvents = new ArrayList<>(eventPayloads.size());
+        LocalDateTime now = LocalDateTime.now();
+        for (Object eventPayload : eventPayloads) {
+            LocalDateTime deliverTime = this.getDeliverTime(eventPayload);
+            EventRecord event = eventRecordRepository.create();
+            event.init(eventPayload, this.svcName, deliverTime, Duration.ofMinutes(DEFAULT_EVENT_EXPIRE_MINUTES), DEFAULT_EVENT_RETRY_TIMES);
+            boolean isDelayDeliver = deliverTime.isAfter(now);
+            if (!isDomainEventNeedPersist(eventPayload) && !isDelayDeliver) {
+                event.markPersist(false);
+                transientEvents.add(event);
+            } else {
+                event.markPersist(true);
+                domainEventInterceptorManager.getOrderedEventInterceptors4DomainEvent().forEach(interceptor -> interceptor.prePersist(event));
+                eventRecordRepository.save(event);
+                domainEventInterceptorManager.getOrderedEventInterceptors4DomainEvent().forEach(interceptor -> interceptor.postPersist(event));
+                persistedEvents.add(event);
+            }
+        }
+        DomainEventAttachedTransactionCommittingEvent domainEventAttachedTransactionCommittingEvent = new DomainEventAttachedTransactionCommittingEvent(this, transientEvents);
+        DomainEventAttachedTransactionCommittedEvent domainEventAttachedTransactionCommittedEvent = new DomainEventAttachedTransactionCommittedEvent(this, persistedEvents);
+        onTransactionCommiting(domainEventAttachedTransactionCommittingEvent);
+        applicationEventPublisher.publishEvent(domainEventAttachedTransactionCommittingEvent);
+        applicationEventPublisher.publishEvent(domainEventAttachedTransactionCommittedEvent);
+    }
+
+    /**
+     * 判断事件是否需要持久化
+     * - 延迟或定时领域事件视情况进行持久化
+     * - 显式指定persist=true的领域事件必须持久化
+     * @param payload
+     * @return
+     */
+    protected boolean isDomainEventNeedPersist(Object payload) {
+        DomainEvent domainEvent = payload == null
+                ? null
+                : payload.getClass().getAnnotation(DomainEvent.class);
+        if (domainEvent != null) {
+            return domainEvent.persist();
+        } else {
+            return false;
+        }
+    }
+
+    protected void onTransactionCommiting(DomainEventAttachedTransactionCommittingEvent domainEventAttachedTransactionCommittingEvent) {
+        List<EventRecord> events = domainEventAttachedTransactionCommittingEvent.getEvents();
+        publish(events);
+    }
+
+    @TransactionalEventListener(fallbackExecution = true, classes = DomainEventAttachedTransactionCommittedEvent.class)
+    public void onTransactionCommitted(DomainEventAttachedTransactionCommittedEvent domainEventAttachedTransactionCommittedEvent) {
+        List<EventRecord> events = domainEventAttachedTransactionCommittedEvent.getEvents();
+        publish(events);
+    }
+
+    private void publish(List<EventRecord> events) {
+        if (events != null && !events.isEmpty()) {
+            events.forEach(event -> {
+                eventPublisher.publish(event);
+            });
+        }
+    }
+
+    public static void reset() {
         TL_ENTITY_EVENT_PAYLOADS.remove();
         TL_EVENT_SCHEDULE_MAP.remove();
     }
 
-    @Override
-    public Set<Object> popEvents() {
-        Set<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
-        TL_EVENT_PAYLOADS.remove();
-        return eventPayloads != null ? eventPayloads : EMPTY_EVENT_PAYLOADS;
-    }
-
-    @Override
-    public Set<Object> popEvents(Object entity) {
+    /**
+     * 弹出实体绑定的事件列表
+     * @param entity 关联实体
+     * @return 事件列表
+     */
+    protected Set<Object> popEvents(Object entity) {
         Map<Object, Set<Object>> entityEventPayloads = TL_ENTITY_EVENT_PAYLOADS.get();
         if(entityEventPayloads == null || !entityEventPayloads.containsKey(entity)){
             return EMPTY_EVENT_PAYLOADS;
@@ -113,6 +169,11 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
         return eventPayloads != null ? eventPayloads : EMPTY_EVENT_PAYLOADS;
     }
 
+    /**
+     * 记录事件发送时间
+     * @param eventPayload
+     * @param schedule
+     */
     protected void putDeliverTime(Object eventPayload, LocalDateTime schedule) {
         Map<Object, LocalDateTime> eventScheduleMap = TL_EVENT_SCHEDULE_MAP.get();
         if (eventScheduleMap == null) {
@@ -122,7 +183,6 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor {
         eventScheduleMap.put(eventPayload, schedule);
     }
 
-    @Override
     public LocalDateTime getDeliverTime(Object eventPayload) {
         Map<Object, LocalDateTime> eventScheduleMap = TL_EVENT_SCHEDULE_MAP.get();
         if (eventScheduleMap != null && eventScheduleMap.containsKey(eventPayload)) {

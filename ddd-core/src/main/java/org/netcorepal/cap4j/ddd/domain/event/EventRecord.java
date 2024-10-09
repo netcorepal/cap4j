@@ -1,5 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.event;
 
+import org.springframework.messaging.Message;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -51,6 +53,24 @@ public interface EventRecord {
     LocalDateTime getNextTryTime();
 
     /**
+     * 标记是否持久化
+     * @param persist
+     */
+    void markPersist(boolean persist);
+
+    /**
+     * 是否持久化
+     * @return
+     */
+    boolean isPersist();
+
+    /**
+     * 创建消息
+     * @return
+     */
+    Message<Object> getMessage();
+
+    /**
      * 是否发送中（等待确认结果）
      * @return
      */
@@ -82,16 +102,16 @@ public interface EventRecord {
     boolean cancelDelivery(LocalDateTime now);
 
     /**
+     * 确认时间已发出
+     * @param now
+     */
+    void confirmedDelivery(LocalDateTime now);
+
+    /**
      * 发生异常
      * @param now
      * @param throwable
      * @return
      */
     void occuredException(LocalDateTime now, Throwable throwable);
-
-    /**
-     * 确认时间已发出
-     * @param now
-     */
-    void confirmedDelivery(LocalDateTime now);
 }

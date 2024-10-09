@@ -11,7 +11,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,51 +24,91 @@ import java.util.stream.Collectors;
  * @date 2023/8/13
  */
 @RequiredArgsConstructor
-public abstract class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
+public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
     private final JpaSpecificationExecutor<Entity> jpaSpecificationExecutor;
     private final JpaRepository<Entity, ID> jpaRepository;
 
-    public Optional<Entity> getById(Object id) {
-        List<ID> ids = new ArrayList<>(1);
-        ids.add((ID) id);
-        Optional<Entity> entity = jpaRepository.findAllById(ids).stream().findFirst();
-        return entity;
+    public Optional<Entity> findOne(Predicate<Entity> predicate) {
+        if (null != JpaPredicateSupport.resumeId(predicate)) {
+            return jpaRepository.findById((ID) JpaPredicateSupport.resumeId(predicate));
+        }
+        if (null != JpaPredicateSupport.resumeIds(predicate)) {
+            if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
+                return Optional.empty();
+            }
+            return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate))
+                    .stream().findFirst();
+        }
+        return jpaSpecificationExecutor.findOne(JpaPredicateSupport.resumeSpecification(predicate));
     }
 
-    public List<Entity> listByIds(Iterable<Object> ids){
-        List<Entity> entities = jpaRepository.findAllById((Iterable<ID>) ids);
-        return entities;
+    public PageData<Entity> findPage(Predicate<Entity> predicate, PageParam pageParam) {
+        if (null != JpaPredicateSupport.resumeId(predicate)) {
+            List<Entity> entities = jpaRepository.findAllById(Arrays.asList((ID) JpaPredicateSupport.resumeId(predicate)));
+            return PageData.create(pageParam, Long.valueOf(entities.size()), entities);
+        }
+        if (null != JpaPredicateSupport.resumeIds(predicate)) {
+            if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
+                return PageData.empty(pageParam.getPageSize(), JpaPredicateSupport.reflectEntityClass(predicate));
+            }
+            List<Entity> entities = jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate))
+                    .stream()
+                    .skip((pageParam.getPageNum() - 1) * pageParam.getPageSize())
+                    .limit(pageParam.getPageSize())
+                    .collect(Collectors.toList());
+            return PageData.create(pageParam, Long.valueOf(entities.size()), entities);
+        }
+        Page<Entity> page = jpaSpecificationExecutor.findAll(JpaPredicateSupport.resumeSpecification(predicate), convertPageable(pageParam));
+        return convertPageData(page);
     }
 
-    public boolean existsById(Object id) {
-        return jpaRepository.existsById((ID) id);
-    }
-
-    public Optional<Entity> getBy(Object condition) {
-        return jpaSpecificationExecutor.findOne((org.springframework.data.jpa.domain.Specification<Entity>) condition);
-    }
-
-    public List<Entity> listBy(Object condition, List<OrderInfo> orders) {
+    public List<Entity> find(Predicate<Entity> predicate, List<OrderInfo> orders) {
         Sort sort = Sort.unsorted();
         if (orders != null && !orders.isEmpty()) {
             sort = convertSort(orders);
         }
-        List<Entity> entities = jpaSpecificationExecutor.findAll((org.springframework.data.jpa.domain.Specification<Entity>) condition, sort);
+        if (null != JpaPredicateSupport.resumeId(predicate)) {
+            return jpaRepository.findAllById(Arrays.asList((ID) JpaPredicateSupport.resumeId(predicate)));
+        }
+        if (null != JpaPredicateSupport.resumeIds(predicate)) {
+            if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
+                return Collections.emptyList();
+            }
+            return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate));
+        }
+        List<Entity> entities = jpaSpecificationExecutor.findAll(JpaPredicateSupport.resumeSpecification(predicate), sort);
         return entities;
     }
 
-    public PageData pageBy(Object condition, PageParam pageParam) {
-        Page<Entity> page = jpaSpecificationExecutor.findAll((org.springframework.data.jpa.domain.Specification<Entity>) condition, convertPageable(pageParam));
-        return convertPageData(page);
-    }
-
-    public long count(Object condition) {
-        long result = jpaSpecificationExecutor.count((org.springframework.data.jpa.domain.Specification<Entity>) condition);
+    public long count(Predicate<Entity> predicate) {
+        if (null != JpaPredicateSupport.resumeId(predicate)) {
+            return jpaRepository.findById((ID) JpaPredicateSupport.resumeId(predicate)).isPresent() ?
+                    1L :
+                    0L;
+        }
+        if (null != JpaPredicateSupport.resumeIds(predicate)) {
+            if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
+                return 0L;
+            }
+            return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate))
+                    .size();
+        }
+        long result = jpaSpecificationExecutor.count(JpaPredicateSupport.resumeSpecification(predicate));
         return result;
     }
 
-    public boolean exists(Object condition) {
-        boolean result = jpaSpecificationExecutor.exists((org.springframework.data.jpa.domain.Specification<Entity>) condition);
+    public boolean exists(Predicate<Entity> predicate) {
+        if (null != JpaPredicateSupport.resumeId(predicate)) {
+            return jpaRepository.findById((ID) JpaPredicateSupport.resumeId(predicate)).isPresent();
+        }
+        if (null != JpaPredicateSupport.resumeIds(predicate)) {
+            if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
+                return false;
+            }
+            return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate))
+                    .size() > 0;
+        }
+        boolean result = jpaSpecificationExecutor.exists(JpaPredicateSupport.resumeSpecification(predicate));
         return result;
     }
 

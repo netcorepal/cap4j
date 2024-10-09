@@ -1,6 +1,5 @@
 package org.netcorepal.cap4j.ddd.domain.event.persistence;
 
-
 import com.alibaba.fastjson.JSON;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,7 +37,7 @@ public class ArchivedEvent {
         this.eventType = event.getEventType();
         this.data = event.getData();
         this.dataType = event.getDataType();
-        this.exception =event.getException();
+        this.exception = event.getException();
         this.createAt = event.getCreateAt();
         this.expireAt = event.getExpireAt();
         this.eventState = event.getEventState();

@@ -12,14 +12,15 @@ import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
-import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
-import org.netcorepal.cap4j.ddd.share.ScanUtils;
-import org.netcorepal.cap4j.ddd.share.TextUtils;
+import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
+import org.netcorepal.cap4j.ddd.share.misc.ScanUtils;
+import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.OrderUtils;
 import org.springframework.core.env.Environment;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 
 /**
@@ -31,33 +32,26 @@ import java.util.*;
 @Slf4j
 @RequiredArgsConstructor
 public class RocketMqDomainEventSubscriberAdapter {
-    private final RocketMqDomainEventSubscriberManager rocketMqDomainEventSubscriberManager;
-    private final Environment environment;
-    private final DomainEventMessageInterceptor domainEventMessageInterceptor;
+    private final EventSubscriberManager eventSubscriberManager;
+    private final List<EventMessageInterceptor> eventMessageInterceptors;
     private final MQConsumerConfigure mqConsumerConfigure;
+
+    private final Environment environment;
+    private final String scanPath;
     private final String applicationName;
     private final String defaultNameSrv;
     private final String msgCharset;
-    private final String scanPath;
 
     List<MQPushConsumer> mqPushConsumers = new ArrayList<>();
 
-    @PostConstruct
     public void init() {
-        Set<Class<?>> classes = ScanUtils.scanClass(scanPath, true);
+        Set<Class<?>> classes = ScanUtils.findIntegrationEventClasses(scanPath);
         classes.stream().filter(cls -> {
-            DomainEvent domainEvent = cls.getAnnotation(DomainEvent.class);
-            if (!Objects.isNull(domainEvent) && StringUtils.isNotEmpty(domainEvent.value())
-                    & !DomainEvent.NONE_SUBSCRIBER.equalsIgnoreCase(domainEvent.subscriber())) {
-                return true;
-            } else {
-                return false;
-            }
+            IntegrationEvent integrationEvent = cls.getAnnotation(IntegrationEvent.class);
+            return !Objects.isNull(integrationEvent) && StringUtils.isNotEmpty(integrationEvent.value())
+                    & !IntegrationEvent.NONE_SUBSCRIBER.equalsIgnoreCase(integrationEvent.subscriber());
         }).forEach(domainEventClass -> {
-            MQPushConsumer mqPushConsumer = null;
-            if (mqPushConsumer != null) {
-                mqPushConsumer = mqConsumerConfigure.get(domainEventClass);
-            }
+            MQPushConsumer mqPushConsumer = mqConsumerConfigure == null ? null : mqConsumerConfigure.get(domainEventClass);
             if (mqPushConsumer == null) {
                 mqPushConsumer = createDefaultConsumer(domainEventClass);
             }
@@ -70,6 +64,22 @@ public class RocketMqDomainEventSubscriberAdapter {
                 log.error("集成事件消息监听启动失败", e);
             }
         });
+    }
+
+    private List<EventMessageInterceptor> orderedEventMessageInterceptors = null;
+
+    /**
+     * 获取排序后的事件消息拦截器
+     * 基于{@link org.springframework.core.annotation.Order}
+     *
+     * @return
+     */
+    private List<EventMessageInterceptor> getOrderedEventMessageInterceptors() {
+        if (orderedEventMessageInterceptors == null) {
+            orderedEventMessageInterceptors = new ArrayList<>(eventMessageInterceptors);
+            orderedEventMessageInterceptors.sort(Comparator.comparingInt(a -> OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE)));
+        }
+        return orderedEventMessageInterceptors;
     }
 
     public void shutdown() {
@@ -88,47 +98,47 @@ public class RocketMqDomainEventSubscriberAdapter {
         });
     }
 
-    public DefaultMQPushConsumer createDefaultConsumer(Class domainEventClass) {
-        DomainEvent domainEvent = (DomainEvent) domainEventClass.getAnnotation(DomainEvent.class);
-        if (Objects.isNull(domainEvent) || StringUtils.isBlank(domainEvent.value())
-                || DomainEvent.NONE_SUBSCRIBER.equalsIgnoreCase(domainEvent.subscriber())) {
+    public DefaultMQPushConsumer createDefaultConsumer(Class<?> integrationEventClass) {
+        IntegrationEvent integrationEvent = integrationEventClass.getAnnotation(IntegrationEvent.class);
+        if (Objects.isNull(integrationEvent) || StringUtils.isBlank(integrationEvent.value())
+                || IntegrationEvent.NONE_SUBSCRIBER.equalsIgnoreCase(integrationEvent.subscriber())) {
             // 不是集成事件, 或显式标明无订阅
             return null;
         }
-//        if (!rocketMqDomainEventSubscriberManager.hasSubscriber(domainEventClass)) {
-//            // 不存在订阅
-//            return null;
-//        }
-        String target = domainEvent.value();
+        String target = integrationEvent.value();
         target = TextUtils.resolvePlaceholderWithCache(target, environment);
         String topic = target.lastIndexOf(':') > 0 ? target.substring(0, target.lastIndexOf(':')) : target;
         String tag = target.lastIndexOf(':') > 0 ? target.substring(target.lastIndexOf(':') + 1) : "";
 
         DefaultMQPushConsumer mqPushConsumer = new DefaultMQPushConsumer();
-        mqPushConsumer.setConsumerGroup(getTopicConsumerGroup(topic, domainEvent.subscriber()));
+        mqPushConsumer.setConsumerGroup(getTopicConsumerGroup(topic, integrationEvent.subscriber()));
         mqPushConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
         mqPushConsumer.setInstanceName(applicationName);
         String nameServerAddr = getTopicNamesrvAddr(topic, defaultNameSrv);
         mqPushConsumer.setNamesrvAddr(nameServerAddr);
-        mqPushConsumer.setUnitName(domainEventClass.getSimpleName());
+        mqPushConsumer.setUnitName(integrationEventClass.getSimpleName());
         mqPushConsumer.registerMessageListener((List<MessageExt> msgs, ConsumeConcurrentlyContext context) -> {
             try {
-                for (MessageExt msg :
-                        msgs) {
+                for (MessageExt msg : msgs) {
                     String strMsg = new String(msg.getBody(), msgCharset);
-                    Object event = JSON.parseObject(strMsg, domainEventClass, Feature.SupportNonPublicField);
-                    Map<String, Object> headers = new HashMap<>();
-                    msg.getProperties().forEach((k, v) -> headers.put(k, v));
-                    if (domainEventMessageInterceptor != null) {
-                        Message message = new GenericMessage(event, new DomainEventMessageInterceptor.ModifiableMessageHeaders(headers));
-                        message = domainEventMessageInterceptor.beforeSubscribe(message);
-                        event = message.getPayload();
+                    Object eventPayload = JSON.parseObject(strMsg, integrationEventClass, Feature.SupportNonPublicField);
+
+                    if (getOrderedEventMessageInterceptors().isEmpty()) {
+                        eventSubscriberManager.dispatch(eventPayload);
+                    } else {
+                        Map<String, Object> headers = new HashMap<>();
+                        headers.putAll(msg.getProperties());
+                        Message<Object> message = new GenericMessage<>(eventPayload, new EventMessageInterceptor.ModifiableMessageHeaders(headers));
+                        getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.preSubscribe(message));
+                        // 拦截器可能修改消息，重新赋值
+                        eventPayload = message.getPayload();
+                        eventSubscriberManager.dispatch(eventPayload);
+                        getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.postSubscribe(message));
                     }
-                    rocketMqDomainEventSubscriberManager.trigger(event);
                 }
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             } catch (Exception ex) {
-                log.error("集成事件消息消费失败", ex);
+                log.error("集成事件消息消费异常", ex);
                 return ConsumeConcurrentlyStatus.RECONSUME_LATER;
             }
         });

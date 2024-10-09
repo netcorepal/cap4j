@@ -12,81 +12,53 @@ import java.util.Set;
  */
 public interface DomainEventSupervisor {
     /**
-     * 附加事件
-     * @param eventPayload
+     * 获取领域事件管理器
+     * @return 领域事件管理器
      */
-    void attach(Object eventPayload);
+     static DomainEventSupervisor getInstance() {
+        return DomainEventSupervisorSupport.instance;
+     }
 
     /**
-     * 附加事件
-     * @param eventPayload
+     * 获取领域事件发布管理器
+     * @return
+     */
+     static DomainEventManager getManager(){
+         return DomainEventSupervisorSupport.manager;
+     }
+
+    /**
+     * 附加领域事件到持久化上下文
+     * @param domainEventPayload 领域事件消息体
+     * @param entity 绑定实体，该实体对象进入持久化上下文且事务提交时才会触发领域事件分发
+     */
+    default <DOMAIN_EVENT, ENTITY> void attach(DOMAIN_EVENT domainEventPayload, ENTITY entity){
+        attach(domainEventPayload, entity, LocalDateTime.now());
+    }
+
+
+    /**
+     * 附加领域事件到持久化上下文
+     * @param domainEventPayload 领域事件消息体
+     * @param entity 绑定实体，该实体对象进入持久化上下文且事务提交时才会触发领域事件分发
      * @param delay 延迟发送
      */
-    void attach(Object eventPayload, Duration delay);
+    default <DOMAIN_EVENT, ENTITY> void attach(DOMAIN_EVENT domainEventPayload, ENTITY entity, Duration delay){
+        attach(domainEventPayload, entity, LocalDateTime.now().plus(delay));
+    }
 
     /**
-     * 附加事件
-     * @param eventPayload
+     * 附加领域事件到持久化上下文
+     * @param domainEventPayload 领域事件消息体
+     * @param entity 绑定实体，该实体对象进入持久化上下文且事务提交时才会触发领域事件分发
      * @param schedule 指定时间发送
      */
-    void attach(Object eventPayload, LocalDateTime schedule);
+    <DOMAIN_EVENT, ENTITY> void attach(DOMAIN_EVENT domainEventPayload, ENTITY entity, LocalDateTime schedule);
 
     /**
-     * 附加事件
-     * @param eventPayload
-     * @param entity 绑定实体，该实体对象进入持久化上下文才会触发事件分发
+     * 从持久化上下文剥离领域事件
+     * @param domainEventPayload 领域事件消息体
+     * @param entity 关联实体
      */
-    void attach(Object eventPayload, Object entity);
-
-    /**
-     * 附加事件
-     * @param eventPayload
-     * @param entity 绑定实体，该实体对象进入持久化上下文才会触发事件分发
-     * @param delay 延迟发送
-     */
-    void attach(Object eventPayload, Object entity, Duration delay);
-
-    /**
-     * 附加事件
-     * @param eventPayload
-     * @param entity 绑定实体，该实体对象进入持久化上下文才会触发事件分发
-     * @param schedule 指定时间发送
-     */
-    void attach(Object eventPayload, Object entity, LocalDateTime schedule);
-
-    /**
-     * 剥离事件
-     * @param eventPayload
-     */
-    void detach(Object eventPayload);
-    /**
-     * 剥离事件
-     * @param eventPayload
-     * @param entity
-     */
-    void detach(Object eventPayload, Object entity);
-    /**
-     * 重置事件
-     */
-    void reset();
-
-    /**
-     * 弹出事件列表
-     * @return
-     */
-    Set<Object> popEvents();
-
-    /**
-     * 弹出实体绑定的事件列表
-     * @param entity
-     * @return
-     */
-    public Set<Object> popEvents(Object entity);
-
-    /**
-     * 获取发送事件
-     * @param eventPayload
-     * @return
-     */
-    LocalDateTime getDeliverTime(Object eventPayload);
+    <DOMAIN_EVENT, ENTITY> void detach(DOMAIN_EVENT domainEventPayload, ENTITY entity);
 }

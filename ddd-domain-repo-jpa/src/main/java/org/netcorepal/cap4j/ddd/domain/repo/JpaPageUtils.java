@@ -1,5 +1,6 @@
 package org.netcorepal.cap4j.ddd.domain.repo;
 
+import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 import org.springframework.beans.BeanUtils;
@@ -39,9 +40,9 @@ public class JpaPageUtils {
             try {
                 d = (D) desClass.newInstance();
             } catch (InstantiationException e) {
-                throw new RuntimeException(e);
+                throw new DomainException("分页类型转换异常", e);
             } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+                throw new DomainException("分页类型转换异常", e);
             }
             BeanUtils.copyProperties(s, d);
             return d;
