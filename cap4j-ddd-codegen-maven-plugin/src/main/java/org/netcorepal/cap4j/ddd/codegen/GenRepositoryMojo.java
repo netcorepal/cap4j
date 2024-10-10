@@ -35,6 +35,7 @@ public class GenRepositoryMojo extends GenArchMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        this.renderFileSwitch = false;
         super.execute();
         if (!hasRepositoryTemplate) {
             String repositoriesDir = resolveDirectory(getAdapterModulePath(), basePackage + "." + AGGREGATE_REPOSITORY_PACKAGE);

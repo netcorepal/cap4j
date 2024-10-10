@@ -65,6 +65,7 @@ public class GenEntityMojo extends GenArchMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        this.renderFileSwitch = false;
         super.execute();
         genEntity();
     }
