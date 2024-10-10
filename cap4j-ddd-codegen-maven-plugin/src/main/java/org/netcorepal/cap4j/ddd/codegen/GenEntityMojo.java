@@ -501,8 +501,7 @@ public class GenEntityMojo extends GenArchMojo {
 
     public boolean isReservedColumn(Map<String, Object> column) {
         String columnName = getColumnName(column).toLowerCase();
-        boolean isReserved = idField.equalsIgnoreCase(columnName)
-                || versionField.equalsIgnoreCase(columnName);
+        boolean isReserved = versionField.equalsIgnoreCase(columnName);
         return isReserved;
     }
 
@@ -636,6 +635,9 @@ public class GenEntityMojo extends GenArchMojo {
                     );
                 }
             }
+        }
+        if (Objects.equals(fieldName, versionField)) {
+            comments.add(" * 数据版本（支持乐观锁）");
         }
         if (generateDbType) {
             comments.add(" * " + getColumnDbType(column));
@@ -1007,21 +1009,6 @@ public class GenEntityMojo extends GenArchMojo {
         String tableName = getTableName(table);
         String entityType = getEntityJavaType(tableName);
 
-        String entityIdGenerator = null;
-        if (hasIdGenerator(table)) {
-            entityIdGenerator = getIdGenerator(table);
-        } else if (isValueObject(table)) {
-            if (StringUtils.isNotBlank(idGenerator4ValueObject)) {
-                entityIdGenerator = idGenerator4ValueObject;
-            } else {
-                // ValueObject 值对象 默认使用MD5
-                entityIdGenerator = "org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator";
-            }
-        } else {
-            if (StringUtils.isNotBlank(idGenerator)) {
-                entityIdGenerator = idGenerator;
-            }
-        }
 
         StringWriter stringWriter = new StringWriter();
         BufferedWriter out = new BufferedWriter(stringWriter);
@@ -1037,13 +1024,20 @@ public class GenEntityMojo extends GenArchMojo {
             writeLine(out, "");
             if (isValueObject(table)) {
                 writeLine(out, "");
-                writeLine(out, "    @Override\n" +
-                        "    public Object hash() {\n" +
-                        "        if(null == " + idField + ") {\n" +
-                        "            " + idField + " = " + entityIdGenerator + ".hash(this, \"" + idField + "\", " + getColumnJavaType(getIdColumn(columns)) + ".class);\n" +
-                        "        }\n" +
-                        "        return " + idField + ";\n" +
-                        "    }");
+                if (getIdColumn(columns) == null) {
+                    writeLine(out, "    @Override\n" +
+                            "    public Object hash() {\n" +
+                            "        return null;\n" +
+                            "    }");
+                } else {
+                    writeLine(out, "    @Override\n" +
+                            "    public Object hash() {\n" +
+                            "        if(null == " + idField + ") {\n" +
+                            "            " + idField + " = " + getEntityIdGenerator(table) + ".hash(this, \"" + idField + "\", " + getColumnJavaType(getIdColumn(columns)) + ".class);\n" +
+                            "        }\n" +
+                            "        return " + idField + ";\n" +
+                            "    }");
+                }
                 writeLine(out, "");
             }
             writeLine(out, "");
@@ -1054,34 +1048,12 @@ public class GenEntityMojo extends GenArchMojo {
             writeLine(out, "");
         }
         writeLine(out, "    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
-        writeLine(out, "");
-        writeLine(out, "    @Id");
-        if (null != entityIdGenerator) {
-            writeLine(out, "    @GeneratedValue(generator = \"" + entityIdGenerator + "\")");
-            writeLine(out, "    @GenericGenerator(name = \"" + entityIdGenerator + "\", strategy = \"" + entityIdGenerator + "\")");
-        } else {
-            // 无ID生成器 使用数据库自增
-            writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
-        }
-        writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
-        writeLine(out, "    " + getColumnJavaType(getIdColumn(columns)) + " " + idField + ";");
-        for (Map<String, Object> column : columns) {
-            writeColumnProperty(out, table, column, relations, enums);
+        if (null == getIdColumn(columns)) {
+            throw new RuntimeException("实体表缺失【主键】：" + tableName);
         }
         writeRelationProperty(out, table, relations, tablePackageMap);
-        if (hasColumn(versionField, columns)) {
-            writeLine(out, "");
-            writeLine(out, "    /**");
-            writeLine(out, "     * 数据版本（支持乐观锁）");
-            writeLine(out, "     */");
-            writeLine(out, "    @Version");
-            writeLine(out, "    @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + versionField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
-            if (generateDefault) {
-                writeLine(out, "    @Builder.Default");
-                writeLine(out, "    Integer " + toLowerCamelCase(versionField) + " = 0;");
-            } else {
-                writeLine(out, "    Integer " + toLowerCamelCase(versionField) + ";");
-            }
+        for (Map<String, Object> column : columns) {
+            writeColumnProperty(out, table, column, relations, enums);
         }
         writeLine(out, "");
         writeLine(out, "    // 【字段映射结束】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
@@ -1092,11 +1064,30 @@ public class GenEntityMojo extends GenArchMojo {
         return stringWriter.toString();
     }
 
+    private String getEntityIdGenerator(Map<String, Object> table) {
+        String entityIdGenerator = null;
+        if (hasIdGenerator(table)) {
+            entityIdGenerator = getIdGenerator(table);
+        } else if (isValueObject(table)) {
+            if (StringUtils.isNotBlank(idGenerator4ValueObject)) {
+                entityIdGenerator = idGenerator4ValueObject;
+            } else {
+                // ValueObject 值对象 默认使用MD5
+                entityIdGenerator = "org.netcorepal.cap4j.ddd.domain.repo.Md5HashIdentifierGenerator";
+            }
+        } else {
+            if (StringUtils.isNotBlank(idGenerator)) {
+                entityIdGenerator = idGenerator;
+            }
+        }
+        return entityIdGenerator;
+    }
+
     public void writeColumnProperty(BufferedWriter out, Map<String, Object> table, Map<String, Object> column, Map<String, Map<String, String>> relations, List<String> enums) {
         String columnName = getColumnName(column);
         String columnJavaType = getColumnJavaType(column);
 
-        if (!isColumnNeedGenerate(table, column, relations)) {
+        if (!isColumnNeedGenerate(table, column, relations) && !Objects.equals(columnName, versionField)) {
             return;
         }
 
@@ -1119,6 +1110,20 @@ public class GenEntityMojo extends GenArchMojo {
 
         writeLine(out, "");
         writeFieldComment(out, column);
+        if (Objects.equals(columnName, idField)) {
+            writeLine(out, "    @Id");
+            String entityIdGenerator = getEntityIdGenerator(table);
+            if (null != entityIdGenerator) {
+                writeLine(out, "    @GeneratedValue(generator = \"" + entityIdGenerator + "\")");
+                writeLine(out, "    @GenericGenerator(name = \"" + entityIdGenerator + "\", strategy = \"" + entityIdGenerator + "\")");
+            } else {
+                // 无ID生成器 使用数据库自增
+                writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
+            }
+        }
+        if (Objects.equals(columnName, versionField)) {
+            writeLine(out, "    @Version");
+        }
         if (hasEnum(column)) {
             enums.add(columnJavaType);
             writeLine(out, "    @Convert(converter = " + columnJavaType + ".Converter.class)");
@@ -1952,10 +1957,10 @@ public class GenEntityMojo extends GenArchMojo {
                 "    public CriteriaBuilder criteriaBuilder() {\n" +
                 "        return criteriaBuilder;\n" +
                 "    }\n" +
-                "\n" +
-                "    public ${SchemaBase}.Field<Long> ${IdField}() {\n" +
-                "        return root == null ? new ${SchemaBase}.Field<>(\"${IdField}\") : new ${SchemaBase}.Field<>(root.get(\"${IdField}\"));\n" +
-                "    }\n" +
+//                "\n" +
+//                "    public ${SchemaBase}.Field<Long> ${IdField}() {\n" +
+//                "        return root == null ? new ${SchemaBase}.Field<>(\"${IdField}\") : new ${SchemaBase}.Field<>(root.get(\"${IdField}\"));\n" +
+//                "    }\n" +
                 "${FIELD_ITEMS}\n" +
                 "\n" +
                 "    /**\n" +
