@@ -7,7 +7,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils;
 import org.netcorepal.cap4j.ddd.codegen.template.Template;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
@@ -31,7 +30,6 @@ public class GenArchMojo extends MyAbstractMojo {
         getLog().info("适配层目录：" + getAdapterModulePath());
         getLog().info("应用层目录：" + getApplicationModulePath());
         getLog().info("领域层目录：" + getDomainModulePath());
-        this.renderFileSwitch = true;
         String templateContent = "";
         try {
             if (null == archTemplate || archTemplate.isEmpty()) {

@@ -434,7 +434,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
 
 
     protected Template template = null;
-    boolean renderFileSwitch = false;
+    boolean renderFileSwitch = true;
 
     public String forceRender(PathNode pathNode, String parentPath) throws IOException {
         boolean temp = renderFileSwitch;
