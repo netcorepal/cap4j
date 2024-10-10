@@ -775,7 +775,7 @@ public class GenEntityMojo extends GenArchMojo {
 
     public boolean readEntityCustomerSourceFile(String filePath, List<String> importLines, List<String> annotationLines, List<String> customerLines) throws IOException {
         if (FileUtils.fileExists(filePath)) {
-            String content = FileUtils.fileRead(filePath);
+            String content = FileUtils.fileRead(filePath, this.outputEncoding);
             List<String> lines = Arrays.asList(content.replace("\r\n", "\n").split("\n"));
 
             int startMapperLine = 0;

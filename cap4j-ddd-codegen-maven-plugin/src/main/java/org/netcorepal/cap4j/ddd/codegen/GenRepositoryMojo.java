@@ -114,7 +114,7 @@ public class GenRepositoryMojo extends GenArchMojo {
                     this.getLog().debug("解析Java文件: " + fullClassName);
                     String content = "";
                     try {
-                        content = FileUtils.fileRead(file);
+                        content = FileUtils.fileRead(file, this.outputEncoding);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -222,7 +222,7 @@ public class GenRepositoryMojo extends GenArchMojo {
             FileUtils.rename(new File(filePath + ".remove"), new File(filePath));
         }
         if (FileUtils.fileExists(filePath)) {
-            String content = FileUtils.fileRead(filePath);
+            String content = FileUtils.fileRead(filePath, this.outputEncoding);
             List<String> lines = Arrays.asList(content.replace("\r\n", "\n").split("\n"));
             int startLine = 0;
             int endLine = 0;
