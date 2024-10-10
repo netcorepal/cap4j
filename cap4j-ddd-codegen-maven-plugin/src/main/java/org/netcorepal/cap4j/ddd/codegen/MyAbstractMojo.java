@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
  */
 public abstract class MyAbstractMojo extends AbstractMojo {
 
+    public static final String FLAG_DO_NOT_OVERWRITE = "[cap4j-ddd-codegen-maven-plugin:do-not-overwrite]";
     public final String PATTERN_SPLITTER = "[\\,\\;]";
     public final String PATTERN_DESIGN_PARAMS_SPLITTER = "[\\:]";
     public final String PATTERN_LINE_BREAK = "\\r\\n|[\\r\\n]";
@@ -559,10 +560,14 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                     getLog().warn("文件存在：" + path);
                     break;
                 case "overwrite":
+                    if (!FileUtils.fileRead(path, outputEncoding).contains(FLAG_DO_NOT_OVERWRITE)) {
                     getLog().info("文件覆盖：" + path);
                     FileUtils.fileDelete(path);
                     FileUtils.fileWrite(path, outputEncoding, content);
-                    break;
+                } else{
+                    getLog().info("跳过覆盖，文件内容包含 " + FLAG_DO_NOT_OVERWRITE + "：" + path);
+                }
+                break;
                 case "skip":
                 default:
                     getLog().debug("文件跳过：" + path);
