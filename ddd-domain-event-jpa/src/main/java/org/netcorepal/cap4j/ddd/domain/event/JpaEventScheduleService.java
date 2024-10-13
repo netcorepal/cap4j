@@ -76,56 +76,14 @@ public class JpaEventScheduleService {
                     if (!locker.acquire(lockerKey, pwd, maxLockDuration)) {
                         return;
                     }
-                    Page<Event> events = eventJpaRepository.findAll((root, cq, cb) -> {
-                        cq.where(cb.or(
-                                cb.and(
-                                        // 【初始状态】
-                                        cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.INIT),
-                                        cb.lessThan(root.get(Event.F_NEXT_TRY_TIME), now.plus(interval)),
-                                        cb.equal(root.get(Event.F_SVC_NAME), svcName)
-                                ), cb.and(
-                                        // 【发送中状态】
-                                        cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.DELIVERING),
-                                        cb.lessThan(root.get(Event.F_NEXT_TRY_TIME), now.plus(interval)),
-                                        cb.equal(root.get(Event.F_SVC_NAME), svcName)
-                                ), cb.and(
-                                        // 【异常状态】
-                                        cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.EXCEPTION),
-                                        cb.lessThan(root.get(Event.F_NEXT_TRY_TIME), now.plus(interval)),
-                                        cb.equal(root.get(Event.F_SVC_NAME), svcName)
-                                )));
-                        return null;
-                    }, PageRequest.of(0, batchSize, Sort.by(Sort.Direction.ASC, Event.F_NEXT_TRY_TIME)));
-                    if (!events.hasContent()) {
+                    List<EventRecord> eventRecords = eventRecordRepository.getByNextTryTime(svcName, now.plus(interval), batchSize);
+                    if (eventRecords == null || eventRecords.isEmpty()) {
                         noneEvent = true;
                         continue;
                     }
-                    for (Event event : events.getContent()) {
-                        log.info("事件发送补偿: {}", event.toString());
-                        LocalDateTime deliverTime = event.getNextTryTime().isAfter(now)
-                                ? event.getNextTryTime()
-                                : now;
-
-                        EventRecordImpl eventRecordImpl = new EventRecordImpl();
-                        eventRecordImpl.resume(event);
-
-                        boolean delivering = eventRecordImpl.beginDelivery(deliverTime);
-
-                        int maxTry = Integer.MAX_VALUE;
-                        while (eventRecordImpl.getNextTryTime().isBefore(now.plus(interval))
-                                && eventRecordImpl.isTrying()
-                        ) {
-                            eventRecordImpl.beginDelivery(eventRecordImpl.getNextTryTime());
-                            if (maxTry-- <= 0) {
-                                throw new DomainException("疑似死循环");
-                            }
-                        }
-
-                        eventRecordRepository.save(eventRecordImpl);
-                        if (delivering) {
-                            eventRecordImpl.markPersist(true);
-                            eventPublisher.publish(eventRecordImpl);
-                        }
+                    for (EventRecord eventRecord : eventRecords) {
+                        log.info("事件发送补偿: {}", eventRecord);
+                        eventPublisher.retry(eventRecord, now.plus(interval));
                     }
                 } catch (Exception ex) {
                     log.error("事件发送补偿:异常失败", ex);

@@ -1,5 +1,8 @@
 package org.netcorepal.cap4j.ddd.domain.event;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 /**
  * 事件记录仓储
  *
@@ -10,4 +13,5 @@ public interface EventRecordRepository {
     public EventRecord create();
     public void save(EventRecord event);
     public EventRecord getById(String id);
+    public List<EventRecord> getByNextTryTime(String svcName, LocalDateTime maxNextTryTime, int limit);
 }

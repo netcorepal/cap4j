@@ -102,7 +102,7 @@ public interface EventRecord {
     boolean cancelDelivery(LocalDateTime now);
 
     /**
-     * 确认时间已发出
+     * 确认事件已发出
      * @param now
      */
     void confirmedDelivery(LocalDateTime now);

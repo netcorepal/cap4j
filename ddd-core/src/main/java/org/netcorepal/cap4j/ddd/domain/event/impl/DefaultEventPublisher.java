@@ -108,6 +108,32 @@ public class DefaultEventPublisher implements EventPublisher {
         }
     }
 
+    @Override
+    public void retry(EventRecord eventRecord, LocalDateTime minNextTryTime) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime deliverTime = eventRecord.getNextTryTime().isAfter(now)
+                ? eventRecord.getNextTryTime()
+                : now;
+
+        boolean delivering = eventRecord.beginDelivery(deliverTime);
+
+        int maxTry = 65535;
+        while (eventRecord.getNextTryTime().isBefore(minNextTryTime)
+                && eventRecord.isTrying()
+        ) {
+            eventRecord.beginDelivery(eventRecord.getNextTryTime());
+            if (maxTry-- <= 0) {
+                throw new DomainException("疑似死循环");
+            }
+        }
+
+        eventRecordRepository.save(eventRecord);
+        if (delivering) {
+            eventRecord.markPersist(true);
+            publish(eventRecord);
+        }
+    }
+
     /**
      * 内部发布实现 - 领域事件
      *
