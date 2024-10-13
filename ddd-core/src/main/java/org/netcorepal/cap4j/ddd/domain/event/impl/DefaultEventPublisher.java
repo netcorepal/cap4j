@@ -2,20 +2,15 @@ package org.netcorepal.cap4j.ddd.domain.event.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptorManager;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.share.DomainException;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.OrderUtils;
 import org.springframework.messaging.Message;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -119,7 +114,7 @@ public class DefaultEventPublisher implements EventPublisher {
 
         int maxTry = 65535;
         while (eventRecord.getNextTryTime().isBefore(minNextTryTime)
-                && eventRecord.isTrying()
+                && eventRecord.isValid()
         ) {
             eventRecord.beginDelivery(eventRecord.getNextTryTime());
             if (maxTry-- <= 0) {

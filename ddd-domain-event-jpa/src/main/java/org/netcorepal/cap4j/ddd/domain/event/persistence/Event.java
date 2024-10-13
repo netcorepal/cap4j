@@ -88,7 +88,7 @@ public class Event {
         return this.payload;
     }
 
-    public boolean isTrying() {
+    public boolean isValid() {
         return EventState.INIT.equals(this.eventState)
                 || EventState.DELIVERING.equals(this.eventState)
                 || EventState.EXCEPTION.equals(this.eventState);
@@ -116,7 +116,7 @@ public class Event {
             return false;
         }
         // 初始状态或者确认中或者异常
-        if (!isTrying()) {
+        if (!isValid()) {
             return false;
         }
         // 未到下次重试时间

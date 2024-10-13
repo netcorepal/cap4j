@@ -107,8 +107,8 @@ public class EventRecordImpl implements EventRecord {
     }
 
     @Override
-    public boolean isTrying() {
-        return event.isTrying();
+    public boolean isValid() {
+        return event.isValid();
     }
 
     @Override

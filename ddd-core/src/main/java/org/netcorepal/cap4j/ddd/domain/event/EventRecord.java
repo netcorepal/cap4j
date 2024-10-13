@@ -41,7 +41,7 @@ public interface EventRecord {
     Object getPayload();
 
     /**
-     * 获取计划发送事件
+     * 获取计划发送时间
      * @return
      */
     LocalDateTime getScheduleTime();
@@ -71,13 +71,13 @@ public interface EventRecord {
     Message<Object> getMessage();
 
     /**
-     * 是否发送中（等待确认结果）
+     * 是否有效（待发送，或发送中等待确认结果）
      * @return
      */
-    boolean isTrying();
+    boolean isValid();
 
     /**
-     * 是否失效（未发送）
+     * 是否失效（过期等原因未发生成功）
      * @return
      */
     boolean isInvalid();
