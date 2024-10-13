@@ -34,7 +34,7 @@ public class DefaultEventPublisher implements EventPublisher {
     private final EventMessageInterceptorManager eventMessageInterceptorManager;
     private final DomainEventInterceptorManager domainEventInterceptorManager;
     private final IntegrationEventInterceptorManager integrationEventInterceptorManager;
-    private final int threadPoolsize;
+    private final int threadPoolSize;
 
     private ScheduledExecutorService executor = null;
 
@@ -46,7 +46,7 @@ public class DefaultEventPublisher implements EventPublisher {
             if (null != this.executor) {
                 return;
             }
-            this.executor = Executors.newScheduledThreadPool(threadPoolsize);
+            this.executor = Executors.newScheduledThreadPool(threadPoolSize);
         }
     }
 
