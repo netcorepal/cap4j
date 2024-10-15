@@ -9,7 +9,6 @@ import org.netcorepal.cap4j.ddd.domain.aggregate.*;
 import org.netcorepal.cap4j.ddd.domain.aggregate.impl.DefaultAggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
-import org.netcorepal.cap4j.ddd.domain.event.persistence.EventJpaRepository;
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultPersistListenerManager;
 import org.netcorepal.cap4j.ddd.domain.aggregate.impl.DefaultSpecificationManager;
 import org.netcorepal.cap4j.ddd.domain.repo.configure.JpaUnitOfWorkProperties;
@@ -91,19 +90,6 @@ public class JpaRepositoryAutoConfiguration {
         ) {
             JpaUnitOfWork.fixAopWrapper(jpaUnitOfWork);
         }
-    }
-
-
-    @Bean
-    @ConditionalOnMissingBean(EventRecordRepository.class)
-    public JpaEventRecordRepository jpaEventRecordRepository(
-            EventJpaRepository eventJpaRepository
-    ) {
-        JpaEventRecordRepository eventRecordRepository =
-                new JpaEventRecordRepository(
-                        eventJpaRepository
-                );
-        return eventRecordRepository;
     }
 
     @Bean

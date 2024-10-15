@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.event.persistence;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.annotation.JSONField;
 import com.alibaba.fastjson.parser.Feature;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
+import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.annotation.Retry;
@@ -24,12 +26,16 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.alibaba.fastjson.serializer.SerializerFeature.IgnoreNonFieldGetter;
+import static com.alibaba.fastjson.serializer.SerializerFeature.SkipTransientField;
+
 /**
  * 事件
  *
  * @author binking338
  * @date
  */
+@Aggregate(aggregate = "event", name = "Event", root = true, type = Aggregate.TYPE_ENTITY, description = "事件")
 @Entity
 @Table(name = "`__event`")
 @DynamicInsert
@@ -70,6 +76,7 @@ public class Event {
     }
 
     @Transient
+    @JSONField(serialize=false)
     private Object payload = null;
 
     public Object getPayload() {
@@ -86,6 +93,35 @@ public class Event {
             this.payload = JSON.parseObject(data, dataClass, Feature.SupportNonPublicField);
         }
         return this.payload;
+    }
+
+    private void loadPayload(Object payload) {
+        if (payload == null) {
+            throw new DomainException("事件体不能为null");
+        }
+        this.payload = payload;
+        this.data = JSON.toJSONString(payload, IgnoreNonFieldGetter, SkipTransientField);
+        this.dataType = payload.getClass().getName();
+        IntegrationEvent integrationEvent = payload == null
+                ? null
+                : payload.getClass().getAnnotation(IntegrationEvent.class);
+        DomainEvent domainEvent = payload == null
+                ? null
+                : payload.getClass().getAnnotation(DomainEvent.class);
+        if (integrationEvent != null) {
+            this.eventType = integrationEvent.value();
+        } else if (domainEvent != null) {
+            this.eventType = domainEvent.value();
+        } else {
+            this.eventType = "";
+        }
+        Retry retry = payload == null
+                ? null
+                : payload.getClass().getAnnotation(Retry.class);
+        if (retry != null) {
+            this.tryTimes = retry.retryTimes();
+            this.expireAt = this.createAt.plusMinutes(retry.expireAfter());
+        }
     }
 
     public boolean isValid() {
@@ -152,35 +188,6 @@ public class Event {
         this.exception = sw.toString();
     }
 
-    private void loadPayload(Object payload) {
-        if (payload == null) {
-            throw new DomainException("事件体不能为null");
-        }
-        this.payload = payload;
-        this.data = JSON.toJSONString(payload);
-        this.dataType = payload.getClass().getName();
-        IntegrationEvent integrationEvent = payload == null
-                ? null
-                : payload.getClass().getAnnotation(IntegrationEvent.class);
-        DomainEvent domainEvent = payload == null
-                ? null
-                : payload.getClass().getAnnotation(DomainEvent.class);
-        if (integrationEvent != null) {
-            this.eventType = integrationEvent.value();
-        } else if (domainEvent != null) {
-            this.eventType = domainEvent.value();
-        } else {
-            this.eventType = "";
-        }
-        Retry retry = payload == null
-                ? null
-                : payload.getClass().getAnnotation(Retry.class);
-        if (retry != null) {
-            this.tryTimes = retry.retryTimes();
-            this.expireAt = this.createAt.plusMinutes(retry.expireAfter());
-        }
-    }
-
     private LocalDateTime calculateNextTryTime(LocalDateTime now) {
         Retry retry = getPayload() == null
                 ? null
@@ -205,7 +212,7 @@ public class Event {
 
     @Override
     public String toString() {
-        return JSON.toJSONString(this);
+        return JSON.toJSONString(this, IgnoreNonFieldGetter, SkipTransientField);
     }
 
     @Id

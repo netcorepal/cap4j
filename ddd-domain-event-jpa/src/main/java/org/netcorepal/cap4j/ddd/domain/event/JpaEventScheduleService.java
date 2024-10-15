@@ -35,8 +35,6 @@ import java.util.stream.Collectors;
 public class JpaEventScheduleService {
     private final EventPublisher eventPublisher;
     private final EventRecordRepository eventRecordRepository;
-    private final EventJpaRepository eventJpaRepository;
-    private final ArchivedEventJpaRepository archivedEventJpaRepository;
     private final Locker locker;
     private final String svcName;
     private final String compensationLockerKey;
@@ -46,14 +44,6 @@ public class JpaEventScheduleService {
 
     public void init() {
         addPartition();
-    }
-
-    private String getSvcName() {
-        return svcName;
-    }
-
-    private String getCompensationLockerKey() {
-        return compensationLockerKey;
     }
 
     private boolean compensationRunning = false;
@@ -66,8 +56,7 @@ public class JpaEventScheduleService {
         compensationRunning = true;
 
         String pwd = RandomStringUtils.random(8, true, true);
-        String svcName = getSvcName();
-        String lockerKey = getCompensationLockerKey();
+        String lockerKey = compensationLockerKey;
         try {
             boolean noneEvent = false;
             LocalDateTime now = LocalDateTime.now();
@@ -96,52 +85,26 @@ public class JpaEventScheduleService {
         }
     }
 
-    private String getArchiveLockerKey() {
-        return archiveLockerKey;
-    }
-
     /**
      * 本地事件库归档
      */
     public void archive(int expireDays, int batchSize, Duration maxLockDuration) {
         String pwd = RandomStringUtils.random(8, true, true);
-        String svcName = getSvcName();
-        String lockerKey = getArchiveLockerKey();
+        String lockerKey = archiveLockerKey;
 
         if (!locker.acquire(lockerKey, pwd, maxLockDuration)) {
             return;
         }
         log.info("事件归档");
 
-        Date now = new Date();
+        LocalDateTime now = LocalDateTime.now();
         int failCount = 0;
         while (true) {
             try {
-                Page<Event> events = eventJpaRepository.findAll((root, cq, cb) -> {
-                    cq.where(
-                            cb.and(
-                                    // 【状态】
-                                    cb.or(
-                                            cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.CANCEL),
-                                            cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.EXPIRED),
-                                            cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.EXHAUSTED),
-                                            cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.DELIVERED)
-                                    ),
-                                    cb.lessThan(root.get(Event.F_EXPIRE_AT), DateUtils.addDays(now, expireDays)),
-                                    cb.equal(root.get(Event.F_SVC_NAME), svcName)
-                            ));
-                    return null;
-                }, PageRequest.of(0, batchSize, Sort.by(Sort.Direction.ASC, Event.F_NEXT_TRY_TIME)));
-                if (!events.hasContent()) {
+                int archivedCount = eventRecordRepository.archiveByExpireAt(svcName, now.plusDays(expireDays), batchSize);
+                if(archivedCount == 0){
                     break;
                 }
-                List<ArchivedEvent> archivedEvents = events.stream().map(e -> {
-                            ArchivedEvent ae = new ArchivedEvent();
-                            ae.archiveFrom(e);
-                            return ae;
-                        }
-                ).collect(Collectors.toList());
-                migrate(events.toList(), archivedEvents);
             } catch (Exception ex) {
                 failCount++;
                 log.error("事件归档:失败", ex);
@@ -152,12 +115,6 @@ public class JpaEventScheduleService {
             }
         }
         locker.release(lockerKey, pwd);
-    }
-
-    @Transactional
-    public void migrate(List<Event> events, List<ArchivedEvent> archivedEvents) {
-        archivedEventJpaRepository.saveAll(archivedEvents);
-        eventJpaRepository.deleteInBatch(events);
     }
 
     public void addPartition() {

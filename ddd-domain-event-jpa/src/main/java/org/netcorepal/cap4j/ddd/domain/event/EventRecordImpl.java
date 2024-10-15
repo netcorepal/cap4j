@@ -26,7 +26,7 @@ public class EventRecordImpl implements EventRecord {
     private Message<Object> message = null;
 
     public EventRecordImpl() {
-        event = Event.builder().build();
+//        event = Event.builder().build();
     }
 
     public void resume(Event event) {

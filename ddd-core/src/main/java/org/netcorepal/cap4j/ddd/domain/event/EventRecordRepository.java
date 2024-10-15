@@ -14,4 +14,5 @@ public interface EventRecordRepository {
     public void save(EventRecord event);
     public EventRecord getById(String id);
     public List<EventRecord> getByNextTryTime(String svcName, LocalDateTime maxNextTryTime, int limit);
+    public int archiveByExpireAt(String svcName, LocalDateTime maxExpireAt, int limit);
 }

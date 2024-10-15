@@ -13,6 +13,9 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Date;
 
+import static com.alibaba.fastjson.serializer.SerializerFeature.IgnoreNonFieldGetter;
+import static com.alibaba.fastjson.serializer.SerializerFeature.SkipTransientField;
+
 /**
  * 归档事件
  *
@@ -50,7 +53,7 @@ public class ArchivedEvent {
 
     @Override
     public String toString() {
-        return JSON.toJSONString(this);
+        return JSON.toJSONString(this, IgnoreNonFieldGetter, SkipTransientField);
     }
 
     @Id

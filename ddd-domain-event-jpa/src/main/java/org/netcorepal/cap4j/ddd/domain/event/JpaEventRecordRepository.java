@@ -1,7 +1,8 @@
 package org.netcorepal.cap4j.ddd.domain.event;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEvent;
+import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEventJpaRepository;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.Event;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.EventJpaRepository;
 import org.netcorepal.cap4j.ddd.share.DomainException;
@@ -11,8 +12,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,10 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JpaEventRecordRepository implements EventRecordRepository {
     private final EventJpaRepository eventJpaRepository;
-
-    @Getter
-    @PersistenceContext
-    protected EntityManager entityManager;
+    private final ArchivedEventJpaRepository archivedEventJpaRepository;
 
     @Override
     public EventRecord create() {
@@ -81,5 +77,41 @@ public class JpaEventRecordRepository implements EventRecordRepository {
             eventRecordImpl.resume(event);
             return eventRecordImpl;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public int archiveByExpireAt(String svcName, LocalDateTime maxExpireAt, int limit) {
+        Page<Event> events = eventJpaRepository.findAll((root, cq, cb) -> {
+            cq.where(
+                    cb.and(
+                            // 【状态】
+                            cb.or(
+                                    cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.CANCEL),
+                                    cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.EXPIRED),
+                                    cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.EXHAUSTED),
+                                    cb.equal(root.get(Event.F_EVENT_STATE), Event.EventState.DELIVERED)
+                            ),
+                            cb.lessThan(root.get(Event.F_EXPIRE_AT), maxExpireAt),
+                            cb.equal(root.get(Event.F_SVC_NAME), svcName)
+                    ));
+            return null;
+        }, PageRequest.of(0, limit, Sort.by(Sort.Direction.ASC, Event.F_NEXT_TRY_TIME)));
+        if(!events.hasContent()){
+            return 0;
+        }
+        List<ArchivedEvent> archivedEvents = events.stream().map(event -> {
+            ArchivedEvent archivedEvent = new ArchivedEvent();
+            archivedEvent.archiveFrom(event);
+            return archivedEvent;
+        }).collect(Collectors.toList());
+        migrate(events.getContent(), archivedEvents);
+        return events.getNumberOfElements();
+    }
+
+
+    @Transactional
+    public void migrate(List<Event> events, List<ArchivedEvent> archivedEvents) {
+        archivedEventJpaRepository.saveAll(archivedEvents);
+        eventJpaRepository.deleteInBatch(events);
     }
 }

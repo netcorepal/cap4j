@@ -70,13 +70,26 @@ public class DomainEventAutoConfiguration {
         return defaultDomainEventSupervisor;
     }
 
+
+    @Bean
+    @ConditionalOnMissingBean(EventRecordRepository.class)
+    public JpaEventRecordRepository jpaEventRecordRepository(
+            EventJpaRepository eventJpaRepository,
+            ArchivedEventJpaRepository archivedEventJpaRepository
+    ) {
+        JpaEventRecordRepository eventRecordRepository =
+                new JpaEventRecordRepository(
+                        eventJpaRepository,
+                        archivedEventJpaRepository
+                );
+        return eventRecordRepository;
+    }
+
     @Bean
     @ConditionalOnMissingBean(JpaEventScheduleService.class)
     public JpaEventScheduleService jpaEventScheduleService(
             EventPublisher eventPublisher,
             EventRecordRepository eventRecordRepository,
-            EventJpaRepository eventJpaRepository,
-            ArchivedEventJpaRepository archivedEventJpaRepository,
             Locker locker,
             @Value(CONFIG_KEY_4_SVC_NAME)
             String svcName,
@@ -85,12 +98,11 @@ public class DomainEventAutoConfiguration {
             @Value(CONFIG_KEY_4_EVENT_ARCHIVE_LOCKER_KEY)
             String archiveLockerKey,
             EventScheduleProperties eventScheduleProperties,
-            JdbcTemplate jdbcTemplate) {
+            JdbcTemplate jdbcTemplate
+    ) {
         JpaEventScheduleService scheduleService = new JpaEventScheduleService(
                 eventPublisher,
                 eventRecordRepository,
-                eventJpaRepository,
-                archivedEventJpaRepository,
                 locker,
                 svcName,
                 compensationLockerKey,

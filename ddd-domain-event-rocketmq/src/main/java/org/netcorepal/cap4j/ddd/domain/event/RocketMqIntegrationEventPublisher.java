@@ -11,6 +11,9 @@ import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
 import org.springframework.core.env.Environment;
 
+import static com.alibaba.fastjson.serializer.SerializerFeature.IgnoreNonFieldGetter;
+import static com.alibaba.fastjson.serializer.SerializerFeature.SkipTransientField;
+
 /**
  * 基于RocketMq的领域事件发布器
  * 如下配置需配置好，保障RocketMqTemplate被初始化
@@ -79,7 +82,7 @@ public class RocketMqIntegrationEventPublisher implements IntegrationEventPublis
             try {
                 String msg = String.format("集成事件发送失败, %s body=%s",
                         event.getId(),
-                        JSON.toJSONString(event.getPayload()));
+                        JSON.toJSONString(event.getPayload()), IgnoreNonFieldGetter, SkipTransientField);
                 log.error(msg, throwable);
                 publishCallback.onException(event, new DomainException(msg));
             } catch (Exception ex) {
