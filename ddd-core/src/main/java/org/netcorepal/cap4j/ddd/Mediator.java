@@ -3,6 +3,7 @@ package org.netcorepal.cap4j.ddd;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
+import org.netcorepal.cap4j.ddd.application.saga.SagaSupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.repo.RepositorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.service.DomainServiceSupervisor;
@@ -94,6 +95,15 @@ public interface Mediator extends AggregateFactorySupervisor, RepositorySupervis
     }
 
     /**
+     * 获取Saga管理器
+     *
+     * @return
+     */
+    static SagaSupervisor sagas() {
+        return SagaSupervisor.getInstance();
+    }
+
+    /**
      * 获取查询管理器
      *
      * @return
@@ -124,5 +134,9 @@ public interface Mediator extends AggregateFactorySupervisor, RepositorySupervis
 
     default RequestSupervisor getRequestSupervisor() {
         return RequestSupervisor.getInstance();
+    }
+
+    default SagaSupervisor getSagaSupervisor() {
+        return SagaSupervisor.getInstance();
     }
 }

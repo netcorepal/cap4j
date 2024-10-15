@@ -68,9 +68,9 @@ public class RocketMqIntegrationEventPublisher implements IntegrationEventPublis
                         event.getId(),
                         sendResult.getMsgId()));
                 publishCallback.onSuccess(event);
-            } catch (Exception ex) {
-                log.error("回调失败（事件发送成功）", ex);
-                publishCallback.onException(event, ex);
+            } catch (Throwable throwable) {
+                log.error("回调失败（事件发送成功）", throwable);
+                publishCallback.onException(event, throwable);
             }
         }
 
@@ -84,10 +84,9 @@ public class RocketMqIntegrationEventPublisher implements IntegrationEventPublis
                         event.getId(),
                         JSON.toJSONString(event.getPayload()), IgnoreNonFieldGetter, SkipTransientField);
                 log.error(msg, throwable);
-                publishCallback.onException(event, new DomainException(msg));
-            } catch (Exception ex) {
-                log.error("回调失败（事件发送异常）", ex);
-                publishCallback.onException(event, ex);
+                publishCallback.onException(event, throwable);
+            } catch (Throwable throwable1) {
+                log.error("回调失败（事件发送异常）", throwable1);
             }
         }
     }

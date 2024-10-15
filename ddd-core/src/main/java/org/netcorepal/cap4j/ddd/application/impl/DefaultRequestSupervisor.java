@@ -8,6 +8,9 @@ import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.application.command.Command;
 import org.netcorepal.cap4j.ddd.application.command.NoneResultCommandParam;
 import org.netcorepal.cap4j.ddd.application.query.*;
+import org.netcorepal.cap4j.ddd.application.saga.SagaHandler;
+import org.netcorepal.cap4j.ddd.application.saga.SagaParam;
+import org.netcorepal.cap4j.ddd.application.saga.SagaSupervisor;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
 import java.util.*;
@@ -56,6 +59,9 @@ public class DefaultRequestSupervisor implements RequestSupervisor {
 
     @Override
     public <REQUEST extends RequestParam<RESPONSE>, RESPONSE> RESPONSE send(REQUEST request) {
+        if(request instanceof SagaParam){
+            return SagaSupervisor.getInstance().send((SagaParam<RESPONSE>) request);
+        }
         init();
         requestInterceptorMap.getOrDefault(request.getClass(), Collections.emptyList())
                 .forEach(interceptor -> ((RequestInterceptor<REQUEST, RESPONSE>) interceptor).preRequest(request));
