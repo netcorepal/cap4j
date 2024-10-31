@@ -20,5 +20,23 @@ public abstract class AbstractPersistListener<Entity> implements PersistListener
      * @param type
      */
     @Override
-    public abstract void onChange(Entity entity, PersistType type);
+    public void onChange(Entity entity, PersistType type){
+        switch (type){
+            case CREATE:
+                onCreate(entity);
+                break;
+            case UPDATE:
+                onUpdate(entity);
+                break;
+            case DELETE:
+                onDelete(entity);
+                break;
+        }
+    }
+
+    public abstract void onCreate(Entity entity);
+
+    public abstract void onUpdate(Entity entity);
+
+    public abstract void onDelete(Entity entity);
 }
