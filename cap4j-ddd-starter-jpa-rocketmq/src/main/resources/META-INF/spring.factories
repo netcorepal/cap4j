@@ -6,7 +6,7 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   org.netcorepal.cap4j.ddd.application.distributed.JdbcLockerAutoConfiguration,\
   org.netcorepal.cap4j.ddd.application.event.RocketMqEventAutoConfiguration,\
   org.netcorepal.cap4j.ddd.application.saga.SagaAutoConfiguration,\
-  org.netcorepal.cap4j.ddd.application.MediatorAutoConfiguration,\
+  org.netcorepal.cap4j.ddd.MediatorAutoConfiguration,\
   org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeAutoConfiguration,\
   org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties,\
   org.netcorepal.cap4j.ddd.domain.event.configure.EventScheduleProperties,\

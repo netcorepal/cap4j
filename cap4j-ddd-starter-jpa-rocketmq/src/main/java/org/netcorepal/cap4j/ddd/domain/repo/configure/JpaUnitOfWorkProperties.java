@@ -12,10 +12,18 @@ import org.springframework.context.annotation.Configuration;
  */
 @Data
 @Configuration
-@ConfigurationProperties("cap4j.ddd.domain.jpa-uow")
+@ConfigurationProperties("cap4j.ddd.application.jpa-uow")
 public class JpaUnitOfWorkProperties {
     /**
      * 单次获取记录数
      */
     int retrieveCountWarnThreshold = 3000;
+
+    /**
+     * 是否支持实体内联持久化监听器
+     * 创建 onCreate
+     * 更新 onUpdate
+     * 删除 onDelete | onRemove
+     */
+    boolean supportEntityInlinePersistListener = true;
 }

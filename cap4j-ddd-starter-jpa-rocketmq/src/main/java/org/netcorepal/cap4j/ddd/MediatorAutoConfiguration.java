@@ -1,14 +1,14 @@
-package org.netcorepal.cap4j.ddd.application;
+package org.netcorepal.cap4j.ddd;
 
 import lombok.RequiredArgsConstructor;
-import org.netcorepal.cap4j.ddd.Mediator;
-import org.netcorepal.cap4j.ddd.MediatorSupport;
+import org.netcorepal.cap4j.ddd.application.RequestHandler;
+import org.netcorepal.cap4j.ddd.application.RequestInterceptor;
+import org.netcorepal.cap4j.ddd.application.RequestSupervisorSupport;
 import org.netcorepal.cap4j.ddd.impl.DefaultMediator;
 import org.netcorepal.cap4j.ddd.application.impl.DefaultRequestSupervisor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 import java.util.List;
 

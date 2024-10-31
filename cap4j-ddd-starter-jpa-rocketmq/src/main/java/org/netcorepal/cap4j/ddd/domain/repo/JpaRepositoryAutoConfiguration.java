@@ -9,6 +9,7 @@ import org.netcorepal.cap4j.ddd.domain.aggregate.*;
 import org.netcorepal.cap4j.ddd.domain.aggregate.impl.DefaultAggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
+import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultEntityInlinePersistListener;
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultPersistListenerManager;
 import org.netcorepal.cap4j.ddd.domain.aggregate.impl.DefaultSpecificationManager;
 import org.netcorepal.cap4j.ddd.domain.repo.configure.JpaUnitOfWorkProperties;
@@ -16,6 +17,7 @@ import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultRepositorySupervisor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -111,5 +113,16 @@ public class JpaRepositoryAutoConfiguration {
         DefaultSpecificationManager specificationManager = new DefaultSpecificationManager(specifications);
         specificationManager.init();
         return specificationManager;
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            name = "cap4j.ddd.application.jpa-uow.supportEntityInlinePersistListener",
+            havingValue = "true",
+            matchIfMissing = true
+    )
+    public DefaultEntityInlinePersistListener defaultEntityInlinePersistListener() {
+        DefaultEntityInlinePersistListener entityInlinePersistListener = new DefaultEntityInlinePersistListener();
+        return entityInlinePersistListener;
     }
 }
