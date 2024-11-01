@@ -94,9 +94,9 @@ Mediator中介者模式、
 通常，`cap4j-ddd-codegen`插件只需要我们根据团队或项目的实际情况调整以下配置项即可使用。
 > `<basePackage>`_项目基础包名，一般为com.yourcompany.project_`</basePackage>` 
 > 
-> `<connectionString>`_数据库密码_`</connectionString>`
+> `<connectionString>`_数据库链接_`</connectionString>`
 > 
-> `<user>`_数据库密码_`</user>`
+> `<user>`_数据库账号_`</user>`
 > 
 > `<pwd>`_数据库密码_`</pwd>`
 > 
