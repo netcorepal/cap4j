@@ -1022,24 +1022,6 @@ public class GenEntityMojo extends GenArchMojo {
             writeLine(out, "");
             writeLine(out, "    // 【行为方法开始】");
             writeLine(out, "");
-            if (isValueObject(table)) {
-                writeLine(out, "");
-                if (getIdColumn(columns) == null) {
-                    writeLine(out, "    @Override\n" +
-                            "    public Object hash() {\n" +
-                            "        return null;\n" +
-                            "    }");
-                } else {
-                    writeLine(out, "    @Override\n" +
-                            "    public Object hash() {\n" +
-                            "        if(null == " + idField + ") {\n" +
-                            "            " + idField + " = " + getEntityIdGenerator(table) + ".hash(this, \"" + idField + "\", " + getColumnJavaType(getIdColumn(columns)) + ".class);\n" +
-                            "        }\n" +
-                            "        return " + idField + ";\n" +
-                            "    }");
-                }
-                writeLine(out, "");
-            }
             writeLine(out, "");
             writeLine(out, "");
             writeLine(out, "    // 【行为方法结束】");
@@ -1048,6 +1030,40 @@ public class GenEntityMojo extends GenArchMojo {
             writeLine(out, "");
         }
         writeLine(out, "    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
+        if (isValueObject(table)) {
+            String hashTemplate = "";
+            if (StringUtils.isNotBlank(hashOverride4ValueObject)) {
+                hashTemplate = "    @Override\n" +
+                        "    public Object hash() {\n" +
+                        "        " + hashOverride4ValueObject.trim() + "\n" +
+                        "    }";
+            } else if (getIdColumn(columns) == null) {
+                hashTemplate = "    @Override\n" +
+                        "    public Object hash() {\n" +
+                        "        return " + getEntityIdGenerator(table) + ".hash(this, \"" + idField + "\", Long.class);\n" +
+                        "    }";
+            } else {
+                hashTemplate = "    @Override\n" +
+                        "    public Object hash() {\n" +
+                        "        if(null == " + idField + ") {\n" +
+                        "            " + idField + " = " + getEntityIdGenerator(table) + ".hash(this, \"" + idField + "\", " + getColumnJavaType(getIdColumn(columns)) + ".class);\n" +
+                        "        }\n" +
+                        "        return " + idField + ";\n" +
+                        "    }";
+            }
+            writeLine(out, "");
+            writeLine(out, hashTemplate
+                    .replace("${idField}", idField)
+                    .replace("${IdField}", idField)
+                    .replace("${ID_FIELD}", idField)
+                    .replace("${id_field}", idField)
+                    .replace("${idType}", getColumnJavaType(getIdColumn(columns)))
+                    .replace("${IdType}", getColumnJavaType(getIdColumn(columns)))
+                    .replace("${ID_TYPE}", getColumnJavaType(getIdColumn(columns)))
+                    .replace("${id_type}", getColumnJavaType(getIdColumn(columns)))
+            );
+            writeLine(out, "");
+        }
         if (null == getIdColumn(columns)) {
             throw new RuntimeException("实体表缺失【主键】：" + tableName);
         }

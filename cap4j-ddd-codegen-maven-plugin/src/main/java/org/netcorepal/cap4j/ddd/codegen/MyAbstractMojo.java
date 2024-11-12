@@ -285,7 +285,13 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      * @parameter expression="${idGenerator4ValueObject}"
      */
     @Parameter(property = "idGenerator4ValueObject", defaultValue = "")
-    public String idGenerator4ValueObject = "";
+    public String idGenerator4ValueObject = "";    /**
+     * 值对象hash函数实现语句
+     *
+     * @parameter expression="${hashOverride4ValueObject}"
+     */
+    @Parameter(property = "hashOverride4ValueObject", defaultValue = "")
+    public String hashOverride4ValueObject = "";
     /**
      * 枚举类型【值】字段名称
      *
@@ -1082,6 +1088,8 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         context.put("entitySchemaOutputPackage", entitySchemaOutputPackage);
         context.put("entitySchemaOutputMode", entitySchemaOutputMode);
         context.put("idGenerator", idGenerator);
+        context.put("idGenerator4ValueObject", idGenerator4ValueObject);
+        context.put("hashOverride4ValueObject", hashOverride4ValueObject);
         context.put("fetchType", fetchType);
         context.put("enumValueField", enumValueField);
         context.put("enumNameField", enumNameField);
@@ -1160,12 +1168,18 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.isBlank(entitySchemaOutputPackage)
                         ? ""
                         : "                    <entitySchemaOutputPackage>" + entitySchemaOutputPackage + "</entitySchemaOutputPackage>\n") +
-                (StringUtils.equalsIgnoreCase("EAGER", fetchType)
-                        ? ""
-                        : "                    <fetchType>" + fetchType + "</fetchType>\n") +
                 (StringUtils.isBlank(idGenerator)
                         ? ""
                         : "                    <idGenerator>" + idGenerator + "</idGenerator>\n") +
+                (StringUtils.isBlank(idGenerator4ValueObject)
+                        ? ""
+                        : "                    <idGenerator4ValueObject>" + idGenerator4ValueObject + "</idGenerator4ValueObject>\n") +
+                (StringUtils.isBlank(hashOverride4ValueObject)
+                        ? ""
+                        : "                    <hashOverride4ValueObject>" + hashOverride4ValueObject + "</hashOverride4ValueObject>\n") +
+                (StringUtils.equalsIgnoreCase("EAGER", fetchType)
+                        ? ""
+                        : "                    <fetchType>" + fetchType + "</fetchType>\n") +
                 (StringUtils.equalsIgnoreCase("value", enumValueField)
                         ? ""
                         : "                    <enumValueField>" + enumValueField + "</enumValueField>\n") +
