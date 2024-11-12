@@ -1063,6 +1063,23 @@ public class GenEntityMojo extends GenArchMojo {
                     .replace("${id_type}", getColumnJavaType(getIdColumn(columns)))
             );
             writeLine(out, "");
+            writeLine(out,
+                    "    @Override\n" +
+                    "    public boolean equals(Object o) {\n" +
+                    "        if (null == o) {\n" +
+                    "            return false;\n" +
+                    "        }\n" +
+                    "        if (!(o instanceof Address)) {\n" +
+                    "            return false;\n" +
+                    "        }\n" +
+                    "        return hashCode() == o.hashCode();\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    @Override\n" +
+                    "    public int hashCode() {\n" +
+                    "        return hash().hashCode();\n" +
+                    "    }");
+            writeLine(out, "");
         }
         if (null == getIdColumn(columns)) {
             throw new RuntimeException("实体表缺失【主键】：" + tableName);
