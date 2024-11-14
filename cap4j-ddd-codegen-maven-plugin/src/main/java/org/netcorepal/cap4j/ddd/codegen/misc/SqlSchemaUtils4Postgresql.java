@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import static org.netcorepal.cap4j.ddd.codegen.misc.SqlSchemaUtils.*;
 
 /**
- * todo: 类描述
+ * postgresql 数据库schema工具
  *
  * @author binking338
  * @date 2024/9/18
@@ -49,7 +49,8 @@ public class SqlSchemaUtils4Postgresql {
                 "    att.attidentity AS identity, -- 自增主键\n" +
                 "    format_type(att.atttypid, att.atttypmod) AS column_type, -- 列数据类型\n" +
                 "    col.column_default AS column_default, -- 列默认值\n" +
-                "    pgd.description AS column_comment   -- 列注释\n" +
+                "    pgd.description AS column_comment,   -- 列注释\n" +
+                "    kcu.constraint_type='PRIMARY KEY' as primary_key -- 主键\n" +
                 "FROM\n" +
                 "    pg_attribute att\n" +
                 "        JOIN\n" +
@@ -62,8 +63,15 @@ public class SqlSchemaUtils4Postgresql {
                 "    pg_description pgd ON pgd.objoid = att.attrelid AND pgd.objsubid = att.attnum\n" +
                 "        LEFT JOIN\n" +
                 "    information_schema.columns col ON col.table_name = tbl.relname AND col.column_name = att.attname\n" +
-                "WHERE\n" +
-                "  ns.nspname = '" + mojo.schema + "'        -- 模式名，替换为你的模式名（例如 public）\n" +
+                "        LEFT JOIN\n" +
+                "    (\n" +
+                "        SELECT tc.table_name, kcu.column_name, kcu.constraint_name, tc.constraint_type\n" +
+                "        FROM information_schema.key_column_usage kcu\n" +
+                "        LEFT JOIN information_schema.table_constraints tc\n" +
+                "            ON tc.constraint_type = 'PRIMARY KEY' AND kcu.constraint_name = tc.constraint_name AND kcu.table_schema = tc.table_schema\n" +
+                "    ) kcu ON kcu.table_name = tbl.relname AND kcu.column_name = att.attname\n" +
+                "WHERE tbl.relkind = 'r'\n" +
+                "  AND ns.nspname = '" + mojo.schema + "'        -- 模式名，替换为你的模式名（例如 public）\n" +
                 "  AND att.attnum > 0               -- 排除系统列\n" +
                 "  AND NOT att.attisdropped";
         if (StringUtils.isNotBlank(mojo.table)) {

@@ -595,6 +595,24 @@ public class GenEntityMojo extends GenArchMojo {
     }
 
     /**
+     * 是否Id列
+     * @param column
+     * @return
+     */
+    private boolean isIdColumn(Map<String, Object> column){
+        return Objects.equals(getColumnName(column), idField);
+    }
+
+    /**
+     * 是否Version列
+     * @param column
+     * @return
+     */
+    private boolean isVersionColumn(Map<String, Object> column){
+        return Objects.equals(getColumnName(column), versionField);
+    }
+
+    /**
      * 获取指定列
      *
      * @param columns
@@ -1141,7 +1159,7 @@ public class GenEntityMojo extends GenArchMojo {
 
         writeLine(out, "");
         writeFieldComment(out, column);
-        if (Objects.equals(columnName, idField)) {
+        if (isIdColumn(column)) {
             writeLine(out, "    @Id");
             String entityIdGenerator = getEntityIdGenerator(table);
             if (null != entityIdGenerator) {
@@ -1152,7 +1170,7 @@ public class GenEntityMojo extends GenArchMojo {
                 writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
             }
         }
-        if (Objects.equals(columnName, versionField)) {
+        if (isVersionColumn(column)) {
             writeLine(out, "    @Version");
         }
         if (hasEnum(column)) {

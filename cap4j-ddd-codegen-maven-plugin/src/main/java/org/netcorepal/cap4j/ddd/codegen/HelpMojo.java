@@ -82,8 +82,10 @@ public class HelpMojo extends AbstractMojo {
                 "                    <idGenerator></idGenerator>\n" +
                 "                    <!-- [gen-entity]值对象主键生成器 默认md5哈希 -->\n" +
                 "                    <idGenerator4ValueObject></idGenerator4ValueObject>\n" +
+                "                    <!-- [gen-entity]值对象hash方法代码模板 -->\n" +
+                "                    <hashMethod4ValueObject></hashMethod4ValueObject>\n" +
                 "                    <!-- [gen-entity]枚举类型【值】字段名称 默认'value' -->\n" +
-                "                    <enumValueField>code</enumValueField>\n" +
+                "                    <enumValueField>value</enumValueField>\n" +
                 "                    <!-- [gen-entity]枚举类型【名】字段名称 默认'name' -->\n" +
                 "                    <enumNameField>name</enumNameField>\n" +
                 "                    <!-- [gen-entity]枚举值转换不匹配时，是否抛出异常 -->\n" +
