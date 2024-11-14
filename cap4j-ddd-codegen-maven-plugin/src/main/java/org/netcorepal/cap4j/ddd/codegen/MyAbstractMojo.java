@@ -288,10 +288,10 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     public String idGenerator4ValueObject = "";    /**
      * 值对象hash函数实现语句
      *
-     * @parameter expression="${hashOverride4ValueObject}"
+     * @parameter expression="${hashMethod4ValueObject}"
      */
-    @Parameter(property = "hashOverride4ValueObject", defaultValue = "")
-    public String hashOverride4ValueObject = "";
+    @Parameter(property = "hashMethod4ValueObject", defaultValue = "")
+    public String hashMethod4ValueObject = "";
     /**
      * 枚举类型【值】字段名称
      *
@@ -1089,7 +1089,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         context.put("entitySchemaOutputMode", entitySchemaOutputMode);
         context.put("idGenerator", idGenerator);
         context.put("idGenerator4ValueObject", idGenerator4ValueObject);
-        context.put("hashOverride4ValueObject", hashOverride4ValueObject);
+        context.put("hashMethod4ValueObject", hashMethod4ValueObject);
         context.put("fetchType", fetchType);
         context.put("enumValueField", enumValueField);
         context.put("enumNameField", enumNameField);
@@ -1174,9 +1174,9 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.isBlank(idGenerator4ValueObject)
                         ? ""
                         : "                    <idGenerator4ValueObject>" + idGenerator4ValueObject + "</idGenerator4ValueObject>\n") +
-                (StringUtils.isBlank(hashOverride4ValueObject)
+                (StringUtils.isBlank(hashMethod4ValueObject)
                         ? ""
-                        : "                    <hashOverride4ValueObject>" + hashOverride4ValueObject + "</hashOverride4ValueObject>\n") +
+                        : "                    <hashMethod4ValueObject>" + hashMethod4ValueObject + "</hashMethod4ValueObject>\n") +
                 (StringUtils.equalsIgnoreCase("EAGER", fetchType)
                         ? ""
                         : "                    <fetchType>" + fetchType + "</fetchType>\n") +

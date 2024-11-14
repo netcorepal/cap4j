@@ -6,13 +6,13 @@ package org.netcorepal.cap4j.ddd.domain.aggregate;
  * @author binking338
  * @date 2024/9/18
  */
-public interface ValueObject {
+public interface ValueObject<ID> {
     /**
      * 值对象哈希码
      *
      * @return
      */
-    default Object hash() {
+    default ID hash() {
         return null;
     }
 }

@@ -1008,14 +1008,14 @@ public class GenEntityMojo extends GenArchMojo {
     private String writeEntityClass(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, List<String> enums, List<String> annotationLines, List<String> customerLines) throws IOException {
         String tableName = getTableName(table);
         String entityType = getEntityJavaType(tableName);
-
+        String idType = getIdColumn(columns) == null ? "Long" : getColumnJavaType(getIdColumn(columns));
 
         StringWriter stringWriter = new StringWriter();
         BufferedWriter out = new BufferedWriter(stringWriter);
         annotationLines.forEach(line -> writeLine(out, line));
         writeLine(out, "public class " + entityType +
                 (StringUtils.isNotBlank(entityBaseClass) ? " extends " + entityBaseClass : "") +
-                (isValueObject(table) ? " implements ValueObject" : "") + " {");
+                (isValueObject(table) ? " implements ValueObject<" + idType + ">" : "") + " {");
         if (customerLines.size() > 0) {
             customerLines.forEach(line -> writeLine(out, line));
         } else {
@@ -1032,53 +1032,51 @@ public class GenEntityMojo extends GenArchMojo {
         writeLine(out, "    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
         if (isValueObject(table)) {
             String hashTemplate = "";
-            if (StringUtils.isNotBlank(hashOverride4ValueObject)) {
-                hashTemplate = "    @Override\n" +
-                        "    public Object hash() {\n" +
-                        "        " + hashOverride4ValueObject.trim() + "\n" +
-                        "    }";
+            if (StringUtils.isNotBlank(hashMethod4ValueObject)) {
+                hashTemplate = "    " + hashMethod4ValueObject.trim();
             } else if (getIdColumn(columns) == null) {
                 hashTemplate = "    @Override\n" +
-                        "    public Object hash() {\n" +
-                        "        return " + getEntityIdGenerator(table) + ".hash(this, \"" + idField + "\", Long.class);\n" +
+                        "    public Long hash() {\n" +
+                        "        return (Long) " + getEntityIdGenerator(table) + ".hash(this, \"${idField}\");\n" +
                         "    }";
             } else {
                 hashTemplate = "    @Override\n" +
-                        "    public Object hash() {\n" +
-                        "        if(null == " + idField + ") {\n" +
-                        "            " + idField + " = " + getEntityIdGenerator(table) + ".hash(this, \"" + idField + "\", " + getColumnJavaType(getIdColumn(columns)) + ".class);\n" +
+                        "    public ${idType} hash() {\n" +
+                        "        if(null == ${idField}) {\n" +
+                        "            ${idField} = (${idType}) " + getEntityIdGenerator(table) + ".hash(this, \"${idField}\");\n" +
                         "        }\n" +
-                        "        return " + idField + ";\n" +
+                        "        return ${idField};\n" +
                         "    }";
             }
+
             writeLine(out, "");
             writeLine(out, hashTemplate
                     .replace("${idField}", idField)
                     .replace("${IdField}", idField)
                     .replace("${ID_FIELD}", idField)
                     .replace("${id_field}", idField)
-                    .replace("${idType}", getColumnJavaType(getIdColumn(columns)))
-                    .replace("${IdType}", getColumnJavaType(getIdColumn(columns)))
-                    .replace("${ID_TYPE}", getColumnJavaType(getIdColumn(columns)))
-                    .replace("${id_type}", getColumnJavaType(getIdColumn(columns)))
+                    .replace("${idType}", idType)
+                    .replace("${IdType}", idType)
+                    .replace("${ID_TYPE}", idType)
+                    .replace("${id_type}", idType)
             );
             writeLine(out, "");
             writeLine(out,
                     "    @Override\n" +
-                    "    public boolean equals(Object o) {\n" +
-                    "        if (null == o) {\n" +
-                    "            return false;\n" +
-                    "        }\n" +
-                    "        if (!(o instanceof Address)) {\n" +
-                    "            return false;\n" +
-                    "        }\n" +
-                    "        return hashCode() == o.hashCode();\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    @Override\n" +
-                    "    public int hashCode() {\n" +
-                    "        return hash().hashCode();\n" +
-                    "    }");
+                            "    public boolean equals(Object o) {\n" +
+                            "        if (null == o) {\n" +
+                            "            return false;\n" +
+                            "        }\n" +
+                            "        if (!(o instanceof Address)) {\n" +
+                            "            return false;\n" +
+                            "        }\n" +
+                            "        return hashCode() == o.hashCode();\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    @Override\n" +
+                            "    public int hashCode() {\n" +
+                            "        return hash().hashCode();\n" +
+                            "    }");
             writeLine(out, "");
         }
         if (null == getIdColumn(columns)) {

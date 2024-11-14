@@ -7,12 +7,15 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject;
+import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.NumberUtils;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 /**
  * md5
@@ -35,21 +38,11 @@ public class Md5HashIdentifierGenerator implements IdentifierGenerator {
     public Serializable generate(SharedSessionContractImplementor sharedSessionContractImplementor, Object o) throws HibernateException {
         if (o instanceof ValueObject) {
             Object hash = ((ValueObject) o).hash();
-            if (null != hash) {
-                if (hash instanceof Number) {
-                    return (Number) hash;
-                }
-                return hash.toString();
+            if (null != hash && hash instanceof Serializable) {
+                return (Serializable) hash;
             }
         }
-
-        Class idFieldType = null;
-        try {
-            idFieldType = o.getClass().getField(ID_FIELD_NAME).getType();
-        } catch (NoSuchFieldException e) {
-            /* don't care */
-        }
-        return hash(o, ID_FIELD_NAME, idFieldType);
+        return hash(o, ID_FIELD_NAME);
     }
 
     /**
@@ -57,36 +50,50 @@ public class Md5HashIdentifierGenerator implements IdentifierGenerator {
      *
      * @param o
      * @param idFieldName ID字段名称
-     * @param idFieldType ID字段类型
      * @return
      */
-    public static <ID_TYPE extends Serializable> ID_TYPE hash(Object o, String idFieldName, Class<ID_TYPE> idFieldType) {
+    public static Serializable hash(Object o, String idFieldName) {
         if (null == o) {
             return null;
         }
-        // todo 解决内嵌ValueObject的id移除
         JSONObject jsonObject = (JSONObject) JSON.toJSON(o);
-        jsonObject.remove(idFieldName);
+        recursionRemove(jsonObject, idFieldName);
         String json = jsonObject.toString(SerializerFeature.SortField);
 
+        Class idFieldType = ClassUtils.resolveGenericTypeClass(o.getClass(), 0,
+                ValueObject.class
+        );
         if (idFieldType == String.class) {
-            return (ID_TYPE) DigestUtils.md5DigestAsHex(json.getBytes(StandardCharsets.UTF_8));
+            return DigestUtils.md5DigestAsHex(json.getBytes(StandardCharsets.UTF_8));
         }
 
         byte[] hashBytes = DigestUtils.md5Digest(json.getBytes(StandardCharsets.UTF_8));
         if (idFieldType == Integer.class) {
-            return (ID_TYPE) bytesToInteger(hashBytes);
+            return bytesToInteger(hashBytes);
         }
         if (idFieldType == Long.class) {
-            return (ID_TYPE) bytesToLong(hashBytes);
+            return bytesToLong(hashBytes);
         }
-        if(idFieldType == BigInteger.class){
-            return (ID_TYPE) BigInteger.valueOf(bytesToLong(hashBytes));
+        if (idFieldType == BigInteger.class) {
+            return BigInteger.valueOf(bytesToLong(hashBytes));
         }
-        if(idFieldType == BigDecimal.class){
-            return (ID_TYPE) BigDecimal.valueOf(bytesToLong(hashBytes));
+        if (idFieldType == BigDecimal.class) {
+            return BigDecimal.valueOf(bytesToLong(hashBytes));
         }
-        return (ID_TYPE) bytesToLong(hashBytes);
+        if (Number.class.isAssignableFrom(idFieldType)) {
+            return NumberUtils.convertNumberToTargetClass(bytesToLong(hashBytes), idFieldType);
+        }
+        return bytesToLong(hashBytes);
+    }
+
+    private static void recursionRemove(Map<String, Object> obj, String fieldName) {
+        obj.remove(fieldName);
+        for (Map.Entry<String, Object> entry :
+                obj.entrySet()) {
+            if (null != entry.getValue() && entry.getValue() instanceof Map) {
+                recursionRemove((Map<String, Object>) entry.getValue(), fieldName);
+            }
+        }
     }
 
     private static Long bytesToLong(byte[] b) {
