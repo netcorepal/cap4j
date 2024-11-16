@@ -34,6 +34,8 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     static final String DOMAIN_EVENT_SUBSCRIBER_PACKAGE = "application.subscribers.domain";
     static final String INTEGRATION_EVENT_SUBSCRIBER_PACKAGE = "application.subscribers.integration";
 
+    static final String DEFAULT_MUL_PRI_KEY_NAME = "Key";
+
     /**
      * 代码模板配置文件地址
      *
@@ -156,13 +158,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      */
     @Parameter(property = "ignoreTable", defaultValue = "")
     public String ignoreTable = "";
-    /**
-     * 主键字段名 默认'id'
-     *
-     * @parameter expression="${idField}"
-     */
-    @Parameter(property = "idField", defaultValue = "id")
-    public String idField = "id";
     /**
      * 乐观锁字段 默认'version'
      *
@@ -1078,7 +1073,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         context.put("schema", schema);
         context.put("table", table);
         context.put("ignoreTable", ignoreTable);
-        context.put("idField", idField);
         context.put("versionField", versionField);
         context.put("deletedField", deletedField);
         context.put("readonlyFields", readonlyFields);
@@ -1144,9 +1138,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.isBlank(ignoreFields)
                         ? ""
                         : "                    <ignoreFields>" + ignoreFields + "</ignoreFields>\n") +
-                (StringUtils.isBlank(idField)
-                        ? ""
-                        : "                    <idField>" + idField + "</idField>\n") +
                 (StringUtils.isBlank(versionField)
                         ? ""
                         : "                    <versionField>" + versionField + "</versionField>\n") +

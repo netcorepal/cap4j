@@ -58,8 +58,6 @@ public class HelpMojo extends AbstractMojo {
                 "                    <table></table>\n" +
                 "                    <!-- [gen-entity]数据表忽略，被忽略的表不生成实体 -->\n" +
                 "                    <ignoreTable></ignoreTable>\n" +
-                "                    <!-- [gen-entity]主键字段名 默认'id' -->\n" +
-                "                    <idField>id</idField>\n" +
                 "                    <!-- [gen-entity]乐观锁字段 默认'version' -->\n" +
                 "                    <versionField>version</versionField>\n" +
                 "                    <!-- [gen-entity]软删字段 默认'deleted' -->\n" +

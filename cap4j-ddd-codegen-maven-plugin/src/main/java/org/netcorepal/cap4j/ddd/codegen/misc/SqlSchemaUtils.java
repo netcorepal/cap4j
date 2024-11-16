@@ -388,6 +388,22 @@ public class SqlSchemaUtils {
     }
 
     /**
+     * 是否主键
+     *
+     * @param column
+     * @return
+     */
+    public static boolean isColumnPrimaryKey(Map<String, Object> column) {
+        switch (mojo.dbType) {
+            default:
+            case DB_TYPE_MYSQL:
+                return SqlSchemaUtils4Mysql.isColumnPrimaryKey(column);
+            case DB_TYPE_POSTGRESQL:
+                return SqlSchemaUtils4Postgresql.isColumnPrimaryKey(column);
+        }
+    }
+
+    /**
      * 读取注释
      *
      * @param tableOrColumn

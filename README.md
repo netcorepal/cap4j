@@ -64,7 +64,6 @@ Mediator中介者模式、
                     <table></table>
                     <ignoreTable>\_\_%</ignoreTable>
                     <ignoreFields>db_%</ignoreFields>
-                    <idField>id</idField>
                     <versionField>version</versionField>
                     <deletedField>db_deleted</deletedField>
                     <readonlyFields>db_created_at,db_updated_at</readonlyFields>

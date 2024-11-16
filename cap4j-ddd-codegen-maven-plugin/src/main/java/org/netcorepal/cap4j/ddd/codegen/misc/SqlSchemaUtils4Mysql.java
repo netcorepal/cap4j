@@ -225,6 +225,10 @@ public class SqlSchemaUtils4Mysql {
         return "YES".equalsIgnoreCase(column.get("IS_NULLABLE").toString());
     }
 
+    public static boolean isColumnPrimaryKey(Map<String, Object> column) {
+        return "PRI".equalsIgnoreCase(column.get("COLUMN_KEY").toString());
+    }
+
     public static String getComment(Map<String, Object> tableOrColumn, boolean cleanAnnotations) {
         String comment = "";
         if (tableOrColumn.containsKey("TABLE_COMMENT")) {

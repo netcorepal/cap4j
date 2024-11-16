@@ -147,7 +147,6 @@ public class GenEntityMojo extends GenArchMojo {
         getLog().info("数据库名称：" + schema);
         getLog().info("包含表：" + table);
         getLog().info("忽略表：" + ignoreTable);
-        getLog().info("主键字段：" + idField);
         getLog().info("乐观锁字段：" + versionField);
         getLog().info("软删字段：" + deletedField);
         getLog().info("只读字段：" + readonlyFields);
@@ -583,32 +582,28 @@ public class GenEntityMojo extends GenArchMojo {
         return true;
     }
 
-    /**
-     * 获取Id列
-     *
-     * @param columns
-     * @return
-     */
-    private Map<String, Object> getIdColumn(List<Map<String, Object>> columns) {
-        return columns.stream().filter(column -> Objects.equals(idField, getColumnName(column)))
-                .findFirst().orElse(null);
+    private List<Map<String, Object>> getIdColumns(List<Map<String, Object>> columns) {
+        return columns.stream().filter(column -> isColumnPrimaryKey(column))
+                .collect(Collectors.toList());
     }
 
     /**
      * 是否Id列
+     *
      * @param column
      * @return
      */
-    private boolean isIdColumn(Map<String, Object> column){
-        return Objects.equals(getColumnName(column), idField);
+    private boolean isIdColumn(Map<String, Object> column) {
+        return isColumnPrimaryKey(column);
     }
 
     /**
      * 是否Version列
+     *
      * @param column
      * @return
      */
-    private boolean isVersionColumn(Map<String, Object> column){
+    private boolean isVersionColumn(Map<String, Object> column) {
         return Objects.equals(getColumnName(column), versionField);
     }
 
@@ -930,17 +925,43 @@ public class GenEntityMojo extends GenArchMojo {
         }
 
         SourceFileUtils.addIfNone(annotationLines, "@Entity(\\(.*\\))?", "@Entity");
-        SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
+        List<Map<String, Object>> ids = getIdColumns(columns);
+        if (ids.size() > 1) {
+            SourceFileUtils.addIfNone(annotationLines, "@IdClass(\\(.*\\))", "@IdClass(" + getEntityJavaType(tableName) + "." + DEFAULT_MUL_PRI_KEY_NAME + ".Class)");
+        }
+        SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(" +
+                "name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\"" +
+                ")");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicInsert(\\(.*\\))?", "@DynamicInsert");
         SourceFileUtils.addIfNone(annotationLines, "@DynamicUpdate(\\(.*\\))?", "@DynamicUpdate");
         if (StringUtils.isNotBlank(deletedField) && hasColumn(deletedField, columns)) {
+            if (ids.size() == 0) {
+                throw new RuntimeException("实体表缺失【主键】：" + tableName);
+            }
+            String idFieldName = ids.size() == 1
+                    ? toLowerCamelCase(getColumnName(ids.get(0)))
+                    : "(" + ids.stream().map(id -> toLowerCamelCase(getColumnName(id))).collect(Collectors.joining(", ")) + ")";
+            String idFieldValue = ids.size() == 1
+                    ? "?"
+                    : "(" + ids.stream().map(id -> "?").collect(Collectors.joining(", ")) + ")";
             if (hasColumn(versionField, columns)) {
-                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " set " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? and " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + versionField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? \")");
+                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") +
+                        " set " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 1" +
+                        " where " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idFieldName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = " + idFieldValue +
+                        " and " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + versionField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? \"" +
+                        ")");
             } else {
-                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " set " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? \")");
+                SourceFileUtils.addIfNone(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") +
+                        " set " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 1" +
+                        " where " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idFieldName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = " + idFieldValue + " \"" +
+                        ")");
             }
             if (hasColumn(versionField, columns) && !SourceFileUtils.hasLine(annotationLines, "@SQLDelete(\\(.*" + versionField + ".*\\))")) {
-                SourceFileUtils.replaceText(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " set " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 1 where " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? and " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + versionField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? \")");
+                SourceFileUtils.replaceText(annotationLines, "@SQLDelete(\\(.*\\))?", "@SQLDelete(sql = \"update " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") +
+                        " set " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 1" +
+                        " where " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + idFieldName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = " + idFieldValue +
+                        " and " + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + versionField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = ? \"" +
+                        ")");
             }
             SourceFileUtils.addIfNone(annotationLines, "@Where(\\(.*\\))?", "@Where(clause = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + deletedField + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + " = 0\")");
         }
@@ -993,11 +1014,15 @@ public class GenEntityMojo extends GenArchMojo {
         processImportLines(table, importLines, mainSource);
 
         getLog().info("开始生成实体文件：" + filePath);
-        FileUtils.fileWrite(filePath, outputEncoding,
-                "package " + entityFullPackage + ";\n" +
-                        String.join("\n", importLines) + "\n" +
-                        mainSource + "\n"
-        );
+        if (!FileUtils.fileExists(filePath)
+                || !FileUtils.fileRead(filePath, outputEncoding).contains(FLAG_DO_NOT_OVERWRITE)
+        ) {
+            FileUtils.fileWrite(filePath, outputEncoding,
+                    "package " + entityFullPackage + ";\n" +
+                            String.join("\n", importLines) + "\n" +
+                            mainSource + "\n"
+            );
+        }
         if (generateSchema) {
             writeSchemaSourceFile(table, columns, tablePackageMap, relations, basePackage, baseDir);
         }
@@ -1026,14 +1051,18 @@ public class GenEntityMojo extends GenArchMojo {
     private String writeEntityClass(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, Map<String, Map<String, String>> relations, List<String> enums, List<String> annotationLines, List<String> customerLines) throws IOException {
         String tableName = getTableName(table);
         String entityType = getEntityJavaType(tableName);
-        String idType = getIdColumn(columns) == null ? "Long" : getColumnJavaType(getIdColumn(columns));
+        List<Map<String, Object>> ids = getIdColumns(columns);
+        if (ids.size() == 0) {
+            throw new RuntimeException("实体表缺失【主键】：" + tableName);
+        }
 
         StringWriter stringWriter = new StringWriter();
         BufferedWriter out = new BufferedWriter(stringWriter);
         annotationLines.forEach(line -> writeLine(out, line));
+
         writeLine(out, "public class " + entityType +
                 (StringUtils.isNotBlank(entityBaseClass) ? " extends " + entityBaseClass : "") +
-                (isValueObject(table) ? " implements ValueObject<" + idType + ">" : "") + " {");
+                (isValueObject(table) ? " implements ValueObject<" + (ids.size() != 1 ? "Long" : getColumnJavaType(ids.get(0))) + ">" : "") + " {");
         if (customerLines.size() > 0) {
             customerLines.forEach(line -> writeLine(out, line));
         } else {
@@ -1048,20 +1077,23 @@ public class GenEntityMojo extends GenArchMojo {
             writeLine(out, "");
         }
         writeLine(out, "    // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
+        // 值对象
         if (isValueObject(table)) {
             String hashTemplate = "";
+            String idFieldName = ids.size() != 1 ? "" : toLowerCamelCase(getColumnName(ids.get(0)));
+            String idTypeName = ids.size() != 1 ? "Long" : getColumnJavaType(ids.get(0));
             if (StringUtils.isNotBlank(hashMethod4ValueObject)) {
                 hashTemplate = "    " + hashMethod4ValueObject.trim();
-            } else if (getIdColumn(columns) == null) {
+            } else if (ids.size() != 1) {
                 hashTemplate = "    @Override\n" +
                         "    public Long hash() {\n" +
-                        "        return (Long) " + getEntityIdGenerator(table) + ".hash(this, \"${idField}\");\n" +
+                        "        return (Long) " + getEntityIdGenerator(table) + ".hash(this, \"\");\n" +
                         "    }";
             } else {
                 hashTemplate = "    @Override\n" +
-                        "    public ${idType} hash() {\n" +
+                        "    public ${idTypeName} hash() {\n" +
                         "        if(null == ${idField}) {\n" +
-                        "            ${idField} = (${idType}) " + getEntityIdGenerator(table) + ".hash(this, \"${idField}\");\n" +
+                        "            ${idField} = (${idTypeName}) " + getEntityIdGenerator(table) + ".hash(this, \"${idField}\");\n" +
                         "        }\n" +
                         "        return ${idField};\n" +
                         "    }";
@@ -1069,14 +1101,14 @@ public class GenEntityMojo extends GenArchMojo {
 
             writeLine(out, "");
             writeLine(out, hashTemplate
-                    .replace("${idField}", idField)
-                    .replace("${IdField}", idField)
-                    .replace("${ID_FIELD}", idField)
-                    .replace("${id_field}", idField)
-                    .replace("${idType}", idType)
-                    .replace("${IdType}", idType)
-                    .replace("${ID_TYPE}", idType)
-                    .replace("${id_type}", idType)
+                    .replace("${idField}", idFieldName)
+                    .replace("${IdField}", idFieldName)
+                    .replace("${ID_FIELD}", idFieldName)
+                    .replace("${id_field}", idFieldName)
+                    .replace("${idTypeName}", idTypeName)
+                    .replace("${IdType}", idTypeName)
+                    .replace("${ID_TYPE}", idTypeName)
+                    .replace("${id_type}", idTypeName)
             );
             writeLine(out, "");
             writeLine(out,
@@ -1097,12 +1129,23 @@ public class GenEntityMojo extends GenArchMojo {
                             "    }");
             writeLine(out, "");
         }
-        if (null == getIdColumn(columns)) {
-            throw new RuntimeException("实体表缺失【主键】：" + tableName);
+        // 多主键
+        if (ids.size() > 1) {
+            writeLine(out, "");
+            writeLine(out, "    @Builder\n" +
+                    "    @AllArgsConstructor\n" +
+                    "    @NoArgsConstructor\n" +
+                    "    @Data\n" +
+                    "    public static class " + DEFAULT_MUL_PRI_KEY_NAME + " implements java.io.Serializable {");
+            for (Map<String, Object> id : ids) {
+                writeLine(out, "        @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + getColumnName(id) + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
+                writeLine(out, "        " + getColumnJavaType(id) + " " + toLowerCamelCase(getColumnName(id)) + ";");
+            }
+            writeLine(out, "    }");
         }
         writeRelationProperty(out, table, relations, tablePackageMap);
         for (Map<String, Object> column : columns) {
-            writeColumnProperty(out, table, column, relations, enums);
+            writeColumnProperty(out, table, column, ids, relations, enums);
         }
         writeLine(out, "");
         writeLine(out, "    // 【字段映射结束】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动");
@@ -1132,7 +1175,7 @@ public class GenEntityMojo extends GenArchMojo {
         return entityIdGenerator;
     }
 
-    public void writeColumnProperty(BufferedWriter out, Map<String, Object> table, Map<String, Object> column, Map<String, Map<String, String>> relations, List<String> enums) {
+    public void writeColumnProperty(BufferedWriter out, Map<String, Object> table, Map<String, Object> column, List<Map<String, Object>> ids, Map<String, Map<String, String>> relations, List<String> enums) {
         String columnName = getColumnName(column);
         String columnJavaType = getColumnJavaType(column);
 
@@ -1161,13 +1204,15 @@ public class GenEntityMojo extends GenArchMojo {
         writeFieldComment(out, column);
         if (isIdColumn(column)) {
             writeLine(out, "    @Id");
-            String entityIdGenerator = getEntityIdGenerator(table);
-            if (null != entityIdGenerator) {
-                writeLine(out, "    @GeneratedValue(generator = \"" + entityIdGenerator + "\")");
-                writeLine(out, "    @GenericGenerator(name = \"" + entityIdGenerator + "\", strategy = \"" + entityIdGenerator + "\")");
-            } else {
-                // 无ID生成器 使用数据库自增
-                writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
+            if (ids.size() == 1) {
+                String entityIdGenerator = getEntityIdGenerator(table);
+                if (null != entityIdGenerator) {
+                    writeLine(out, "    @GeneratedValue(generator = \"" + entityIdGenerator + "\")");
+                    writeLine(out, "    @GenericGenerator(name = \"" + entityIdGenerator + "\", strategy = \"" + entityIdGenerator + "\")");
+                } else {
+                    // 无ID生成器 使用数据库自增
+                    writeLine(out, "    @GeneratedValue(strategy = GenerationType.IDENTITY)");
+                }
             }
         }
         if (isVersionColumn(column)) {
@@ -1220,11 +1265,11 @@ public class GenEntityMojo extends GenArchMojo {
                 String joinColumn = refInfos[1];
                 String fetchAnnotation = ""; // fetchType.equals("LAZY") ? "" : (" @Fetch(FetchMode." + this.fetchMode + ")");
 
-
                 writeLine(out, "");
                 switch (relation) {
                     case "OneToMany":// 专属聚合内关系
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { CascadeType.ALL }, fetch = FetchType." + fetchType + ", orphanRemoval = true)" + fetchAnnotation);
+                        writeLine(out, "    @Fetch(FetchMode.SUBSELECT)");
                         writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
                         boolean countIsOne = countIsOne(navTable);
                         if (countIsOne) {
@@ -1252,6 +1297,7 @@ public class GenEntityMojo extends GenArchMojo {
                     case "*OneToMany":// 当前不会用到，无法控制集合数量规模
                         writeLine(out, "    @" + relation.replace("*", "") + "(mappedBy = \"" + toLowerCamelCase(getEntityJavaType(tableName)) + "\"" +
                                 ", cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    @Fetch(FetchMode.SUBSELECT)");
                         writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                         break;
                     case "OneToOne":
@@ -1266,6 +1312,7 @@ public class GenEntityMojo extends GenArchMojo {
                         break;
                     case "ManyToMany":
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    @Fetch(FetchMode.SUBSELECT)");
                         writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\"" +
                                 ", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)}" +
                                 ", inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)})");
@@ -1274,6 +1321,7 @@ public class GenEntityMojo extends GenArchMojo {
                     case "*ManyToMany":
                         writeLine(out, "    @" + relation.replace("*", "") + "(mappedBy = \"" + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(tableName))) + "\"" +
                                 ", cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
+                        writeLine(out, "    @Fetch(FetchMode.SUBSELECT)");
                         writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                         break;
                     default:
@@ -1545,7 +1593,6 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "EntityVar", entityVar, context);
         putContext(tag, "schemaBasePackage", SourceFileUtils.refPackage(schemaBaseFullPackage, basePackage), context);
         putContext(tag, "SchemaBase", DEFAULT_SCHEMA_BASE_CLASS_NAME, context);
-        putContext(tag, "IdField", idField, context);
 
         String fieldItems = "";
         for (Map<String, Object> column : columns) {
@@ -2006,10 +2053,6 @@ public class GenEntityMojo extends GenArchMojo {
                 "    public CriteriaBuilder criteriaBuilder() {\n" +
                 "        return criteriaBuilder;\n" +
                 "    }\n" +
-//                "\n" +
-//                "    public ${SchemaBase}.Field<Long> ${IdField}() {\n" +
-//                "        return root == null ? new ${SchemaBase}.Field<>(\"${IdField}\") : new ${SchemaBase}.Field<>(root.get(\"${IdField}\"));\n" +
-//                "    }\n" +
                 "${FIELD_ITEMS}\n" +
                 "\n" +
                 "    /**\n" +

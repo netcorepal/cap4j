@@ -123,7 +123,7 @@ public class GenRepositoryMojo extends GenArchMojo {
                         this.getLog().info("发现聚合根: " + fullClassName);
 
                         String simpleClassName = resolveSimpleClassName(file.getAbsolutePath());
-                        String identityClass = getIdentityType(content);
+                        String identityClass = getIdentityType(content, simpleClassName);
                         String aggregate = AggregateRoot2AggregateNameMap.containsKey(simpleClassName)
                                 ? AggregateRoot2AggregateNameMap.get(simpleClassName)
                                 : toSnakeCase(simpleClassName);
@@ -192,19 +192,32 @@ public class GenRepositoryMojo extends GenArchMojo {
                 });
     }
 
-    private String getIdentityType(String content) {
-        Pattern ID_FIELD_PATTERN = Pattern.compile("^\\s*([_A-Za-z][_A-Za-z0-9]*)\\s*" + idField + "\\s*;$");
-        String idFieldLine = Arrays.stream(content.split("(\r)|(\n)|(\r\n)"))
-                .filter(ID_FIELD_PATTERN.asPredicate())
-                .findFirst()
-                .orElse(null);
-        if (null != idFieldLine) {
-            Matcher matcher = ID_FIELD_PATTERN.matcher(idFieldLine);
-            if (matcher.find() && matcher.groupCount() == 1) {
-                return matcher.group(1);
+    private String getIdentityType(String content, String simpleClassName) {
+        String defaultIdentityType = "Long";
+        Pattern ID_ANNOTATION_PATTERN = Pattern.compile("^\\s*@Id(\\(\\s*\\))?\\s*$");
+        Pattern FIELD_PATTERN = Pattern.compile("^\\s*(private|protected|public)?\\s*([_A-Za-z][_A-Za-z0-9]*)\\s*([_A-Za-z][_A-Za-z0-9]*)\\s*;$");
+        long idAnnotationCount = Arrays.stream(content.split("(\r)|(\n)|(\r\n)")).filter(ID_ANNOTATION_PATTERN.asPredicate())
+                .count();
+        if (idAnnotationCount > 1) {
+            return simpleClassName + "." + DEFAULT_MUL_PRI_KEY_NAME;
+        } else if(idAnnotationCount == 0) {
+            return defaultIdentityType;
+        } else {
+            boolean idAnnotationReaded = false;
+            for (String line : content.split("(\r)|(\n)|(\r\n)")) {
+                if(!idAnnotationReaded){
+                    if(ID_ANNOTATION_PATTERN.asPredicate().test(line)){
+                        idAnnotationReaded = true;
+                    }
+                } else {
+                    Matcher matcher = FIELD_PATTERN.matcher(line);
+                    if(matcher.find() && matcher.groupCount() > 2){
+                        return matcher.group(matcher.groupCount() - 1);
+                    }
+                }
             }
+            return defaultIdentityType;
         }
-        return "Long";
     }
 
     /**

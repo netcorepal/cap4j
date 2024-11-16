@@ -263,6 +263,10 @@ public class SqlSchemaUtils4Postgresql {
         return "true".equalsIgnoreCase(column.get("not_null").toString());
     }
 
+    public static boolean isColumnPrimaryKey(Map<String, Object> column) {
+        return "true".equalsIgnoreCase(column.get("primary_key").toString());
+    }
+
     public static String getComment(Map<String, Object> tableOrColumn, boolean cleanAnnotations) {
         String comment = "";
         if (tableOrColumn.containsKey("table_comment")) {
