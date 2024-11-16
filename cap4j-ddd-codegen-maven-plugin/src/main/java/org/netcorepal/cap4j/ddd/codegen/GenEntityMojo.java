@@ -936,7 +936,7 @@ public class GenEntityMojo extends GenArchMojo {
         SourceFileUtils.addIfNone(annotationLines, "@DynamicUpdate(\\(.*\\))?", "@DynamicUpdate");
         if (StringUtils.isNotBlank(deletedField) && hasColumn(deletedField, columns)) {
             if (ids.size() == 0) {
-                throw new RuntimeException("实体表缺失【主键】：" + tableName);
+                throw new RuntimeException("实体缺失【主键】：" + tableName);
             }
             String idFieldName = ids.size() == 1
                     ? toLowerCamelCase(getColumnName(ids.get(0)))
@@ -990,6 +990,11 @@ public class GenEntityMojo extends GenArchMojo {
             // &&"ManyToMany".equalsIgnoreCase(getRelation(table))
         ) {
             getLog().info("跳过关系表：" + tableName);
+            return;
+        }
+        List<Map<String, Object>> ids = getIdColumns(columns);
+        if (ids.size() == 0) {
+            getLog().error("跳过问题表：" + tableName + "缺失主键");
             return;
         }
 
@@ -1053,7 +1058,7 @@ public class GenEntityMojo extends GenArchMojo {
         String entityType = getEntityJavaType(tableName);
         List<Map<String, Object>> ids = getIdColumns(columns);
         if (ids.size() == 0) {
-            throw new RuntimeException("实体表缺失【主键】：" + tableName);
+            throw new RuntimeException("实体缺失【主键】：" + tableName);
         }
 
         StringWriter stringWriter = new StringWriter();
