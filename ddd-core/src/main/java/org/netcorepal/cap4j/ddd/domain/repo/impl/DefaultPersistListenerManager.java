@@ -40,7 +40,7 @@ public class DefaultPersistListenerManager implements PersistListenerManager {
             persistListeners.sort(Comparator.comparingInt(a -> OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE)));
             for (PersistListener persistListener : persistListeners) {
                 Class<?> entityClass = ClassUtils.resolveGenericTypeClass(
-                    persistListener.getClass(), 0,
+                    persistListener, 0,
                     AbstractPersistListener.class, PersistListener.class
                 );
                 subscribe(entityClass, persistListener);

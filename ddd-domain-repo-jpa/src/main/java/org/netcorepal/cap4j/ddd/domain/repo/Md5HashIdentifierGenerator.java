@@ -60,7 +60,7 @@ public class Md5HashIdentifierGenerator implements IdentifierGenerator {
         recursionRemove(jsonObject, idFieldName);
         String json = jsonObject.toString(SerializerFeature.SortField);
 
-        Class idFieldType = ClassUtils.resolveGenericTypeClass(o.getClass(), 0,
+        Class idFieldType = ClassUtils.resolveGenericTypeClass(o, 0,
                 ValueObject.class
         );
         if (idFieldType == String.class) {

@@ -49,7 +49,7 @@ public class DefaultEventSubscriberManager implements EventSubscriberManager {
             );
             for (EventSubscriber<?> subscriber : subscribers) {
                 Class<?> eventClass = ClassUtils.resolveGenericTypeClass(
-                        subscriber.getClass(), 0,
+                        subscriber, 0,
                         AbstractEventSubscriber.class, EventSubscriber.class);
                 subscribe(eventClass, subscriber);
             }

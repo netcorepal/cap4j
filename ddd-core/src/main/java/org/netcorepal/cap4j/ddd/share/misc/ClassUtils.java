@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.share.misc;
 
 import lombok.SneakyThrows;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.cglib.beans.BeanCopier;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.converter.Converter;
@@ -22,12 +23,13 @@ public class ClassUtils {
     /**
      * 获取指定类或接口泛型参数类型
      *
-     * @param clazz
+     * @param obj
      * @param typeArgumentIndex
      * @param superClasses
      * @return
      */
-    public static Class<?> resolveGenericTypeClass(Class<?> clazz, int typeArgumentIndex, Class<?>... superClasses) {
+    public static Class<?> resolveGenericTypeClass(Object obj, int typeArgumentIndex, Class<?>... superClasses) {
+        Class<?> clazz = AopUtils.getTargetClass(obj);
         ParameterizedType parameterizedType = null;
         if (Arrays.stream(superClasses).anyMatch(
                 superClass -> superClass.equals(ResolvableType.forType(clazz.getGenericSuperclass()).toClass()))

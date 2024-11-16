@@ -39,7 +39,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
         repositoryMap = new HashMap<>();
         repositories.forEach(repository -> {
             Class<?> entityClass = ClassUtils.resolveGenericTypeClass(
-                    repository.getClass(), 0,
+                    repository, 0,
                     AbstractJpaRepository.class, Repository.class
             );
             repositoryMap.put(entityClass, repository);

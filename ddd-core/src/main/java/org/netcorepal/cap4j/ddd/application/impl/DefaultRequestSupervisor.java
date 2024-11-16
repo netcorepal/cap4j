@@ -42,7 +42,7 @@ public class DefaultRequestSupervisor implements RequestSupervisor {
         requestInterceptorMap = new HashMap<>();
         for (RequestHandler<?, ?> requestHandler : requestHandlers) {
             Class<?> requestPayloadClass = ClassUtils.resolveGenericTypeClass(
-                    requestHandler.getClass(), 0,
+                    requestHandler, 0,
                     RequestHandler.class,
                     Command.class, NoneResultCommandParam.class,
                     Query.class, ListQuery.class, PageQuery.class);
@@ -50,7 +50,7 @@ public class DefaultRequestSupervisor implements RequestSupervisor {
         }
         for (RequestInterceptor<?, ?> requestInterceptor : requestInterceptors) {
             Class<?> requestPayloadClass = ClassUtils.resolveGenericTypeClass(
-                    requestInterceptor.getClass(), 0,
+                    requestInterceptor, 0,
                     RequestInterceptor.class);
             List<RequestInterceptor<?, ?>> interceptors = requestInterceptorMap.computeIfAbsent(requestPayloadClass, cls -> new ArrayList<>());
             interceptors.add(requestInterceptor);

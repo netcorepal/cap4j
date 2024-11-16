@@ -36,7 +36,7 @@ public class DefaultAggregateFactorySupervisor implements AggregateFactorySuperv
             factories.forEach(factory -> {
                 factoryMap.put(
                         ClassUtils.resolveGenericTypeClass(
-                                factory.getClass(), 0,
+                                factory, 0,
                                 AggregateFactory.class
                         ),
                         factory
