@@ -14,6 +14,9 @@ import org.netcorepal.cap4j.ddd.application.query.Query;
 import org.netcorepal.cap4j.ddd.application.saga.*;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validator;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -30,6 +33,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervisor {
     private final List<RequestHandler<?, ?>> requestHandlers;
     private final List<RequestInterceptor<?, ?>> requestInterceptors;
+    private final Validator validator;
     private final SagaRecordRepository sagaRecordRepository;
     private final String svcName;
     private final int threadPoolSize;
@@ -92,6 +96,12 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
 
     @Override
     public <REQUEST extends SagaParam<RESPONSE>, RESPONSE> RESPONSE send(REQUEST request) {
+        if(validator != null){
+            Set<ConstraintViolation<REQUEST>> constraintViolations = validator.validate(request);
+            if(!constraintViolations.isEmpty()){
+                throw new ConstraintViolationException(constraintViolations);
+            }
+        }
         init();
         SagaRecord sagaRecord = createSagaRecord(request.getClass().getName(), request);
         return internalSend(request, sagaRecord);
@@ -99,6 +109,12 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
 
     @Override
     public <REQUEST extends SagaParam<?>> SagaRecord sendAsync(REQUEST request) {
+        if(validator != null){
+            Set<ConstraintViolation<REQUEST>> constraintViolations = validator.validate(request);
+            if(!constraintViolations.isEmpty()){
+                throw new ConstraintViolationException(constraintViolations);
+            }
+        }
         init();
         SagaRecord sagaRecord = createSagaRecord(request.getClass().getName(), request);
         executor.submit(() ->
@@ -119,7 +135,14 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
             sagaRecordRepository.save(saga);
             return saga.getResult();
         }
-        return internalSend(saga.getParam(), saga);
+        SagaParam param = saga.getParam();
+        if(validator != null){
+            Set<ConstraintViolation<SagaParam>> constraintViolations = validator.validate(param);
+            if(!constraintViolations.isEmpty()){
+                throw new ConstraintViolationException(constraintViolations);
+            }
+        }
+        return internalSend(param, saga);
     }
 
     @Override

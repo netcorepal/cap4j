@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.validation.Validator;
 import java.util.List;
 
 /**
@@ -24,9 +25,10 @@ public class MediatorAutoConfiguration {
     @Bean
     public DefaultRequestSupervisor defaultRequestSupervisor(
             List<RequestHandler<?,?>> requestHandlers,
-            List<RequestInterceptor<?,?>> requestInterceptors
+            List<RequestInterceptor<?,?>> requestInterceptors,
+            Validator validator
     ){
-        DefaultRequestSupervisor defaultRequestSupervisor = new DefaultRequestSupervisor(requestHandlers, requestInterceptors);
+        DefaultRequestSupervisor defaultRequestSupervisor = new DefaultRequestSupervisor(requestHandlers, requestInterceptors, validator);
         defaultRequestSupervisor.init();
         RequestSupervisorSupport.configure(defaultRequestSupervisor);
         return defaultRequestSupervisor;

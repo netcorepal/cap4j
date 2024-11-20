@@ -20,6 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import javax.validation.Validator;
 import java.time.Duration;
 import java.util.List;
 
@@ -47,6 +48,7 @@ public class SagaAutoConfiguration {
     public DefaultSagaSupervisor defaultSagaSupervisor(
             List<RequestHandler<?, ?>> requestHandlers,
             List<RequestInterceptor<?, ?>> requestInterceptors,
+            Validator validator,
             SagaRecordRepository sagaRecordRepository,
             @Value(CONFIG_KEY_4_SVC_NAME)
             String svcName,
@@ -55,6 +57,7 @@ public class SagaAutoConfiguration {
         DefaultSagaSupervisor defaultSagaSupervisor = new DefaultSagaSupervisor(
                 requestHandlers,
                 requestInterceptors,
+                validator,
                 sagaRecordRepository,
                 svcName,
                 sagaProperties.getAsyncThreadPoolSize()
