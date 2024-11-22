@@ -64,7 +64,7 @@ public class JpaUnitOfWork implements UnitOfWork {
     @Override
     public void persist(Object entity) {
         if (persistedEntitiesThreadLocal.get() == null) {
-            persistedEntitiesThreadLocal.set(new HashSet<>());
+            persistedEntitiesThreadLocal.set(new LinkedHashSet<>());
         } else if (persistedEntitiesThreadLocal.get().contains(entity)) {
             return;
         }
@@ -100,7 +100,7 @@ public class JpaUnitOfWork implements UnitOfWork {
     @Override
     public void remove(Object entity) {
         if (removedEntitiesThreadLocal.get() == null) {
-            removedEntitiesThreadLocal.set(new HashSet<>());
+            removedEntitiesThreadLocal.set(new LinkedHashSet<>());
         } else if (removedEntitiesThreadLocal.get().contains(entity)) {
             return;
         }
@@ -117,7 +117,7 @@ public class JpaUnitOfWork implements UnitOfWork {
             return false;
         }
         if (processingThreadLocal.get() == null) {
-            processingThreadLocal.set(new HashSet<>());
+            processingThreadLocal.set(new LinkedHashSet<>());
             processingThreadLocal.get().add(entity);
             currentProcessedPersistenceContextEntities.add(entity);
             return true;
@@ -138,32 +138,33 @@ public class JpaUnitOfWork implements UnitOfWork {
 
     @Override
     public void save(Propagation propagation) {
-        Set<Object> currentProcessedEntities = new HashSet<>();
+        Set<Object> currentProcessedEntitySet = new LinkedHashSet<>();
 
         Set<Object> persistEntitySet = null;
         if (persistedEntitiesThreadLocal.get() != null) {
-            persistEntitySet = new HashSet<>(persistedEntitiesThreadLocal.get());
+            persistEntitySet = new LinkedHashSet<>(persistedEntitiesThreadLocal.get());
             persistedEntitiesThreadLocal.get().clear();
-            persistEntitySet.forEach(e -> pushProcessingEntities(e, currentProcessedEntities));
+            persistEntitySet.forEach(e -> pushProcessingEntities(e, currentProcessedEntitySet));
         } else {
-            persistEntitySet = new HashSet<>();
+            persistEntitySet = new LinkedHashSet<>();
         }
         Set<Object> deleteEntitySet = null;
         if (removedEntitiesThreadLocal.get() != null) {
-            deleteEntitySet = new HashSet<>(removedEntitiesThreadLocal.get());
+            deleteEntitySet = new LinkedHashSet<>(removedEntitiesThreadLocal.get());
             removedEntitiesThreadLocal.get().clear();
-            deleteEntitySet.forEach(e -> pushProcessingEntities(e, currentProcessedEntities));
+            deleteEntitySet.forEach(e -> pushProcessingEntities(e, currentProcessedEntitySet));
         } else {
-            deleteEntitySet = new HashSet<>();
+            deleteEntitySet = new LinkedHashSet<>();
         }
         if (null == entityPersisttedEventThreadLocal.get()) {
-            entityPersisttedEventThreadLocal.set(new EntityPersisttedEvent(this, new HashSet<>(), new HashSet<>(), new HashSet<>()));
+            entityPersisttedEventThreadLocal.set(new EntityPersisttedEvent(this, new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>()));
         }
         specifyEntitesBeforeTransaction(persistEntitySet);
-        Set<Object>[] saveAndDeleteEntityList = new Set[]{persistEntitySet, deleteEntitySet, currentProcessedEntities};
+        Set<Object>[] saveAndDeleteEntities = new Set[]{persistEntitySet, deleteEntitySet, currentProcessedEntitySet};
         save(input -> {
             Set<Object> persistEntities = input[0];
             Set<Object> deleteEntities = input[1];
+            Set<Object> processedEntities = input[2];
             specifyEntitesInTransaction(persistEntities);
             boolean flush = false;
             List<Object> refreshEntityList = null;
@@ -211,7 +212,7 @@ public class JpaUnitOfWork implements UnitOfWork {
                 entityPersisttedEventThreadLocal.remove();
                 applicationEventPublisher.publishEvent(entityPersisttedEvent);
             }
-            Set<Object> entities = new HashSet<>();
+            Set<Object> entities = new LinkedHashSet<>();
             if (persistEntities != null && !persistEntities.isEmpty()) {
                 entities.addAll(persistEntities);
             }
@@ -219,14 +220,14 @@ public class JpaUnitOfWork implements UnitOfWork {
                 entities.addAll(deleteEntities);
             }
             for (Object entity : persistenceContextEntities()) {
-                pushProcessingEntities(entity, currentProcessedEntities);
+                pushProcessingEntities(entity, processedEntities);
             }
-            entities.addAll(currentProcessedEntities);
+            entities.addAll(processedEntities);
             domainEventManager.release(entities);
             integrationEventManager.release();
             return null;
-        }, saveAndDeleteEntityList, propagation);
-        popProcessingEntities(currentProcessedEntities);
+        }, saveAndDeleteEntities, propagation);
+        popProcessingEntities(currentProcessedEntitySet);
     }
 
     public static void reset() {
@@ -455,7 +456,7 @@ public class JpaUnitOfWork implements UnitOfWork {
      *
      * @param entities
      */
-    protected void specifyEntitesInTransaction(Set<Object> entities) {
+    protected void specifyEntitesInTransaction(Collection<Object> entities) {
         if (entities != null && !entities.isEmpty()) {
             for (Object entity : entities) {
                 Specification.Result result = specificationManager.specifyInTransaction(entity);
@@ -471,7 +472,7 @@ public class JpaUnitOfWork implements UnitOfWork {
      *
      * @param entities
      */
-    protected void specifyEntitesBeforeTransaction(Set<Object> entities) {
+    protected void specifyEntitesBeforeTransaction(Collection<Object> entities) {
         if (entities != null && !entities.isEmpty()) {
             for (Object entity : entities) {
                 Specification.Result result = specificationManager.specifyBeforeTransaction(entity);
