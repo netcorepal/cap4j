@@ -908,7 +908,7 @@ public class GenEntityMojo extends GenArchMojo {
         boolean annotationEmpty = annotationLines.size() == 0;
         SourceFileUtils.removeText(annotationLines, "@Aggregate\\(.*\\)");
         SourceFileUtils.addIfNone(annotationLines, "@Aggregate\\(.*\\)", "@Aggregate(" +
-                "aggregate = \"" + getAggregateWithModule(tableName) + "\", " +
+                "aggregate = \"" + toUpperCamelCase(getAggregateWithModule(tableName)) + "\", " +
                 "name = \"" + getEntityJavaType(tableName) + "\", " +
                 "root = " + (isAggregateRoot(table) ? "true" : "false") + ", " +
                 "type = " + (isValueObject(table) ? "Aggregate.TYPE_VALUE_OBJECT" : "Aggregate.TYPE_ENTITY") + ", " +
@@ -1354,7 +1354,7 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "templatePackage", refPackage(getAggregatesPackage()), context);
         putContext(tag, "package", refPackage(aggregate), context);
         putContext(tag, "path", aggregate.replace(".", File.separator), context);
-        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Aggregate", toUpperCamelCase(aggregate), context);
         putContext(tag, "Comment", "", context);
         putContext(tag, "CommentEscaped", "", context);
         putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
@@ -1402,7 +1402,7 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "templatePackage", refPackage(getAggregatesPackage()), context);
         putContext(tag, "package", refPackage(aggregate), context);
         putContext(tag, "path", aggregate.replace(".", File.separator), context);
-        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Aggregate", toUpperCamelCase(aggregate), context);
         putContext(tag, "Comment", "", context);
         putContext(tag, "CommentEscaped", "", context);
         putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
@@ -1451,7 +1451,7 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "package", refPackage(aggregate), context);
         putContext(tag, "path", aggregate.replace(".", File.separator), context);
         putContext(tag, "persist", "false", context);
-        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Aggregate", toUpperCamelCase(aggregate), context);
         putContext(tag, "Comment", domainEventDescEscaped, context);
         putContext(tag, "CommentEscaped", domainEventDescEscaped, context);
         putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
@@ -1514,7 +1514,7 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "templatePackage", refPackage(getAggregatesPackage()), context);
         putContext(tag, "package", refPackage(aggregate), context);
         putContext(tag, "path", aggregate.replace(".", File.separator), context);
-        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Aggregate", toUpperCamelCase(aggregate), context);
         putContext(tag, "Comment", "", context);
         putContext(tag, "CommentEscaped", "", context);
         putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
@@ -1590,7 +1590,7 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "templatePackage", refPackage(schemaPackage), context);
         putContext(tag, "package", refPackage(aggregate), context);
         putContext(tag, "path", aggregate.replace(".", File.separator), context);
-        putContext(tag, "Aggregate", aggregate, context);
+        putContext(tag, "Aggregate", toUpperCamelCase(aggregate), context);
         putContext(tag, "Comment", comment, context);
         putContext(tag, "CommentEscaped", comment.replaceAll(PATTERN_LINE_BREAK, " "), context);
         putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);

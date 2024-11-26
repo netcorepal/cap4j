@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.toSnakeCase;
+import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.toUpperCamelCase;
 import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.*;
 
 /**
@@ -124,9 +125,9 @@ public class GenRepositoryMojo extends GenArchMojo {
 
                         String simpleClassName = resolveSimpleClassName(file.getAbsolutePath());
                         String identityClass = getIdentityType(content, simpleClassName);
-                        String aggregate = AggregateRoot2AggregateNameMap.containsKey(simpleClassName)
-                                ? AggregateRoot2AggregateNameMap.get(simpleClassName)
-                                : toSnakeCase(simpleClassName);
+                        String aggregate = AggregateRoot2AggregateNameMap.containsKey(fullClassName)
+                                ? AggregateRoot2AggregateNameMap.get(fullClassName)
+                                : toUpperCamelCase(simpleClassName);
                         this.getLog().info("聚合根ID类型: " + identityClass);
 
                         if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(fullClassName)) {
@@ -200,18 +201,18 @@ public class GenRepositoryMojo extends GenArchMojo {
                 .count();
         if (idAnnotationCount > 1) {
             return simpleClassName + "." + DEFAULT_MUL_PRI_KEY_NAME;
-        } else if(idAnnotationCount == 0) {
+        } else if (idAnnotationCount == 0) {
             return defaultIdentityType;
         } else {
             boolean idAnnotationReaded = false;
             for (String line : content.split("(\r)|(\n)|(\r\n)")) {
-                if(!idAnnotationReaded){
-                    if(ID_ANNOTATION_PATTERN.asPredicate().test(line)){
+                if (!idAnnotationReaded) {
+                    if (ID_ANNOTATION_PATTERN.asPredicate().test(line)) {
                         idAnnotationReaded = true;
                     }
                 } else {
                     Matcher matcher = FIELD_PATTERN.matcher(line);
-                    if(matcher.find() && matcher.groupCount() > 2){
+                    if (matcher.find() && matcher.groupCount() > 2) {
                         return matcher.group(matcher.groupCount() - 1);
                     }
                 }
