@@ -20,4 +20,11 @@ public @interface DomainService {
      * @return
      */
     String name() default "";
+
+    /**
+     * 领域服务描述
+     *
+     * @return
+     */
+    String description() default "";
 }
