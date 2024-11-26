@@ -45,6 +45,8 @@ public class JpaUnitOfWork implements UnitOfWork {
     private final PersistListenerManager persistListenerManager;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final int retrieveCountWarnThreshold;
+    private final boolean supportEntityInlinePersistListener;
+    private final boolean supportValueObjectExistsCheckOnSave;
 
     @Getter
     @PersistenceContext
@@ -174,7 +176,17 @@ public class JpaUnitOfWork implements UnitOfWork {
                     EntityInformation entityInformation = JpaEntityInformationSupport.getEntityInformation(entity.getClass(), getEntityManager());
                     if (!entityInformation.isNew(entity)) {
                         if (!getEntityManager().contains(entity)) {
-                            getEntityManager().merge(entity);
+                            if (supportValueObjectExistsCheckOnSave && entity instanceof ValueObject) {
+                                Object hash = ((ValueObject) entity).hash();
+                                boolean exists = null != getEntityManager().find(entity.getClass(), hash);
+                                if (exists) {
+                                    getEntityManager().merge(entity);
+                                } else {
+                                    getEntityManager().persist(entity);
+                                }
+                            } else {
+                                getEntityManager().merge(entity);
+                            }
                         }
                         entityPersisttedEventThreadLocal.get().getUpdatedEntities().add(entity);
                     } else {
@@ -504,6 +516,9 @@ public class JpaUnitOfWork implements UnitOfWork {
 
     @EventListener(classes = EntityPersisttedEvent.class)
     public void onTransactionCommiting(EntityPersisttedEvent event) {
+        if (!supportEntityInlinePersistListener) {
+            return;
+        }
         for (Object entity : event.getCreatedEntities()) {
             persistListenerManager.onChange(entity, PersistType.CREATE);
         }

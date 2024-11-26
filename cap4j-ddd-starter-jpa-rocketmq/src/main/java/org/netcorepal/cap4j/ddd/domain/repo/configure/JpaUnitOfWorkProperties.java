@@ -26,4 +26,9 @@ public class JpaUnitOfWorkProperties {
      * 删除 onDelete | onRemove
      */
     boolean supportEntityInlinePersistListener = true;
+
+    /**
+     * 是否在保存时检查值对象是否存在
+     */
+    boolean supportValueObjectExistsCheckOnSave = true;
 }

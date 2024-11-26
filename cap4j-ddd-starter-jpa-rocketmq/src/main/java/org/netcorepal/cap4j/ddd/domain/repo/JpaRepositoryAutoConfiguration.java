@@ -79,7 +79,9 @@ public class JpaRepositoryAutoConfiguration {
                 specificationManager,
                 persistListenerManager,
                 applicationEventPublisher,
-                jpaUnitOfWorkProperties.getRetrieveCountWarnThreshold());
+                jpaUnitOfWorkProperties.getRetrieveCountWarnThreshold(),
+                jpaUnitOfWorkProperties.isSupportEntityInlinePersistListener(),
+                jpaUnitOfWorkProperties.isSupportValueObjectExistsCheckOnSave());
         UnitOfWorkSupport.configure(unitOfWork);
         return unitOfWork;
     }
