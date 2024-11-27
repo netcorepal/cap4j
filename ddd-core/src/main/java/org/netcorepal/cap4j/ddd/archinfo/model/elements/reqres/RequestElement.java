@@ -15,6 +15,8 @@ import org.netcorepal.cap4j.ddd.archinfo.model.Element;
 @Builder
 public class RequestElement implements Element, ClassRef {
     String classRef;
+    String requestClassRef;
+    String responseClassRef;
     String name;
     String description;
 

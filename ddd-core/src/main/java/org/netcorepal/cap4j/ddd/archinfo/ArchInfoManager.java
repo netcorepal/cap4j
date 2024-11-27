@@ -28,6 +28,7 @@ import org.springframework.context.event.EventListener;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -87,6 +88,8 @@ public class ArchInfoManager {
         ListCatalog commandCatalog = new ListCatalog("commands", "命令", commandClasses.stream()
                 .map(cls -> CommandElement.builder()
                         .classRef(cls.getName())
+                        .requestClassRef(resolveRequestClass(cls).getTypeName())
+                        .responseClassRef(resolveResponseClass(cls).getTypeName())
                         .name(cls.getSimpleName())
                         .description(getDescription(cls, ""))
                         .build()
@@ -94,6 +97,8 @@ public class ArchInfoManager {
         ListCatalog queryCatalog = new ListCatalog("queries", "查询", queryClasses.stream()
                 .map(cls -> QueryElement.builder()
                         .classRef(cls.getName())
+                        .requestClassRef(resolveRequestClass(cls).getTypeName())
+                        .responseClassRef(resolveResponseClass(cls).getTypeName())
                         .name(cls.getSimpleName())
                         .description(getDescription(cls, ""))
                         .build()
@@ -101,6 +106,8 @@ public class ArchInfoManager {
         ListCatalog sagaCatalog = new ListCatalog("sagas", "SAGA", sagaClasses.stream()
                 .map(cls -> SagaElement.builder()
                         .classRef(cls.getName())
+                        .requestClassRef(resolveRequestClass(cls).getTypeName())
+                        .responseClassRef(resolveResponseClass(cls).getTypeName())
                         .name(cls.getSimpleName())
                         .description(getDescription(cls, ""))
                         .build()
@@ -108,6 +115,8 @@ public class ArchInfoManager {
         ListCatalog requestCatalog = new ListCatalog("requests", "请求处理", requestClasses.stream()
                 .map(cls -> RequestElement.builder()
                         .classRef(cls.getName())
+                        .requestClassRef(resolveRequestClass(cls).getTypeName())
+                        .responseClassRef(resolveResponseClass(cls).getTypeName())
                         .name(cls.getSimpleName())
                         .description(getDescription(cls, ""))
                         .build()
@@ -305,6 +314,16 @@ public class ArchInfoManager {
             return "/architecture/application/events/integration/" + eventCls.getSimpleName();
         }
         return null;
+    }
+
+    protected Type resolveRequestClass(Class<?> requestHandlerCls) {
+        Method method = ClassUtils.findMethod(requestHandlerCls, "exec", m -> m.getParameterCount() == 1);
+        return method.getGenericParameterTypes()[0];
+    }
+
+    protected Type resolveResponseClass(Class<?> requestHandlerCls) {
+        Method method = ClassUtils.findMethod(requestHandlerCls, "exec", m -> m.getParameterCount() == 1);
+        return method.getGenericReturnType();
     }
 
     protected Aggregate getAggregate(AnnotatedElement accessibleObject) {
