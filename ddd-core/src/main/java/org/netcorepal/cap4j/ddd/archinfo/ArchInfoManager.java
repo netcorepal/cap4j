@@ -230,6 +230,12 @@ public class ArchInfoManager {
                                     .filter(factoryCls -> getAggregate(factoryCls).aggregate().equals(aggregate.aggregate()))
                                     .map(factoryCls -> (Element) FactoryElement.builder()
                                             .classRef(factoryCls.getName())
+                                            .payloadClassRef(
+                                                    factoryPayloadClasses.stream()
+                                                            .filter(payloadCls -> getAggregate(payloadCls).aggregate().equals(aggregate.aggregate()))
+                                                            .map(payloadCls -> payloadCls.getName())
+                                                            .collect(Collectors.toList())
+                                            )
                                             .name(getAggregate(factoryCls).name())
                                             .description(getDescription(factoryCls, getAggregate(factoryCls).description()))
                                             .build())
@@ -363,6 +369,7 @@ public class ArchInfoManager {
 
     List<Class> repositoryClasses = new ArrayList<>();
     List<Class> factoryClasses = new ArrayList<>();
+    List<Class> factoryPayloadClasses = new ArrayList<>();
     List<Class> entityClasses = new ArrayList<>();
     List<Class> valueObjectClasses = new ArrayList<>();
     List<Class> enumObjectClasses = new ArrayList<>();
@@ -398,6 +405,9 @@ public class ArchInfoManager {
                         break;
                     case Aggregate.TYPE_FACTORY:
                         factoryClasses.add(cls);
+                        break;
+                    case Aggregate.TYPE_FACTORY_PAYLOAD:
+                        factoryPayloadClasses.add(cls);
                         break;
                     case Aggregate.TYPE_ENTITY:
                         entityClasses.add(cls);

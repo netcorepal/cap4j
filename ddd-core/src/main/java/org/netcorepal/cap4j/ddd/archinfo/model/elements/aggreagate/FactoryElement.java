@@ -5,6 +5,8 @@ import lombok.Data;
 import org.netcorepal.cap4j.ddd.archinfo.model.ClassRef;
 import org.netcorepal.cap4j.ddd.archinfo.model.Element;
 
+import java.util.List;
+
 /**
  * 聚合工厂
  *
@@ -15,6 +17,7 @@ import org.netcorepal.cap4j.ddd.archinfo.model.Element;
 @Builder
 public class FactoryElement implements Element, ClassRef {
     String classRef;
+    List<String> payloadClassRef;
     String name;
     String description;
 
