@@ -8,21 +8,9 @@
       "children": [
         {
           "type": "file",
-          "name": "${Command}Request.java",
+          "name": "${Command}.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Command}命令请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Command}Request implements RequestParam<${ReturnType}> {\n    String param;\n\n}"
-        },
-        {
-          "type": "file",
-          "name": "${Command}Response.java",
-          "format": "raw",
-          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Command}命令响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Command}Response {\n    boolean success;\n}\n"
-        },
-        {
-          "type": "file",
-          "name": "${Command}Handler.java",
-          "format": "raw",
-          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.Mediator;\nimport org.netcorepal.cap4j.ddd.application.command.Command;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Command}命令请求实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Command}Handler implements Command<${Command}Request, ${Command}Response> {\n\n    @Override\n    public ${Command}Response exec(${Command}Request cmd) {\n        Mediator.uow().save();\n        \n        return ${Command}Response.builder()\n                .success(true)\n                .build();\n    }\n}\n"
+          "data": "package ${basePackage}.application.commands${package};\n\n\nimport lombok.*;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.Mediator;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\nimport org.netcorepal.cap4j.ddd.application.command.Command;\nimport org.springframework.stereotype.Service;\n\n/**\n * todo: 命令描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\npublic class ${Command} {\n\n    /**\n     * ${Command}命令请求实现\n     */\n    @Service\n    @RequiredArgsConstructor\n    @Slf4j\n    public static class Handler implements Command<Request, Response> {\n        @Override\n        public Response exec(Request cmd) {\n            Mediator.uow().save();\n\n            return Response.builder()\n                    .success(true)\n                    .build();\n        }\n    }\n\n    /**\n     * ${Command}命令请求参数\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Request implements RequestParam<Response> {\n        String param;\n    }\n\n    /**\n     * ${Command}命令响应\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Response {\n        boolean success;\n    }\n}"
         }
       ]
     },
@@ -34,15 +22,9 @@
       "children": [
         {
           "type": "file",
-          "name": "${Query}Request.java",
+          "name": "${Query}.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n\n/**\n * ${Query}查询请求参数\n * ${Comment}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request implements RequestParam<${Query}Response> {\n    Long id;\n}"
-        },
-        {
-          "type": "file",
-          "name": "${Query}Response.java",
-          "format": "raw",
-          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Query}查询响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * todo: 查询描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\npublic class ${Query} {\n    /**\n     * ${Query}查询请求参数\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Request implements RequestParam<Response> {\n        String param;\n    }\n\n    /**\n     * ${Query}查询响应\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Response {\n        Long id;\n    }\n}"
         }
       ]
     },
@@ -54,15 +36,9 @@
       "children": [
         {
           "type": "file",
-          "name": "${Query}Request.java",
+          "name": "${Query}.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.query.ListQueryParam;\n\n\n/**\n * ${Query}查询请求参数\n * ${Comment}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request implements ListQueryParam<${Query}Response> {\n    Long id;\n}"
-        },
-        {
-          "type": "file",
-          "name": "${Query}Response.java",
-          "format": "raw",
-          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Query}查询响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.query.ListQueryParam;\n\n/**\n * todo: 查询描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\npublic class ${Query} {\n    /**\n     * ${Query}查询请求参数\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Request implements ListQueryParam<Response> {\n        String param;\n    }\n\n    /**\n     * ${Query}查询响应\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Response {\n        Long id;\n    }\n}"
         }
       ]
     },
@@ -74,15 +50,9 @@
       "children": [
         {
           "type": "file",
-          "name": "${Query}Request.java",
+          "name": "${Query}.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.query.PageQueryParam;\n\n/**\n * ${Query}查询请求参数\n * ${Comment}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request extends PageQueryParam<${Query}Response> {\n    Long id;\n}"
-        },
-        {
-          "type": "file",
-          "name": "${Query}Response.java",
-          "format": "raw",
-          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Query}查询响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.query.PageQueryParam;\n\n/**\n * todo: 查询描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\npublic class ${Query} {\n    /**\n     * ${Query}查询请求参数\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Request extends PageQueryParam<Response> {\n        String param;\n    }\n\n    /**\n     * ${Query}查询响应\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Response {\n        Long id;\n    }\n}"
         }
       ]
     },
@@ -96,7 +66,7 @@
           "type": "file",
           "name": "${Query}Handler.java",
           "format": "raw",
-          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.Query;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements Query<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public ${Query}Response exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
+          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query};\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.Query;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements Query<${Query}.Request, ${Query}.Response> {\n    \n    @Override\n    public ${Query}.Response exec(${Query}.Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}"
         }
       ]
     },
@@ -110,7 +80,7 @@
           "type": "file",
           "name": "${Query}Handler.java",
           "format": "raw",
-          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.ListQuery;\nimport org.springframework.stereotype.Service;\n\nimport java.util.List;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements ListQuery<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public List<${Query}Response> exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
+          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query};\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.ListQuery;\nimport org.springframework.stereotype.Service;\n\nimport java.util.List;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements ListQuery<${Query}.Request, ${Query}.Response> {\n    \n    @Override\n    public List<${Query}.Response> exec(${Query}.Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}"
         }
       ]
     },
@@ -124,7 +94,7 @@
           "type": "file",
           "name": "${Query}Handler.java",
           "format": "raw",
-          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.PageQuery;\nimport org.netcorepal.cap4j.ddd.share.PageData;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements PageQuery<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public PageData<${Query}Response> exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
+          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query};\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.PageQuery;\nimport org.netcorepal.cap4j.ddd.share.PageData;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements PageQuery<${Query}.Request, ${Query}.Response> {\n    \n    @Override\n    public PageData<${Query}.Response> exec(${Query}.Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}"
         }
       ]
     },
@@ -135,15 +105,9 @@
       "children": [
         {
           "type": "file",
-          "name": "${Client}Request.java",
+          "name": "${Client}.java",
           "format": "raw",
-          "data": "package ${basePackage}.application.distributed.clients${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Client}防腐端请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Request implements RequestParam<${Client}Response> {\n    Long id;\n}\n"
-        },
-        {
-          "type": "file",
-          "name": "${Client}Response.java",
-          "format": "raw",
-          "data": "package ${basePackage}.application.distributed.clients${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Client}防腐端响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Response {\n    Long id;\n}\n"
+          "data": "package ${basePackage}.application.distributed.clients${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * todo: 防腐端描述\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\npublic class ${Client} {\n\n    /**\n     * ${Client}防腐端请求参数\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Request implements RequestParam<Response> {\n        Long id;\n    }\n\n    /**\n     * ${Client}防腐端响应\n     */\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Response {\n        Long id;\n    }\n}"
         }
       ]
     },
@@ -156,7 +120,7 @@
           "type": "file",
           "name": "${Client}Handler.java",
           "format": "raw",
-          "data": "package ${basePackage}.adapter.application.distributed.clients${package};\n\nimport ${basePackage}.application.distributed.clients${package}.${Client}Request;\nimport ${basePackage}.application.distributed.clients${package}.${Client}Response;\nimport org.netcorepal.cap4j.ddd.application.RequestHandler;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Client}防腐端适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\npublic class ${Client}Handler implements RequestHandler<${Client}Request, ${Client}Response> {\n    @Override\n    public ${Client}Response exec(${Client}Request ${Client}Request) {\n        return null;\n    }\n}\n"
+          "data": "package ${basePackage}.adapter.application.distributed.clients${package};\n\nimport ${basePackage}.application.distributed.clients${package}.${Client};\nimport org.netcorepal.cap4j.ddd.application.RequestHandler;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Client}防腐端适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\npublic class ${Client}Handler implements RequestHandler<${Client}.Request, ${Client}.Response> {\n    @Override\n    public ${Client}.Response exec(${Client}.Request request) {\n        return null;\n    }\n}"
         }
       ]
     },
@@ -219,15 +183,9 @@
       "children": [
         {
           "type": "file",
-          "name": "${Entity}Payload.java",
-          "format": "raw",
-          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n\n/**\n * ${Entity}工厂负载\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Entity}Payload implements AggregatePayload<${Entity}> {\n    String name;\n    \n}\n"
-        },
-        {
-          "type": "file",
           "name": "${Entity}Factory.java",
           "format": "raw",
-          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}聚合工厂\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Factory\", type = Aggregate.TYPE_FACTORY, description = \"\")\n@Service\npublic class ${Entity}Factory implements AggregateFactory<${Entity}Payload, ${Entity}> {\n\n    @Override\n    public ${Entity} create(${Entity}Payload payload) {\n\n        return ${Entity}.builder()\n\n                .build();\n    }\n}\n"
+          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}聚合工厂\n * \n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Entity}\", name = \"${Entity}Factory\", type = Aggregate.TYPE_FACTORY, description = \"\")\n@Service\npublic class ${Entity}Factory implements AggregateFactory<${Entity}Factory.Payload, ${Entity}> {\n\n    @Override\n    public ${Entity} create(Payload payload) {\n\n        return ${Entity}.builder()\n\n                .build();\n    }\n    \n    /**\n     * ${Entity}工厂负载\n     */\n    @Aggregate(aggregate = \"${Entity}\", name = \"${Entity}Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n    @Data\n    @Builder\n    @NoArgsConstructor\n    @AllArgsConstructor\n    public static class Payload implements AggregatePayload<${Entity}> {\n        String name;\n\n    }\n}"
         }
       ]
     },
@@ -497,7 +455,7 @@
                                       "type": "file",
                                       "name": "ResponseData.java",
                                       "format": "raw",
-                                      "data": "package ${basePackage}.adapter.portal.api._share;\n\nimport ${basePackage}._share.CodeEnum;\nimport ${basePackage}._share.exception.ErrorException;\nimport ${basePackage}._share.exception.KnownException;\nimport ${basePackage}._share.exception.WarnException;\nimport com.fasterxml.jackson.annotation.JsonIgnore;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport lombok.Data;\n\nimport java.util.Objects;\n\n/**\n * @author cap4j-ddd-codegen\n */\n@Data\n@Schema(description = \"接口响应格式\")\npublic class ResponseData<T> {\n    @Schema(description=\"状态码\")\n    private Status status;\n    @Schema(description=\"结果集\")\n    private T data;\n    @Schema(description=\"服务器时间\")\n    private long timestamp;\n\n    private ResponseData() {\n    }\n\n    private ResponseData(T data) {\n        this.status = new Status(CodeEnum.SUCCESS.getCode(), CodeEnum.SUCCESS.getName());\n        this.timestamp = System.currentTimeMillis();\n        this.data = data;\n    }\n\n    private ResponseData(Integer code, String msg, T data) {\n        this.status = new Status(code, msg);\n        if (code == null) {\n            this.status.setCode(CodeEnum.FAIL.getCode());\n        }\n\n        if (msg == null) {\n            this.status.setMsg(\"\");\n        }\n\n        this.data = data;\n        this.timestamp = System.currentTimeMillis();\n    }\n\n    public static <T> ResponseData<T> success(T data) {\n        return new ResponseData(data);\n    }\n\n    public static <T> ResponseData<T> success(String msg, T data) {\n        return new ResponseData(CodeEnum.SUCCESS.getCode(), msg, data);\n    }\n\n    public static <T> ResponseData<T> fail(String msg) {\n        return new ResponseData(CodeEnum.FAIL.getCode(), msg, null);\n    }\n\n    public static <T> ResponseData<T> fail(CodeEnum codeEnum) {\n        return new ResponseData(codeEnum.getCode(), codeEnum.getName(), null);\n    }\n\n    public static <T> ResponseData<T> fail(KnownException knownException) {\n        return new ResponseData(knownException.getCode(), knownException.getMsg(), null);\n    }\n\n    public static <T> ResponseData<T> fail(Integer code, String msg) {\n        code = code == null ? CodeEnum.FAIL.getCode() : code;\n        return new ResponseData(code, msg, null);\n    }\n\n    public static <T> ResponseData<T> illegalArgument() {\n        return new ResponseData(CodeEnum.PARAM_INVALIDATE.getCode(), CodeEnum.PARAM_INVALIDATE.getName(), null);\n    }\n\n    public static <T> ResponseData<T> systemError() {\n        return new ResponseData(CodeEnum.ERROR.getCode(), CodeEnum.ERROR.getName(), null);\n    }\n\n    @JsonIgnore\n    public boolean isSuccess() {\n        Integer retCode = status.getCode();\n        return Objects.equals(CodeEnum.SUCCESS.getCode(), retCode);\n    }\n\n    public void throwKnownException(){\n        throw new KnownException(status.getCode(), status.getMsg());\n    }\n\n    public void throwWarnException(){\n        throw new WarnException(status.getCode(), status.getMsg());\n    }\n\n    public void throwErrorException(){\n        throw new ErrorException(status.getCode(), status.getMsg());\n    }\n\n    public void tryThrowKnownException(){\n        if(!isSuccess()){\n            throwKnownException();\n        }\n    }\n\n    public void tryThrowWarnException(){\n        if(!isSuccess()){\n            throwWarnException();\n        }\n    }\n\n    public void tryThrowErrorException(){\n        if(!isSuccess()){\n            throwErrorException();\n        }\n    }\n}\n\n"
+                                      "data": "package ${basePackage}.adapter.portal.api._share;\n\nimport ${basePackage}._share.CodeEnum;\nimport ${basePackage}._share.exception.ErrorException;\nimport ${basePackage}._share.exception.KnownException;\nimport ${basePackage}._share.exception.WarnException;\nimport com.fasterxml.jackson.annotation.JsonIgnore;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport lombok.Data;\n\nimport java.util.Objects;\n\n/**\n * @author cap4j-ddd-codegen\n */\n@Data\n@Schema(description = \"接口响应格式\")\npublic static class ResponseData<T> {\n    @Schema(description=\"状态码\")\n    private Status status;\n    @Schema(description=\"结果集\")\n    private T data;\n    @Schema(description=\"服务器时间\")\n    private long timestamp;\n\n    private ResponseData() {\n    }\n\n    private ResponseData(T data) {\n        this.status = new Status(CodeEnum.SUCCESS.getCode(), CodeEnum.SUCCESS.getName());\n        this.timestamp = System.currentTimeMillis();\n        this.data = data;\n    }\n\n    private ResponseData(Integer code, String msg, T data) {\n        this.status = new Status(code, msg);\n        if (code == null) {\n            this.status.setCode(CodeEnum.FAIL.getCode());\n        }\n\n        if (msg == null) {\n            this.status.setMsg(\"\");\n        }\n\n        this.data = data;\n        this.timestamp = System.currentTimeMillis();\n    }\n\n    public static <T> ResponseData<T> success(T data) {\n        return new ResponseData(data);\n    }\n\n    public static <T> ResponseData<T> success(String msg, T data) {\n        return new ResponseData(CodeEnum.SUCCESS.getCode(), msg, data);\n    }\n\n    public static <T> ResponseData<T> fail(String msg) {\n        return new ResponseData(CodeEnum.FAIL.getCode(), msg, null);\n    }\n\n    public static <T> ResponseData<T> fail(CodeEnum codeEnum) {\n        return new ResponseData(codeEnum.getCode(), codeEnum.getName(), null);\n    }\n\n    public static <T> ResponseData<T> fail(KnownException knownException) {\n        return new ResponseData(knownException.getCode(), knownException.getMsg(), null);\n    }\n\n    public static <T> ResponseData<T> fail(Integer code, String msg) {\n        code = code == null ? CodeEnum.FAIL.getCode() : code;\n        return new ResponseData(code, msg, null);\n    }\n\n    public static <T> ResponseData<T> illegalArgument() {\n        return new ResponseData(CodeEnum.PARAM_INVALIDATE.getCode(), CodeEnum.PARAM_INVALIDATE.getName(), null);\n    }\n\n    public static <T> ResponseData<T> systemError() {\n        return new ResponseData(CodeEnum.ERROR.getCode(), CodeEnum.ERROR.getName(), null);\n    }\n\n    @JsonIgnore\n    public boolean isSuccess() {\n        Integer retCode = status.getCode();\n        return Objects.equals(CodeEnum.SUCCESS.getCode(), retCode);\n    }\n\n    public void throwKnownException(){\n        throw new KnownException(status.getCode(), status.getMsg());\n    }\n\n    public void throwWarnException(){\n        throw new WarnException(status.getCode(), status.getMsg());\n    }\n\n    public void throwErrorException(){\n        throw new ErrorException(status.getCode(), status.getMsg());\n    }\n\n    public void tryThrowKnownException(){\n        if(!isSuccess()){\n            throwKnownException();\n        }\n    }\n\n    public void tryThrowWarnException(){\n        if(!isSuccess()){\n            throwWarnException();\n        }\n    }\n\n    public void tryThrowErrorException(){\n        if(!isSuccess()){\n            throwErrorException();\n        }\n    }\n}\n\n"
                                     },
                                     {
                                       "type": "file",
