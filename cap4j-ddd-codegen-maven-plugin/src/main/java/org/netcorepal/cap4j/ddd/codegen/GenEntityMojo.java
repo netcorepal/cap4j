@@ -927,7 +927,7 @@ public class GenEntityMojo extends GenArchMojo {
         SourceFileUtils.addIfNone(annotationLines, "@Entity(\\(.*\\))?", "@Entity");
         List<Map<String, Object>> ids = getIdColumns(columns);
         if (ids.size() > 1) {
-            SourceFileUtils.addIfNone(annotationLines, "@IdClass(\\(.*\\))", "@IdClass(" + getEntityJavaType(tableName) + "." + DEFAULT_MUL_PRI_KEY_NAME + ".Class)");
+            SourceFileUtils.addIfNone(annotationLines, "@IdClass(\\(.*\\))", "@IdClass(" + getEntityJavaType(tableName) + "." + DEFAULT_MUL_PRI_KEY_NAME + ".class)");
         }
         SourceFileUtils.addIfNone(annotationLines, "@Table(\\(.*\\))?", "@Table(" +
                 "name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + tableName + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\"" +
@@ -1140,7 +1140,7 @@ public class GenEntityMojo extends GenArchMojo {
             writeLine(out, "    @Builder\n" +
                     "    @AllArgsConstructor\n" +
                     "    @NoArgsConstructor\n" +
-                    "    @Data\n" +
+                    "    @lombok.Data\n" +
                     "    public static class " + DEFAULT_MUL_PRI_KEY_NAME + " implements java.io.Serializable {");
             for (Map<String, Object> id : ids) {
                 writeLine(out, "        @Column(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + getColumnName(id) + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\")");
@@ -1489,7 +1489,7 @@ public class GenEntityMojo extends GenArchMojo {
                 String path = forceRender(
                         pathNode,
                         SourceFileUtils.resolveDirectory(
-                                baseDir,
+                                getApplicationModulePath(),
                                 concatPackage(basePackage, context.get("templatePackage"))
                         )
                 );

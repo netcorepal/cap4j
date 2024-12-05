@@ -280,7 +280,8 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      * @parameter expression="${idGenerator4ValueObject}"
      */
     @Parameter(property = "idGenerator4ValueObject", defaultValue = "")
-    public String idGenerator4ValueObject = "";    /**
+    public String idGenerator4ValueObject = "";
+    /**
      * 值对象hash函数实现语句
      *
      * @parameter expression="${hashMethod4ValueObject}"
@@ -401,9 +402,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     public String getAdapterModulePath() {
         String adapterModulePath = "";
         if (multiModule) {
-            adapterModulePath = Arrays.stream(new File(getProjectDir()).listFiles())
-                    .filter(path -> path.getAbsolutePath().endsWith(moduleNameSuffix4Adapter))
-                    .findFirst().get().getAbsolutePath();
+            adapterModulePath = getProjectDir() + File.separator + getProjectArtifactId() + moduleNameSuffix4Adapter;
         } else {
             adapterModulePath = getProjectDir();
         }
@@ -413,9 +412,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     public String getDomainModulePath() {
         String adapterModulePath = "";
         if (multiModule) {
-            adapterModulePath = Arrays.stream(new File(getProjectDir()).listFiles())
-                    .filter(path -> path.getAbsolutePath().endsWith(moduleNameSuffix4Domain))
-                    .findFirst().get().getAbsolutePath();
+            adapterModulePath = getProjectDir() + File.separator + getProjectArtifactId() + moduleNameSuffix4Domain;
         } else {
             adapterModulePath = getProjectDir();
         }
@@ -425,9 +422,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     public String getApplicationModulePath() {
         String adapterModulePath = "";
         if (multiModule) {
-            adapterModulePath = Arrays.stream(new File(getProjectDir()).listFiles())
-                    .filter(path -> path.getAbsolutePath().endsWith(moduleNameSuffix4Application))
-                    .findFirst().get().getAbsolutePath();
+            adapterModulePath = getProjectDir() + File.separator + getProjectArtifactId() + moduleNameSuffix4Application;
         } else {
             adapterModulePath = getProjectDir();
         }
@@ -562,13 +557,13 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                     break;
                 case "overwrite":
                     if (!FileUtils.fileRead(path, outputEncoding).contains(FLAG_DO_NOT_OVERWRITE)) {
-                    getLog().info("文件覆盖：" + path);
-                    FileUtils.fileDelete(path);
-                    FileUtils.fileWrite(path, outputEncoding, content);
-                } else{
-                    getLog().info("跳过覆盖，文件内容包含 " + FLAG_DO_NOT_OVERWRITE + "：" + path);
-                }
-                break;
+                        getLog().info("文件覆盖：" + path);
+                        FileUtils.fileDelete(path);
+                        FileUtils.fileWrite(path, outputEncoding, content);
+                    } else {
+                        getLog().info("跳过覆盖，文件内容包含 " + FLAG_DO_NOT_OVERWRITE + "：" + path);
+                    }
+                    break;
                 case "skip":
                 default:
                     getLog().debug("文件跳过：" + path);
@@ -1045,18 +1040,42 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     protected String projectArtifactId = "";
     protected String projectVersion = "";
 
-    public Map<String, String> getEscapeContext() {
+    protected void resolveMavenProject() {
         MavenProject mavenProject = ((MavenProject) getPluginContext().get("project"));
-        if (mavenProject != null) {
-            projectGroupId = mavenProject.getGroupId();
-            projectArtifactId = mavenProject.getArtifactId();
-            projectVersion = mavenProject.getVersion();
+        if (mavenProject != null && StringUtils.isBlank(projectArtifactId)) {
+            if (multiModule == false || !mavenProject.hasParent()) {
+                projectGroupId = mavenProject.getGroupId();
+                projectArtifactId = mavenProject.getArtifactId();
+                projectVersion = mavenProject.getVersion();
+            } else {
+                projectGroupId = mavenProject.getParent().getGroupId();
+                projectArtifactId = mavenProject.getParent().getArtifactId();
+                projectVersion = mavenProject.getParent().getVersion();
+            }
         }
+    }
+
+    protected String getProjectGroupId() {
+        resolveMavenProject();
+        return projectGroupId;
+    }
+
+    protected String getProjectArtifactId() {
+        resolveMavenProject();
+        return projectArtifactId;
+    }
+
+    protected String getProjectVersion() {
+        resolveMavenProject();
+        return projectVersion;
+    }
+
+    public Map<String, String> getEscapeContext() {
         Map<String, String> context = new HashMap<>();
         context.put("cap4jPluginConfiguration", stringfyCap4jPluginConfiguration());
-        context.put("groupId", projectGroupId);
-        context.put("artifactId", projectArtifactId);
-        context.put("version", projectVersion);
+        context.put("groupId", getProjectGroupId());
+        context.put("artifactId", getProjectArtifactId());
+        context.put("version", getProjectVersion());
         context.put("archTemplate", archTemplate);
         context.put("archTemplateEncoding", archTemplateEncoding);
         context.put("outputEncoding", outputEncoding);

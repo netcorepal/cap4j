@@ -1,0 +1,957 @@
+{
+  "type": "root",
+  "templates": [
+    {
+      "type": "dir",
+      "tag": "command",
+      "name": "${path}",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Command}Request.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Command}命令请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Command}Request implements RequestParam<${ReturnType}> {\n    String param;\n\n}"
+        },
+        {
+          "type": "file",
+          "name": "${Command}Response.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Command}命令响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Command}Response {\n    boolean success;\n}\n"
+        },
+        {
+          "type": "file",
+          "name": "${Command}Handler.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.commands${package};\n\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.Mediator;\nimport org.netcorepal.cap4j.ddd.application.command.Command;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Command}命令请求实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Command}Handler implements Command<${Command}Request, ${Command}Response> {\n\n    @Override\n    public ${Command}Response exec(${Command}Request cmd) {\n        Mediator.uow().save();\n        \n        return ${Command}Response.builder()\n                .success(true)\n                .build();\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "query",
+      "name": "${path}",
+      "pattern": "^(?!.*(List|list|Page|page)).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Request.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n\n/**\n * ${Query}查询请求参数\n * ${Comment}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request implements RequestParam<${Query}Response> {\n    Long id;\n}"
+        },
+        {
+          "type": "file",
+          "name": "${Query}Response.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Query}查询响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "query",
+      "name": "${path}",
+      "pattern": "^.*(List|list).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Request.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.query.ListQueryParam;\n\n\n/**\n * ${Query}查询请求参数\n * ${Comment}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request implements ListQueryParam<${Query}Response> {\n    Long id;\n}"
+        },
+        {
+          "type": "file",
+          "name": "${Query}Response.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Query}查询响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "query",
+      "name": "${path}",
+      "pattern": "^.*(Page|page).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Request.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.query.PageQueryParam;\n\n/**\n * ${Query}查询请求参数\n * ${Comment}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Request extends PageQueryParam<${Query}Response> {\n    Long id;\n}"
+        },
+        {
+          "type": "file",
+          "name": "${Query}Response.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.queries${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Query}查询响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Query}Response {\n    Long id;\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "query_handler",
+      "name": "",
+      "pattern": "^(?!.*(List|list|Page|page)).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Handler.java",
+          "format": "raw",
+          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.Query;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements Query<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public ${Query}Response exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "query_handler",
+      "name": "",
+      "pattern": "^.*(List|list).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Handler.java",
+          "format": "raw",
+          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.ListQuery;\nimport org.springframework.stereotype.Service;\n\nimport java.util.List;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements ListQuery<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public List<${Query}Response> exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "query_handler",
+      "name": "",
+      "pattern": "^.*(Page|page).*$",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Query}Handler.java",
+          "format": "raw",
+          "data": "package ${basePackage}.adapter.application.queries;\n\nimport ${basePackage}.application.queries${package}.${Query}Request;\nimport ${basePackage}.application.queries${package}.${Query}Response;\nimport lombok.RequiredArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.netcorepal.cap4j.ddd.application.query.PageQuery;\nimport org.netcorepal.cap4j.ddd.share.PageData;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Query}查询请求适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\n@RequiredArgsConstructor\n@Slf4j\npublic class ${Query}Handler implements PageQuery<${Query}Request, ${Query}Response> {\n    \n    @Override\n    public PageData<${Query}Response> exec(${Query}Request request) {\n        // mybatis / jpa 哪个顺手就用哪个吧！\n        return null;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "client",
+      "name": "${path}",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Client}Request.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.distributed.clients${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.RequestParam;\n\n/**\n * ${Client}防腐端请求参数\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Request implements RequestParam<${Client}Response> {\n    Long id;\n}\n"
+        },
+        {
+          "type": "file",
+          "name": "${Client}Response.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.distributed.clients${package};\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\n\n/**\n * ${Client}防腐端响应\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Client}Response {\n    Long id;\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "client_handler",
+      "name": "${path}",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Client}Handler.java",
+          "format": "raw",
+          "data": "package ${basePackage}.adapter.application.distributed.clients${package};\n\nimport ${basePackage}.application.distributed.clients${package}.${Client}Request;\nimport ${basePackage}.application.distributed.clients${package}.${Client}Response;\nimport org.netcorepal.cap4j.ddd.application.RequestHandler;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Client}防腐端适配实现\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\npublic class ${Client}Handler implements RequestHandler<${Client}Request, ${Client}Response> {\n    @Override\n    public ${Client}Response exec(${Client}Request ${Client}Request) {\n        return null;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "integration_event",
+      "name": "",
+      "children": [
+        {
+          "type": "file",
+          "name": "${IntegrationEvent}.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.distributed.events;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;\n\n/**\n * ${IntegrationEvent}集成事件\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@IntegrationEvent(value = ${MQ_TOPIC}, subscriber = ${MQ_CONSUMER})\n@Data\n@Builder\n@AllArgsConstructor\n@NoArgsConstructor\npublic class ${IntegrationEvent} {\n    private Long id;\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "integration_event_handler",
+      "name": "",
+      "children": [
+        {
+          "type": "file",
+          "name": "${IntegrationEvent}Subscriber.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.subscribers.integration;\n\nimport ${basePackage}.application.distributed.events.${IntegrationEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${IntegrationEvent}集成事件订阅\n * ${Comment}\n */\n@Service\n@RequiredArgsConstructor\npublic class ${IntegrationEvent}Subscriber {\n\n    @EventListener(${IntegrationEvent}.class)\n    public void on(${IntegrationEvent} event) {\n        \n    }\n\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "domain_event",
+      "name": "${path}${SEPARATOR}events",
+      "children": [
+        {
+          "type": "file",
+          "name": "${DomainEvent}.java",
+          "format": "raw",
+          "data": "package ${basePackage}.domain.aggregates${package}.events;\n\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;\n\n/**\n * ${Entity}.${DomainEvent}领域事件\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@DomainEvent(persist = ${persist})\n@Aggregate(aggregate = \"${Aggregate}\", name = \"${DomainEvent}\", type = Aggregate.TYPE_DOMAIN_EVENT, description = \"\")\n@Data\n@Builder\n@AllArgsConstructor\n@NoArgsConstructor\npublic class ${DomainEvent} {\n    Long id;\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "domain_event_handler",
+      "name": "",
+      "children": [
+        {
+          "type": "file",
+          "name": "${DomainEvent}Subscriber.java",
+          "format": "raw",
+          "data": "package ${basePackage}.application.subscribers.domain;\n\nimport ${basePackage}.domain.aggregates${package}.events.${DomainEvent};\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.context.event.EventListener;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}.${DomainEvent}领域事件订阅\n * ${Comment}\n */\n@Service\n@RequiredArgsConstructor\npublic class ${DomainEvent}Subscriber {\n\n    @EventListener(${DomainEvent}.class)\n    public void on(${DomainEvent} event) {\n        \n    }\n\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "factory",
+      "name": "${path}${SEPARATOR}factory",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Entity}Payload.java",
+          "format": "raw",
+          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport lombok.AllArgsConstructor;\nimport lombok.Builder;\nimport lombok.Data;\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;\n\n/**\n * ${Entity}工厂负载\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Payload\", type = Aggregate.TYPE_FACTORY_PAYLOAD, description = \"\")\n@Data\n@Builder\n@NoArgsConstructor\n@AllArgsConstructor\npublic class ${Entity}Payload implements AggregatePayload<${Entity}> {\n    String name;\n    \n}\n"
+        },
+        {
+          "type": "file",
+          "name": "${Entity}Factory.java",
+          "format": "raw",
+          "data": "package ${basePackage}.domain.aggregates${package}.factory;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}聚合工厂\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Factory\", type = Aggregate.TYPE_FACTORY, description = \"\")\n@Service\npublic class ${Entity}Factory implements AggregateFactory<${Entity}Payload, ${Entity}> {\n\n    @Override\n    public ${Entity} create(${Entity}Payload payload) {\n\n        return ${Entity}.builder()\n\n                .build();\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "specification",
+      "name": "${path}${SEPARATOR}specs",
+      "children": [
+        {
+          "type": "file",
+          "name": "${Entity}Specification.java",
+          "format": "raw",
+          "data": "package ${basePackage}.domain.aggregates${package}.specs;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.Specification;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}规格约束\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Specification\", type = Aggregate.TYPE_SPECIFICATION, description = \"\")\n@Service\npublic class ${Entity}Specification implements Specification<${Entity}> {\n    @Override\n    public Result specify(${Entity} entity) {\n        return Result.fail(\"未实现\");\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "tag": "domain_service",
+      "name": "${path}",
+      "children": [
+        {
+          "type": "file",
+          "name": "${DomainService}.java",
+          "format": "raw",
+          "data": "package ${basePackage}.domain.services${package};\n\nimport org.netcorepal.cap4j.ddd.domain.service.annotation.DomainService;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@DomainService\n@Service\npublic class ${DomainService} {\n}\n"
+        }
+      ]
+    }
+  ],
+  "children": [
+    {
+      "type": "dir",
+      "name": "${artifactId}-adapter",
+      "children": [
+        {
+          "type": "file",
+          "name": "pom.xml",
+          "format": "raw",
+          "data": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n    <modelVersion>4.0.0</modelVersion>\n    <parent>\n        <groupId>${groupId}</groupId>\n        <artifactId>${artifactId}</artifactId>\n        <version>${version}</version>\n    </parent>\n\n    <artifactId>${artifactId}-adapter</artifactId>\n\n    <properties>\n        <maven.compiler.source>8</maven.compiler.source>\n        <maven.compiler.target>8</maven.compiler.target>\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n    </properties>\n\n    <dependencies>\n        <dependency>\n            <groupId>${groupId}</groupId>\n            <artifactId>${artifactId}-share</artifactId>\n            <version>${project.version}</version>\n        </dependency>\n        <dependency>\n            <groupId>${groupId}</groupId>\n            <artifactId>${artifactId}-application</artifactId>\n            <version>${project.version}</version>\n        </dependency>\n\n        <!-- spring boot web -->\n        <dependency>\n            <groupId>org.springframework.boot</groupId>\n            <artifactId>spring-boot-starter-web</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>org.springframework.boot</groupId>\n            <artifactId>spring-boot-starter-actuator</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>org.springframework.boot</groupId>\n            <artifactId>spring-boot-starter-validation</artifactId>\n        </dependency>\n\n        <!-- apollo客户端 -->\n        <dependency>\n            <groupId>com.ctrip.framework.apollo</groupId>\n            <artifactId>apollo-client</artifactId>\n            <version>1.7.0</version>\n        </dependency>\n        <!-- Xxl Job -->\n        <dependency>\n            <groupId>com.githup.liuyanggithup</groupId>\n            <artifactId>xxl-job-core</artifactId>\n            <version>1.2.1</version>\n        </dependency>\n        <!-- feign -->\n        <dependency>\n            <groupId>org.springframework.cloud</groupId>\n            <artifactId>spring-cloud-starter-openfeign</artifactId>\n        </dependency>\n        <dependency>\n            <groupId>io.github.openfeign</groupId>\n            <artifactId>feign-okhttp</artifactId>\n            <version>11.10</version>\n        </dependency>\n        <!-- mybatis -->\n        <dependency>\n            <groupId>org.mybatis.spring.boot</groupId>\n            <artifactId>mybatis-spring-boot-starter</artifactId>\n            <version>2.1.3</version>\n        </dependency>\n        <!-- 数据库连接池 -->\n        <dependency>\n            <groupId>com.alibaba</groupId>\n            <artifactId>druid-spring-boot-starter</artifactId>\n            <version>${spring-boot-druid.version}</version>\n        </dependency>\n        <!-- mysql -->\n        <dependency>\n            <groupId>mysql</groupId>\n            <artifactId>mysql-connector-java</artifactId>\n            <version>${mysql-connector.version}</version>\n        </dependency>\n\n        <!--        &lt;!&ndash; Redis&ndash;&gt;-->\n        <!--        <dependency>-->\n        <!--            <groupId>org.springframework.boot</groupId>-->\n        <!--            <artifactId>spring-boot-starter-data-redis</artifactId>-->\n        <!--        </dependency>-->\n        <!--        &lt;!&ndash; redis依赖commons-pool2 &ndash;&gt;-->\n        <!--        <dependency>-->\n        <!--            <groupId>org.apache.commons</groupId>-->\n        <!--            <artifactId>commons-pool2</artifactId>-->\n        <!--        </dependency>-->\n\n        <!--        &lt;!&ndash; es &ndash;&gt;-->\n        <!--        <dependency>-->\n        <!--            <groupId>org.springframework.boot</groupId>-->\n        <!--            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>-->\n        <!--        </dependency>-->\n\n        <!-- 接口文档 -->\n        <dependency>\n            <groupId>org.springdoc</groupId>\n            <artifactId>springdoc-openapi-ui</artifactId>\n            <version>${springdoc.version}</version>\n        </dependency>\n        <dependency>\n            <groupId>com.github.xiaoymin</groupId>\n            <artifactId>knife4j-springdoc-ui</artifactId>\n            <version>${knife4j.version}</version>\n        </dependency>\n    </dependencies>\n\n</project>"
+        },
+        {
+          "type": "dir",
+          "name": "src",
+          "children": [
+            {
+              "type": "dir",
+              "name": "main",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": [
+                        {
+                          "type": "dir",
+                          "name": "adapter",
+                          "children": [
+                            {
+                              "type": "dir",
+                              "name": "_share",
+                              "children": [
+                                {
+                                  "type": "dir",
+                                  "name": "configure",
+                                  "children": [
+                                    {
+                                      "type": "file",
+                                      "name": "ApolloConfig.java",
+                                      "format": "raw",
+                                      "data": "package ${basePackage}.adapter._share.configure;\n\nimport com.ctrip.framework.apollo.core.ConfigConsts;\nimport com.ctrip.framework.apollo.model.ConfigChangeEvent;\nimport com.ctrip.framework.apollo.spring.annotation.ApolloConfigChangeListener;\nimport lombok.AllArgsConstructor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.springframework.boot.autoconfigure.condition.ConditionalOnClass;\nimport org.springframework.cloud.context.environment.EnvironmentChangeEvent;\nimport org.springframework.context.ApplicationEventPublisher;\nimport org.springframework.context.annotation.Configuration;\n\nimport java.util.Set;\n\n/**\n * Apollo配置\n * \n * @author bingking338\n */\n@Slf4j\n@Configuration\n@AllArgsConstructor\n@ConditionalOnClass(com.ctrip.framework.apollo.Apollo.class)\npublic class ApolloConfig {\n    private final ApplicationEventPublisher eventPublisher;\n\n    /**\n     * 自动更新环境变量\n     *\n     * @param changeEvent\n     */\n    @ApolloConfigChangeListener(ConfigConsts.NAMESPACE_APPLICATION)\n    public void onChange(ConfigChangeEvent changeEvent) {\n        Set<String> changedKeys = changeEvent.changedKeys();\n        log.info(\"Apollo Refreshing properties changedKeys:{}!\", changedKeys);\n        eventPublisher.publishEvent(new EnvironmentChangeEvent(changeEvent.changedKeys()));\n        log.info(\"Apollo Refreshing properties refreshed!\");\n    }\n\n}"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "dir",
+                              "name": "application",
+                              "children": [
+                                {
+                                  "type": "dir",
+                                  "name": "_share",
+                                  "children": [
+                                    {
+                                      "type": "dir",
+                                      "name": "configure",
+                                      "children": [
+                                        {
+                                          "type": "file",
+                                          "name": "MyIntegrationEventInterceptor.java",
+                                          "format": "raw",
+                                          "data": "package ${basePackage}.adapter.application._share.configure;\n\nimport org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;\nimport org.netcorepal.cap4j.ddd.domain.event.EventRecord;\nimport org.springframework.stereotype.Service;\n\nimport java.time.LocalDateTime;\n\n/**\n * 集成事件拦截器\n *\n * @author cap4j-ddd-codegen\n * @date 2024/09/14\n */\n@Service\npublic class MyIntegrationEventInterceptor implements IntegrationEventInterceptor {\n\n    @Override\n    public void prePersist(EventRecord event) {\n\n    }\n\n    @Override\n    public void postPersist(EventRecord event) {\n\n    }\n\n    @Override\n    public void preRelease(EventRecord event) {\n\n    }\n\n    @Override\n    public void postRelease(EventRecord event) {\n\n    }\n\n    @Override\n    public void onException(Throwable throwable, EventRecord event) {\n\n    }\n\n    @Override\n    public void onAttach(Object eventPayload, LocalDateTime schedule) {\n\n    }\n\n    @Override\n    public void onDetach(Object eventPayload) {\n\n    }\n}\n"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "distributed",
+                                  "children": [
+                                    {
+                                      "type": "dir",
+                                      "name": "clients",
+                                      "tag": "client_handler"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "queries",
+                                  "tag": "query_handler"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "dir",
+                              "name": "domain",
+                              "children": [
+                                {
+                                  "type": "dir",
+                                  "name": "_share",
+                                  "children": [
+                                    {
+                                      "type": "dir",
+                                      "name": "configure",
+                                      "children": [
+                                        {
+                                          "type": "file",
+                                          "name": "MyDomainEventInterceptor.java",
+                                          "format": "raw",
+                                          "data": "package ${basePackage}.adapter.domain._share.configure;\n\nimport org.netcorepal.cap4j.ddd.domain.event.DomainEventInterceptor;\nimport org.netcorepal.cap4j.ddd.domain.event.EventRecord;\nimport org.springframework.stereotype.Service;\n\nimport java.time.LocalDateTime;\n\n/**\n * 领域事件拦截器\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Service\npublic class MyDomainEventInterceptor implements DomainEventInterceptor {\n    @Override\n    public void onAttach(Object eventPayload, Object entity, LocalDateTime schedule) {\n\n    }\n\n    @Override\n    public void onDetach(Object eventPayload, Object entity) {\n\n    }\n\n    @Override\n    public void prePersist(EventRecord event) {\n\n    }\n\n    @Override\n    public void postPersist(EventRecord event) {\n\n    }\n\n    @Override\n    public void preRelease(EventRecord event) {\n\n    }\n\n    @Override\n    public void postRelease(EventRecord event) {\n\n    }\n\n    @Override\n    public void onException(Throwable throwable, EventRecord event) {\n\n    }\n}\n"
+                                        },
+                                        {
+                                          "type": "file",
+                                          "name": "MyEventMessageInterceptor.java",
+                                          "format": "raw",
+                                          "data": "package ${basePackage}.adapter.domain._share.configure;\n\nimport org.netcorepal.cap4j.ddd.domain.event.EventMessageInterceptor;\nimport org.springframework.messaging.Message;\nimport org.springframework.stereotype.Service;\n\n/**\n * 领域事件消息拦截器\n *\n * @author cap4j-ddd-codegen\n */\n@Service\npublic class MyEventMessageInterceptor implements EventMessageInterceptor {\n\n    @Override\n    public void initPublish(Message message) {\n\n    }\n\n    @Override\n    public void prePublish(Message message) {\n\n    }\n\n    @Override\n    public void postPublish(Message message) {\n\n    }\n\n    @Override\n    public void preSubscribe(Message message) {\n\n    }\n\n    @Override\n    public void postSubscribe(Message message) {\n\n    }\n}\n"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "repositories"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "dir",
+                              "name": "infra",
+                              "children": [
+                                {
+                                  "type": "dir",
+                                  "name": "_share"
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "jdbc",
+                                  "children": [
+                                    {
+                                      "type": "file",
+                                      "name": "NamedParameterJdbcTemplateDao.java",
+                                      "format": "raw",
+                                      "data": "package ${basePackage}.adapter.infra.jdbc;\n\nimport lombok.extern.slf4j.Slf4j;\nimport org.springframework.beans.BeanWrapper;\nimport org.springframework.beans.PropertyAccessorFactory;\nimport org.springframework.core.convert.TypeDescriptor;\nimport org.springframework.core.convert.converter.GenericConverter;\nimport org.springframework.core.convert.support.DefaultConversionService;\nimport org.springframework.jdbc.core.BeanPropertyRowMapper;\nimport org.springframework.jdbc.core.JdbcTemplate;\nimport org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;\nimport org.springframework.stereotype.Service;\n\nimport javax.persistence.AttributeConverter;\nimport javax.persistence.Convert;\nimport java.lang.reflect.Field;\nimport java.lang.reflect.InvocationTargetException;\nimport java.lang.reflect.Method;\nimport java.math.BigDecimal;\nimport java.time.LocalDate;\nimport java.time.LocalDateTime;\nimport java.time.LocalTime;\nimport java.util.*;\nimport java.util.regex.Matcher;\nimport java.util.regex.Pattern;\nimport java.util.stream.Collectors;\n\n/**\n * @author cap4j-ddd-codegen\n */\n@Slf4j\n@Service\npublic class NamedParameterJdbcTemplateDao {\n    private final JdbcTemplate jdbcTemplate;\n    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;\n\n    public NamedParameterJdbcTemplateDao(JdbcTemplate jdbcTemplate) {\n        this.jdbcTemplate = jdbcTemplate;\n        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);\n    }\n\n    /**\n     * 查询一个实体，数据异常返回0或多条记录将会抛出异常\n     *\n     * @param entityClass\n     * @param sql\n     * @param paramBeans\n     * @param <E>\n     * @return\n     */\n    public <E> E queryOne(Class<E> entityClass, String sql, Object... paramBeans) {\n        Map<String, Object> params = resolveParamMap(paramBeans);\n        E result = null;\n        if (entityClass.isEnum()) {\n            Integer val = this.namedParameterJdbcTemplate.queryForObject(sql, params, Integer.class);\n            result = (E) EnumConvertUtil.getEnumFromCode(entityClass, val);\n        } else if (isPrimitiveType(entityClass)) {\n            result = this.namedParameterJdbcTemplate.queryForObject(sql, params, entityClass);\n        } else {\n            result = this.namedParameterJdbcTemplate.queryForObject(sql, params, generateRowMapper(entityClass));\n        }\n        return result;\n    }\n\n    /**\n     * 查询第一条实体记录\n     *\n     * @param entityClass\n     * @param sql\n     * @param paramBeans\n     * @param <E>\n     * @return\n     */\n    public <E> Optional<E> queryFirst(Class<E> entityClass, String sql, Object... paramBeans) {\n        Map<String, Object> params = resolveParamMap(paramBeans);\n        Pattern limitPattern = Pattern.compile(\"\\\\s+LIMIT\\\\s+\", Pattern.CASE_INSENSITIVE);\n        Matcher matcher = limitPattern.matcher(sql);\n        if (!matcher.find()) {\n            if (sql.trim().endsWith(\";\")) {\n                sql = sql.replaceFirst(\";\\\\s*$\", \" LIMIT 1;\");\n            } else {\n                sql += \" LIMIT 1;\";\n            }\n        }\n        List<E> result = null;\n        if (entityClass.isEnum()) {\n            result = this.namedParameterJdbcTemplate.queryForList(sql, params, Integer.class)\n                    .stream().map(i -> (E) EnumConvertUtil.getEnumFromCode(entityClass, i)).collect(Collectors.toList());\n        } else if (isPrimitiveType(entityClass)) {\n            result = this.namedParameterJdbcTemplate.queryForList(sql, params, entityClass);\n        } else {\n            result = this.namedParameterJdbcTemplate.query(sql, params, generateRowMapper(entityClass));\n        }\n        return result.stream().findFirst();\n    }\n\n    /**\n     * 查询实体列表\n     *\n     * @param entityClass\n     * @param sql\n     * @param paramBeans\n     * @param <E>\n     * @return\n     */\n    public <E> List<E> queryList(Class<E> entityClass, String sql, Object... paramBeans) {\n        Map<String, Object> params = resolveParamMap(paramBeans);\n        List<E> result = null;\n        if (entityClass.isEnum()) {\n            result = this.namedParameterJdbcTemplate.queryForList(sql, params, Integer.class)\n                    .stream().map(i -> (E) EnumConvertUtil.getEnumFromCode(entityClass, i)).collect(Collectors.toList());\n        } else if (isPrimitiveType(entityClass)) {\n            result = this.namedParameterJdbcTemplate.queryForList(sql, params, entityClass);\n        } else {\n            result = this.namedParameterJdbcTemplate.query(sql, params, generateRowMapper(entityClass));\n        }\n        return result;\n    }\n\n    /**\n     * 解析参数\n     *\n     * @param paramBeans\n     * @return\n     */\n    private Map<String, Object> resolveParamMap(Object... paramBeans) {\n        HashMap<String, Object> params = new HashMap<>();\n        for (Object paramBean : paramBeans) {\n            convertToPropertiesMap(params, paramBean);\n        }\n        return params;\n    }\n\n    /**\n     * 参数对象转Map\n     *\n     * @param resultMap\n     * @param object\n     * @param <T>\n     * @return\n     */\n    private static <T> Map<String, Object> convertToPropertiesMap(Map<String, Object> resultMap, T object) {\n        resultMap = resultMap == null\n                ? new HashMap<>()\n                : resultMap;\n\n        if (object == null) {\n            return resultMap;\n        }\n        if ((Map.class).isAssignableFrom(object.getClass())) {\n            resultMap.putAll((Map<String, ?>) object);\n        } else {\n            BeanWrapper wrapper = PropertyAccessorFactory.forBeanPropertyAccess(object);\n\n            for (Field propertyDescriptor : wrapper.getWrappedClass().getDeclaredFields()) {\n                String fieldName = propertyDescriptor.getName();\n\n                try {\n                    Object value = wrapper.getPropertyValue(fieldName);\n                    value = EnumConvertUtil.processWithJpaConverter(propertyDescriptor, value);\n                    value = EnumConvertUtil.processWithGetEnumCode(propertyDescriptor, value);\n                    resultMap.put(fieldName, value);\n                } catch (Exception e) {\n                    // 处理获取属性值时发生的异常\n                    log.error(\"命名参数转换异常 fieldName=\" + fieldName, e);\n                }\n            }\n        }\n\n        return resultMap;\n    }\n\n    /**\n     * 判断是否基础类型\n     *\n     * @param clazz\n     * @return\n     */\n    private static boolean isPrimitiveType(Class clazz) {\n        if (Long.class.equals(clazz)\n                || Integer.class.equals(clazz)\n                || Short.class.equals(clazz)\n                || Byte.class.equals(clazz)\n                || Float.class.equals(clazz)\n                || Double.class.equals(clazz)\n                || Boolean.class.equals(clazz)\n                || String.class.equals(clazz)\n                || BigDecimal.class.equals(clazz)\n                || Date.class.equals(clazz)\n                || LocalDateTime.class.equals(clazz)\n                || LocalDate.class.equals(clazz)\n                || LocalTime.class.equals(clazz)\n        ) {\n            return true;\n        }\n        return false;\n    }\n\n\n    private static Map<Class, BeanPropertyRowMapper> beanPropertyRowMapperMap = new HashMap<>();\n\n    /**\n     * 生成支持JpaConvert注解转化的RowMapper\n     *\n     * @param clazz\n     * @param <T>\n     * @return\n     */\n    private static <T> BeanPropertyRowMapper<T> generateRowMapper(Class<T> clazz) {\n        if (!beanPropertyRowMapperMap.containsKey(clazz)) {\n            DefaultConversionService conversionService = new DefaultConversionService();\n            BeanPropertyRowMapper beanPropertyRowMapper = BeanPropertyRowMapper.newInstance(clazz, conversionService);\n            for (Field propertyDescriptor : clazz.getDeclaredFields()) {\n                Convert convert = propertyDescriptor.getAnnotation(Convert.class);\n                if (convert != null && !convert.disableConversion()) {\n                    try {\n                        AttributeConverter converter = (AttributeConverter) convert.converter().newInstance();\n                        conversionService.addConverter(new JpaNumber2EnumConverter(Integer.class, propertyDescriptor.getType(), converter));\n                        conversionService.addConverter(new JpaNumber2EnumConverter(Long.class, propertyDescriptor.getType(), converter));\n                        conversionService.addConverter(new JpaNumber2EnumConverter(Short.class, propertyDescriptor.getType(), converter));\n                    } catch (InstantiationException e) {\n                        throw new RuntimeException(e);\n                    } catch (IllegalAccessException e) {\n                        throw new RuntimeException(e);\n                    }\n                } else if (propertyDescriptor.getType().isEnum()) {\n                    conversionService.addConverter(new GenericNumber2EnumConverter(Integer.class, propertyDescriptor.getType()));\n                    conversionService.addConverter(new GenericNumber2EnumConverter(Long.class, propertyDescriptor.getType()));\n                    conversionService.addConverter(new GenericNumber2EnumConverter(Short.class, propertyDescriptor.getType()));\n                }\n            }\n            beanPropertyRowMapperMap.put(clazz, beanPropertyRowMapper);\n        }\n        return beanPropertyRowMapperMap.get(clazz);\n    }\n\n    /**\n     * 枚举转化工具\n     */\n    private static class EnumConvertUtil {\n        private static final String ENUM_PERSIST_FIELD_METHOD = \"getCode\";\n\n        /**\n         * 反射读取枚举数字编码\n         *\n         * @param e\n         * @return\n         */\n        private static Object getEnumCode(Object e) {\n            Object code = null;\n            for (String fm : ENUM_PERSIST_FIELD_METHOD.split(\",\")) {\n                try {\n                    Method m = e.getClass().getMethod(fm);\n                    if (m != null) {\n                        code = m.invoke(e);\n                        break;\n                    }\n                } catch (IllegalAccessException ex) {\n                    throw new RuntimeException(ex);\n                } catch (InvocationTargetException ex) {\n                    throw new RuntimeException(ex);\n                } catch (NoSuchMethodException ex) {\n                    throw new RuntimeException(ex);\n                }\n            }\n            return code;\n        }\n\n        private static final Map<Class, Map<Object, Object>> CODE_ENUM_MAP_CACHE = new HashMap<>();\n\n        /**\n         * 数字编码转换成指定枚举类型\n         *\n         * @param enumClass\n         * @param val\n         * @return\n         */\n        private static Object getEnumFromCode(Class enumClass, Object val) {\n            if (!CODE_ENUM_MAP_CACHE.containsKey(enumClass)) {\n                Map<Object, Object> codeEnumMap = Arrays.stream(enumClass.getEnumConstants())\n                        .collect(Collectors.toMap(e -> getEnumCode(e), e -> e));\n                CODE_ENUM_MAP_CACHE.put(enumClass, codeEnumMap);\n            }\n            return CODE_ENUM_MAP_CACHE.get(enumClass).get(val);\n        }\n\n        /**\n         * 尝试JpaConvert注解转换枚举数字编码\n         *\n         * @param propertyDescriptor\n         * @param value\n         * @return\n         */\n        private static Object processWithJpaConverter(Field propertyDescriptor, Object value) {\n            Convert convert = propertyDescriptor.getAnnotation(Convert.class);\n            if (convert != null && !convert.disableConversion()) {\n                try {\n                    AttributeConverter converter = null;\n                    converter = (AttributeConverter) convert.converter().newInstance();\n                    return converter.convertToDatabaseColumn(value);\n                } catch (InstantiationException e) {\n                    throw new RuntimeException(e);\n                } catch (IllegalAccessException e) {\n                    throw new RuntimeException(e);\n                }\n            }\n            return value;\n        }\n\n        /**\n         * 尝试反射获取枚举数字编码\n         *\n         * @param propertyDescriptor\n         * @param value\n         * @return\n         */\n        private static Object processWithGetEnumCode(Field propertyDescriptor, Object value) {\n            if (value != null && value.getClass().isEnum()) {\n                return getEnumCode(value);\n            }\n            return value;\n        }\n    }\n\n    /**\n     * 基于JPA Convert注解的GenericConverter\n     */\n    private static class JpaNumber2EnumConverter implements GenericConverter {\n        Set<ConvertiblePair> set = new HashSet<>();\n        AttributeConverter attributeConverter;\n\n        public JpaNumber2EnumConverter(Class sourceType, Class targetType, AttributeConverter converter) {\n            set.add(new ConvertiblePair(sourceType, targetType));\n            this.attributeConverter = converter;\n        }\n\n        @Override\n        public Set<ConvertiblePair> getConvertibleTypes() {\n            return set;\n        }\n\n        @Override\n        public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {\n            return attributeConverter.convertToEntityAttribute(source);\n        }\n    }\n\n    /**\n     * 基于反射的GenericConverter\n     */\n    private static class GenericNumber2EnumConverter implements GenericConverter {\n\n        Set<ConvertiblePair> set = new HashSet<>();\n\n        public GenericNumber2EnumConverter(Class sourceType, Class targetType) {\n            set.add(new ConvertiblePair(sourceType, targetType));\n        }\n\n        @Override\n        public Set<ConvertiblePair> getConvertibleTypes() {\n            return set;\n        }\n\n        @Override\n        public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {\n            return EnumConvertUtil.getEnumFromCode(targetType.getType(), source);\n        }\n    }\n\n}\n"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "mybatis",
+                                  "children": [
+                                    {
+                                      "type": "dir",
+                                      "name": "_share",
+                                      "children": [
+                                        {
+                                          "type": "file",
+                                          "name": "MyEnumTypeHandler.java",
+                                          "format": "raw",
+                                          "data": "package ${basePackage}.adapter.infra.mybatis._share;\n\nimport org.apache.ibatis.type.BaseTypeHandler;\nimport org.apache.ibatis.type.JdbcType;\n\nimport java.lang.reflect.InvocationTargetException;\nimport java.lang.reflect.Method;\nimport java.sql.CallableStatement;\nimport java.sql.PreparedStatement;\nimport java.sql.ResultSet;\nimport java.sql.SQLException;\nimport java.util.Arrays;\nimport java.util.Map;\nimport java.util.stream.Collectors;\n\n/**\n * Mybatis枚举转化\n *\n * @author cap4j-ddd-codegen\n */\npublic class MyEnumTypeHandler <E extends Enum<E>> extends BaseTypeHandler<E> {\n    private static final String ENUM_PERSIST_FIELD_METHOD = \"getCode\";\n    private Integer getEnumCode(E e){\n        Integer code = 0;\n        for (String fm : ENUM_PERSIST_FIELD_METHOD.split(\",\")) {\n            try {\n                Method m = e.getClass().getMethod(fm);\n                if (m != null) {\n                    code = (Integer) m.invoke(e);\n                    break;\n                }\n            } catch (IllegalAccessException ex) {\n                throw new RuntimeException(ex);\n            } catch (InvocationTargetException ex) {\n                throw new RuntimeException(ex);\n            } catch (NoSuchMethodException ex) {\n                throw new RuntimeException(ex);\n            }\n        }\n        return code;\n    }\n\n    private Map<Integer, E> enums;\n\n    public MyEnumTypeHandler(Class<E> type) {\n        if (type == null) {\n            throw new IllegalArgumentException(\"Type argument cannot be null\");\n        } else {\n            this.enums = Arrays.stream(type.getEnumConstants()).collect(Collectors.toMap(e -> getEnumCode((E) e), e -> (E) e));\n            if (this.enums == null) {\n                throw new IllegalArgumentException(type.getSimpleName() + \" does not represent an enum type.\");\n            }\n        }\n    }\n\n    @Override\n    public void setNonNullParameter(PreparedStatement preparedStatement, int i, E e, JdbcType jdbcType) throws SQLException {\n        int val = getEnumCode(e);\n        preparedStatement.setInt(i, val);\n    }\n\n    @Override\n    public E getNullableResult(ResultSet resultSet, String s) throws SQLException {\n        int ordinal = resultSet.getInt(s);\n        return this.enums.get(ordinal);\n    }\n\n    @Override\n    public E getNullableResult(ResultSet resultSet, int i) throws SQLException {\n        int ordinal = resultSet.getInt(i);\n        return this.enums.get(ordinal);\n    }\n\n    @Override\n    public E getNullableResult(CallableStatement callableStatement, int i) throws SQLException {\n        int ordinal = callableStatement.getInt(i);\n        return this.enums.get(ordinal);\n    }\n}\n"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "dir",
+                                      "name": "mapper"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "dir",
+                              "name": "portal",
+                              "children": [
+                                {
+                                  "type": "dir",
+                                  "name": "api",
+                                  "children": [
+                                    {
+                                      "type": "dir",
+                                      "name": "_share",
+                                      "children": [
+                                        {
+                                          "type": "dir",
+                                          "name": "configure",
+                                          "children": [
+                                            {
+                                              "type": "file",
+                                              "name": "CommonExceptionHandler.java",
+                                              "format": "raw",
+                                              "data": "package ${basePackage}.adapter.portal.api._share.configure;\n\nimport ${basePackage}._share.CodeEnum;\nimport ${basePackage}.adapter.portal.api._share.ResponseData;\nimport ${basePackage}._share.exception.ErrorException;\nimport ${basePackage}._share.exception.KnownException;\nimport ${basePackage}._share.exception.WarnException;\nimport com.alibaba.fastjson.JSON;\nimport com.fasterxml.jackson.annotation.JsonPropertyOrder;\nimport lombok.Data;\nimport lombok.extern.slf4j.Slf4j;\nimport org.apache.catalina.connector.ClientAbortException;\nimport org.slf4j.event.Level;\nimport org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.converter.HttpMessageNotReadableException;\nimport org.springframework.validation.BindException;\nimport org.springframework.web.HttpRequestMethodNotSupportedException;\nimport org.springframework.web.bind.MethodArgumentNotValidException;\nimport org.springframework.web.bind.MissingRequestHeaderException;\nimport org.springframework.web.bind.MissingServletRequestParameterException;\nimport org.springframework.web.bind.annotation.ExceptionHandler;\nimport org.springframework.web.bind.annotation.ResponseStatus;\nimport org.springframework.web.bind.annotation.RestControllerAdvice;\nimport org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;\nimport org.springframework.web.servlet.NoHandlerFoundException;\n\nimport javax.servlet.http.HttpServletRequest;\nimport javax.validation.ConstraintViolation;\nimport javax.validation.ConstraintViolationException;\nimport java.util.Map;\nimport java.util.Set;\n\n/**\n * 公共的全局异常处理器\n *\n * @author cap4j-ddd-codegen\n */\n@Slf4j\n@RestControllerAdvice\n@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)\npublic class CommonExceptionHandler {\n\n    public String getRequestInfo(HttpServletRequest request) {\n        RequestMsg requestMsg = new RequestMsg();\n        Map<String, String[]> param = request.getParameterMap();\n        String url = request.getRequestURI();\n        requestMsg.setParams(param);\n        requestMsg.setUrl(url);\n        return JSON.toJSONString(requestMsg);\n    }\n\n    @Data\n    @JsonPropertyOrder({\"url\", \"params\"})\n    public static class RequestMsg {\n        private String url;\n        private Map<String, String[]> params;\n    }\n\n    @ExceptionHandler(NoHandlerFoundException.class)\n    @ResponseStatus(HttpStatus.NOT_FOUND)\n    public ResponseData<Object> handleError(NoHandlerFoundException e) {\n        log.warn(String.format(\"404没找到请求:%s\", e.getMessage()), e);\n        return ResponseData.fail(CodeEnum.NOT_FOUND);\n    }\n\n    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)\n    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)\n    public ResponseData<Object> handleError(HttpRequestMethodNotSupportedException e) {\n        log.warn(String.format(\"不支持当前请求方法:%s\", e.getMessage()), e);\n        return ResponseData.fail(CodeEnum.METHOD_NOT_SUPPORTED);\n    }\n\n    /**\n     * 参数校验异常\n     *\n     * @param e exception\n     * @return ResponseData\n     */\n    @ExceptionHandler(ConstraintViolationException.class)\n    @ResponseStatus(HttpStatus.BAD_REQUEST)\n    public ResponseData<Object> handleError(HttpServletRequest request, ConstraintViolationException e) {\n        String requestInfo = getRequestInfo(request);\n        log.warn(String.format(\"参数校验异常:%s request:%s \", e.getMessage(), requestInfo), e);\n        Set<ConstraintViolation<?>> constraintViolations = e.getConstraintViolations();\n        for (ConstraintViolation<?> constraintViolation : constraintViolations) {\n            String message = constraintViolation.getMessage();\n            return ResponseData.fail(CodeEnum.PARAM_INVALIDATE.getCode(), message);\n        }\n        return ResponseData.fail(CodeEnum.PARAM_INVALIDATE.getCode(), e.getLocalizedMessage());\n    }\n\n    @ExceptionHandler(MissingServletRequestParameterException.class)\n    @ResponseStatus(HttpStatus.BAD_REQUEST)\n    public ResponseData<Object> handleError(MissingServletRequestParameterException e) {\n        log.warn(String.format(\"缺少请求参数:%s\", e.getMessage()), e);\n        String message = String.format(\"缺少必要的请求参数: %s\", e.getParameterName());\n        return ResponseData.fail(CodeEnum.PARAM_INVALIDATE.getCode(), message);\n    }\n\n    @ExceptionHandler(MethodArgumentTypeMismatchException.class)\n    @ResponseStatus(HttpStatus.BAD_REQUEST)\n    public ResponseData<Object> handleError(MethodArgumentTypeMismatchException e) {\n        log.warn(String.format(\"请求参数格式错误:%s\", e.getMessage()), e);\n        String message = String.format(\"请求参数格式错误: %s\", e.getName());\n        return ResponseData.fail(CodeEnum.PARAM_INVALIDATE.getCode(), message);\n    }\n\n    @ExceptionHandler(MethodArgumentNotValidException.class)\n    @ResponseStatus(HttpStatus.BAD_REQUEST)\n    public ResponseData<Object> handleError(MethodArgumentNotValidException e) {\n        log.warn(String.format(\"参数验证失败:%s\", e.getMessage()), e);\n        return ResponseData.fail(CodeEnum.PARAM_INVALIDATE.getCode(), \"参数[\" + e.getBindingResult().getFieldError().getField() + \"]不正确：\" + e.getBindingResult().getFieldError().getDefaultMessage());\n    }\n\n    @ExceptionHandler(BindException.class)\n    @ResponseStatus(HttpStatus.BAD_REQUEST)\n    public ResponseData<Object> handleError(BindException e) {\n        log.warn(String.format(\"参数绑定失败:%s\", e.getMessage()), e);\n        return ResponseData.fail(CodeEnum.PARAM_INVALIDATE.getCode(), \"参数不正确\");\n    }\n\n    @ExceptionHandler(HttpMessageNotReadableException.class)\n    @ResponseStatus(HttpStatus.BAD_REQUEST)\n    public ResponseData<Object> handleError(HttpServletRequest request, HttpMessageNotReadableException e) {\n        log.error(String.format(\"消息不能读取:%s request:%s\", e.getMessage(), getRequestInfo(request)), e);\n        return ResponseData.fail(CodeEnum.MESSAGE_NOT_READABLE);\n    }\n\n    @ExceptionHandler(value = MissingRequestHeaderException.class)\n    @ResponseStatus(HttpStatus.BAD_REQUEST)\n    public ResponseData<Object> headerParamException(HttpServletRequest request, MissingRequestHeaderException e) {\n        log.warn(String.format(\"缺少header参数:%s request:%s\",  e.getHeaderName(), getRequestInfo(request)), e);\n        return ResponseData.fail(CodeEnum.PARAM_INVALIDATE.getCode(), \"缺少header参数\");\n    }\n\n    @ExceptionHandler(value = KnownException.class)\n    @ResponseStatus(HttpStatus.OK)\n    public ResponseData<Object> knownException(KnownException be) {\n        if (Level.ERROR.toString().equalsIgnoreCase(be.getLevel())) {\n            log.error(\"发生业务错误: \", be);\n        } else if (Level.WARN.toString().equalsIgnoreCase(be.getLevel())) {\n            log.warn(\"发生业务警告: \", be);\n        } else if (log.isDebugEnabled()) {\n            log.debug(\"业务失败返回: \", be);\n        }\n        return ResponseData.fail(be);\n    }\n\n    @ExceptionHandler(value = WarnException.class)\n    @ResponseStatus(HttpStatus.OK)\n    public ResponseData<Object> warnException(WarnException be) {\n        log.warn(\"发生业务警告: \", be);\n        return ResponseData.fail(be);\n    }\n\n    @ExceptionHandler(value = ErrorException.class)\n    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)\n    public ResponseData<Object> errorException(ErrorException be) {\n        log.error(\"发生业务错误: \", be);\n        return ResponseData.fail(be);\n    }\n\n    @ExceptionHandler(value = ClientAbortException.class)\n    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)\n    public ResponseData<Object> clientAbortException(ClientAbortException ce) {\n        log.warn(\"客户端中断异常: \", ce);\n        return ResponseData.fail(\"断开的连接:Broken pipe\");\n    }\n\n    @ExceptionHandler(Throwable.class)\n    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)\n    public ResponseData<Object> handleError(HttpServletRequest request, Throwable e) {\n        KnownException ke = getKnownException(e);\n        if (ke != null) {\n            return knownException(ke);\n        }\n        log.error(String.format(\"发生未知异常:%s request:%s\", e.getMessage(), getRequestInfo(request)), e);\n        return ResponseData.fail(CodeEnum.ERROR);\n    }\n\n    private KnownException getKnownException(Throwable e) {\n        if (e instanceof KnownException) {\n            return (KnownException) e;\n        }\n        if (e.getCause() != null && e.getCause() != e) {\n            return getKnownException(e.getCause());\n        }\n        return null;\n    }\n}"
+                                            },
+                                            {
+                                              "type": "file",
+                                              "name": "MvcConfig.java",
+                                              "format": "raw",
+                                              "data": "package ${basePackage}.adapter.portal.api._share.configure;\n\nimport lombok.RequiredArgsConstructor;\nimport org.netcorepal.cap4j.ddd.domain.web.ClearDomainContextInterceptor;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.web.servlet.config.annotation.InterceptorRegistry;\nimport org.springframework.web.servlet.config.annotation.WebMvcConfigurer;\n\n/**\n * Mvc配置\n * @author cap4j-ddd-codegen\n */\n@Configuration\n@RequiredArgsConstructor\npublic class MvcConfig implements WebMvcConfigurer {\n    private final ClearDomainContextInterceptor clearDomainContextInterceptor;\n\n    @Override\n    public void addInterceptors(InterceptorRegistry registry) {\n        registry.addInterceptor(clearDomainContextInterceptor).addPathPatterns(\"/**\");\n    }\n}\n"
+                                            },
+                                            {
+                                              "type": "file",
+                                              "name": "SwaggerConfig.java",
+                                              "format": "raw",
+                                              "data": "package ${basePackage}.adapter.portal.api._share.configure;\n\nimport io.swagger.v3.oas.models.OpenAPI;\nimport io.swagger.v3.oas.models.info.Info;\nimport lombok.extern.slf4j.Slf4j;\nimport org.springdoc.core.GroupedOpenApi;\nimport org.springframework.beans.factory.annotation.Value;\nimport org.springframework.boot.web.context.WebServerInitializedEvent;\nimport org.springframework.context.ApplicationListener;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\n//import org.springframework.web.bind.annotation.RestController;\n//import springfox.documentation.builders.ApiInfoBuilder;\n//import springfox.documentation.builders.PathSelectors;\n//import springfox.documentation.builders.RequestHandlerSelectors;\n//import springfox.documentation.spi.DocumentationType;\n//import springfox.documentation.spring.web.plugins.Docket;\n//import springfox.documentation.swagger2.annotations.EnableSwagger2;\n\n/**\n * swagger文档配置\n *\n * @author cap4j-ddd-codegen\n */\n@Configuration\n@Slf4j\n//@EnableSwagger2\npublic class SwaggerConfig implements ApplicationListener<WebServerInitializedEvent> {\n    @Value(\"${spring.application.name:${artifactId}}\")\n    private String applicationName;\n    @Value(\"${spring.application.version:${version}}\")\n    private String applicationVersion;\n    private String description = \"\";\n\n\n    private OpenAPI openApiConfig(OpenAPI openAPI) {\n        return openAPI.info(new Info()\n                .title(applicationName)\n                .version(applicationVersion)\n                .description(description));\n    }\n\n    /**\n     * 用于单个文档情形，文档地址是统一的 /v3/api-docs，该文档地址可以通过配置项 springdoc.api-docs.path 进行自定义配置\n     * 需依赖 com.github.xiaoymin:knife4j-springdoc-ui，并取消依赖 com.github.xiaoymin:knife4j-spring-boot-starter\n     * 可配置项\n     * springdoc.api-docs.path=/v3/openapi\n     * springdoc.packagesToScan=package1, package2\n     * springdoc.pathsToMatch=/v1, /api/balance/**\n     *\n     * @return\n     */\n    @Bean\n    public OpenAPI openAPI() {\n        return openApiConfig(new OpenAPI());\n    }\n\n    /**\n     * 用于多个文档情形，文档地址会加分组名称 /v3/api-docs/{group}，该文档地址前缀可以通过配置项 springdoc.api-docs.path 进行自定义配置\n     * knife4j ui需要分组支持\n     *\n     * @return\n     */\n    @Bean\n    public GroupedOpenApi groupedOpenApi() {\n        String[] paths = {\"/**\"};\n        String pacakage = this.getClass().getPackage().getName().split(\".adapter\")[0]\n                + \".adapter.portal.api\";\n        return GroupedOpenApi.builder()\n                .group(applicationName)\n                .pathsToMatch(paths)\n                .packagesToScan(pacakage)\n                .addOperationCustomizer((operation, handlerMethod) -> operation)\n                .addOpenApiCustomiser(openApi -> openApiConfig(openApi))\n                .build();\n    }\n\n//    /**\n//     * springfox 文档配置\n//     * 需依赖 com.github.xiaoymin:knife4j-spring-boot-starter，并取消依赖 com.github.xiaoymin:knife4j-springdoc-ui\n//     * 标记 @EnableSwagger2\n//     * @return\n//     */\n//    @Bean\n//    public Docket docket() {\n//        Docket docket=new Docket(DocumentationType.SWAGGER_2)\n//                .apiInfo(new ApiInfoBuilder()\n//                        .title(applicationName)\n//                        .version(applicationVersion)\n//                        .description(description)\n//                        .build())\n//                //.groupName(applicationName)\n//                .select()\n//                .apis(RequestHandlerSelectors.withClassAnnotation(RestController.class))\n//                .paths(PathSelectors.any())\n//                .build();\n//        return docket;\n//    }\n\n    @Value(\"${server.port:80}\")\n    private String serverPort;\n    @Value(\"${server.servlet.context-path:/}\")\n    private String serverServletContentPath;\n\n    @Override\n    public void onApplicationEvent(WebServerInitializedEvent webServerInitializedEvent) {\n        log.info(\"swagger URL: http://localhost:\" + serverPort + serverServletContentPath + \"/swagger-ui/index.html\");\n        log.info(\"knife4j URL: http://localhost:\" + serverPort + serverServletContentPath + \"/doc.html\");\n    }\n}\n"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "file",
+                                          "name": "ResponseData.java",
+                                          "format": "raw",
+                                          "data": "package ${basePackage}.adapter.portal.api._share;\n\nimport ${basePackage}._share.CodeEnum;\nimport ${basePackage}._share.exception.ErrorException;\nimport ${basePackage}._share.exception.KnownException;\nimport ${basePackage}._share.exception.WarnException;\nimport com.fasterxml.jackson.annotation.JsonIgnore;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport lombok.Data;\n\nimport java.util.Objects;\n\n/**\n * @author cap4j-ddd-codegen\n */\n@Data\n@Schema(description = \"接口响应格式\")\npublic class ResponseData<T> {\n    @Schema(description=\"状态码\")\n    private Status status;\n    @Schema(description=\"结果集\")\n    private T data;\n    @Schema(description=\"服务器时间\")\n    private long timestamp;\n\n    private ResponseData() {\n    }\n\n    private ResponseData(T data) {\n        this.status = new Status(CodeEnum.SUCCESS.getCode(), CodeEnum.SUCCESS.getName());\n        this.timestamp = System.currentTimeMillis();\n        this.data = data;\n    }\n\n    private ResponseData(Integer code, String msg, T data) {\n        this.status = new Status(code, msg);\n        if (code == null) {\n            this.status.setCode(CodeEnum.FAIL.getCode());\n        }\n\n        if (msg == null) {\n            this.status.setMsg(\"\");\n        }\n\n        this.data = data;\n        this.timestamp = System.currentTimeMillis();\n    }\n\n    public static <T> ResponseData<T> success(T data) {\n        return new ResponseData(data);\n    }\n\n    public static <T> ResponseData<T> success(String msg, T data) {\n        return new ResponseData(CodeEnum.SUCCESS.getCode(), msg, data);\n    }\n\n    public static <T> ResponseData<T> fail(String msg) {\n        return new ResponseData(CodeEnum.FAIL.getCode(), msg, null);\n    }\n\n    public static <T> ResponseData<T> fail(CodeEnum codeEnum) {\n        return new ResponseData(codeEnum.getCode(), codeEnum.getName(), null);\n    }\n\n    public static <T> ResponseData<T> fail(KnownException knownException) {\n        return new ResponseData(knownException.getCode(), knownException.getMsg(), null);\n    }\n\n    public static <T> ResponseData<T> fail(Integer code, String msg) {\n        code = code == null ? CodeEnum.FAIL.getCode() : code;\n        return new ResponseData(code, msg, null);\n    }\n\n    public static <T> ResponseData<T> illegalArgument() {\n        return new ResponseData(CodeEnum.PARAM_INVALIDATE.getCode(), CodeEnum.PARAM_INVALIDATE.getName(), null);\n    }\n\n    public static <T> ResponseData<T> systemError() {\n        return new ResponseData(CodeEnum.ERROR.getCode(), CodeEnum.ERROR.getName(), null);\n    }\n\n    @JsonIgnore\n    public boolean isSuccess() {\n        Integer retCode = status.getCode();\n        return Objects.equals(CodeEnum.SUCCESS.getCode(), retCode);\n    }\n\n    public void throwKnownException(){\n        throw new KnownException(status.getCode(), status.getMsg());\n    }\n\n    public void throwWarnException(){\n        throw new WarnException(status.getCode(), status.getMsg());\n    }\n\n    public void throwErrorException(){\n        throw new ErrorException(status.getCode(), status.getMsg());\n    }\n\n    public void tryThrowKnownException(){\n        if(!isSuccess()){\n            throwKnownException();\n        }\n    }\n\n    public void tryThrowWarnException(){\n        if(!isSuccess()){\n            throwWarnException();\n        }\n    }\n\n    public void tryThrowErrorException(){\n        if(!isSuccess()){\n            throwErrorException();\n        }\n    }\n}\n\n"
+                                        },
+                                        {
+                                          "type": "file",
+                                          "name": "Status.java",
+                                          "format": "raw",
+                                          "data": "package ${basePackage}.adapter.portal.api._share;\n\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport lombok.Data;\n\n/**\n * @author cap4j-ddd-codegen\n */\n@Data\n@Schema(description = \"接口返回状态\")\npublic class Status {\n    @Schema(description=\"业务状态码\")\n    private Integer code;\n    @Schema(description=\"业务状态信息\")\n    private String msg;\n\n    public Status() {\n    }\n\n    public Status(Integer code, String msg) {\n        this.code = code;\n        this.msg = msg;\n    }\n}\n"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "file",
+                                      "name": "TestController.java",
+                                      "format": "raw",
+                                      "data": "package ${basePackage}.adapter.portal.api;\n\nimport io.swagger.v3.oas.annotations.tags.Tag;\nimport lombok.extern.slf4j.Slf4j;\nimport ${basePackage}.adapter.portal.api._share.ResponseData;\nimport org.springframework.web.bind.annotation.*;\n\n/**\n *\n * @author cap4j-ddd-codegen\n */\n@Tag(name = \"测试控制器\")\n@RestController\n@RequestMapping(value = \"/test\")\n@Slf4j\npublic class TestController {\n\n    @PostMapping(value = \"\")\n    public ResponseData<String> test(@RequestParam(\"msg\") String msg) {\n        return ResponseData.success(\"echo: \" + msg);\n    }\n\n}\n"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "jobs",
+                                  "children": [
+                                    {
+                                      "type": "dir",
+                                      "name": "_share",
+                                      "children": [
+                                        {
+                                          "type": "dir",
+                                          "name": "configure",
+                                          "children": [
+                                            {
+                                              "type": "file",
+                                              "name": "XxlJobConfig.java",
+                                              "format": "raw",
+                                              "data": "package ${basePackage}.adapter.portal.jobs._share.configure;\n\nimport com.xxl.job.core.executor.impl.XxlJobSpringExecutor;\nimport lombok.extern.slf4j.Slf4j;\nimport org.springframework.beans.factory.annotation.Value;\nimport org.springframework.boot.autoconfigure.condition.ConditionalOnClass;\nimport org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;\nimport org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.util.Assert;\n\n/**\n * xxljob-job config\n *\n * @author xuxueli 2017-04-28\n */\n@Slf4j\n@Configuration\n@ConditionalOnClass({XxlJobSpringExecutor.class})\n@ConditionalOnProperty(prefix = \"xxl.job\", value = {\"admin.addresses\", \"executor.appname\"})\npublic class XxlJobConfig {\n\n    /**\n     * 针对多网卡、容器内部署等情况，可借助 \"spring-cloud-commons\" 提供的 \"InetUtils\" 组件灵活定制注册IP；\n     *\n     *      1、引入依赖：\n     *          <dependency>\n     *             <groupId>org.springframework.cloud</groupId>\n     *             <artifactId>spring-cloud-commons</artifactId>\n     *             <version>${version}</version>\n     *         </dependency>\n     *\n     *      2、配置文件，或者容器启动变量\n     *          spring.cloud.inetutils.preferred-networks: 'xxx.xxx.xxx.'\n     *\n     *      3、获取IP\n     *          String ip_ = inetUtils.findFirstNonLoopbackHostInfo().getIpAddress();\n     */\n\n\n    @Value(\"${xxl.job.admin.addresses}\")\n    private String adminAddresses;\n\n    @Value(\"${xxl.job.accessToken}\")\n    private String accessToken;\n\n    @Value(\"${xxl.job.executor.appname}\")\n    private String appname;\n\n    @Value(\"${xxl.job.executor.address}\")\n    private String address;\n\n    @Value(\"${xxl.job.executor.ip}\")\n    private String ip;\n\n    @Value(\"${xxl.job.executor.port}\")\n    private int port;\n\n    @Value(\"${xxl.job.executor.logpath}\")\n    private String logPath;\n\n    @Value(\"${xxl.job.executor.logretentiondays}\")\n    private int logRetentionDays;\n\n\n    @Bean(initMethod = \"start\", destroyMethod = \"destroy\")\n    @ConditionalOnMissingBean(XxlJobSpringExecutor.class)\n    public XxlJobSpringExecutor xxlJobExecutor() {\n        Assert.hasText(adminAddresses, \"[xxljob.job.admin.addresses] must not be null\");\n        Assert.hasText(appname, \"[xxljob.job.executor.appname] must not be null\");\n        log.info(\">>>>>>>>>>> xxljob-job config init.\");\n        XxlJobSpringExecutor xxlJobSpringExecutor = new XxlJobSpringExecutor();\n        xxlJobSpringExecutor.setAdminAddresses(adminAddresses);\n        xxlJobSpringExecutor.setAppName(appname);\n        // xxlJobSpringExecutor.setAddress(address);\n        xxlJobSpringExecutor.setIp(ip);\n        xxlJobSpringExecutor.setPort(port);\n        xxlJobSpringExecutor.setAccessToken(accessToken);\n        xxlJobSpringExecutor.setLogPath(logPath);\n        xxlJobSpringExecutor.setLogRetentionDays(logRetentionDays);\n\n        return xxlJobSpringExecutor;\n    }\n}\n"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "queues"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "dir",
+                  "name": "resources",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "mapper"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "dir",
+              "name": "test",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "name": "${artifactId}-application",
+      "children": [
+        {
+          "type": "file",
+          "name": "pom.xml",
+          "format": "raw",
+          "data": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n    <modelVersion>4.0.0</modelVersion>\n    <parent>\n        <groupId>${groupId}</groupId>\n        <artifactId>${artifactId}</artifactId>\n        <version>${version}</version>\n    </parent>\n\n    <artifactId>${artifactId}-application</artifactId>\n\n    <properties>\n        <maven.compiler.source>8</maven.compiler.source>\n        <maven.compiler.target>8</maven.compiler.target>\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n    </properties>\n\n    <dependencies>\n        <dependency>\n            <groupId>${groupId}</groupId>\n            <artifactId>${artifactId}-share</artifactId>\n            <version>${project.version}</version>\n        </dependency>\n        <dependency>\n            <groupId>${groupId}</groupId>\n            <artifactId>${artifactId}-domain</artifactId>\n            <version>${project.version}</version>\n        </dependency>\n    </dependencies>\n\n</project>"
+        },
+        {
+          "type": "dir",
+          "name": "src",
+          "children": [
+            {
+              "type": "dir",
+              "name": "main",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": [
+                        {
+                          "type": "dir",
+                          "name": "application",
+                          "children": [
+                            {
+                              "type": "dir",
+                              "name": "_share",
+                              "children": [
+                                {
+                                  "type": "dir",
+                                  "name": "enums"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "dir",
+                              "name": "commands",
+                              "tag": "command"
+                            },
+                            {
+                              "type": "dir",
+                              "name": "distributed",
+                              "children": [
+                                {
+                                  "type": "dir",
+                                  "name": "clients",
+                                  "tag": "client"
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "events",
+                                  "tag": "integration_event"
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "sagas"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "dir",
+                              "name": "queries",
+                              "tag": "query"
+                            },
+                            {
+                              "type": "dir",
+                              "name": "subscribers",
+                              "children": [
+                                {
+                                  "type": "dir",
+                                  "name": "domain",
+                                  "tag": "domain_event_handler"
+                                },
+                                {
+                                  "type": "dir",
+                                  "name": "integration",
+                                  "tag": "integration_event_handler"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "dir",
+                  "name": "resources",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "type": "dir",
+              "name": "test",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "name": "${artifactId}-domain",
+      "children": [
+        {
+          "type": "file",
+          "name": "pom.xml",
+          "format": "raw",
+          "data": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n    <modelVersion>4.0.0</modelVersion>\n    <parent>\n        <groupId>${groupId}</groupId>\n        <artifactId>${artifactId}</artifactId>\n        <version>${version}</version>\n    </parent>\n\n    <artifactId>${artifactId}-domain</artifactId>\n\n    <properties>\n        <maven.compiler.source>8</maven.compiler.source>\n        <maven.compiler.target>8</maven.compiler.target>\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n    </properties>\n\n    <dependencies>\n        <dependency>\n            <groupId>${groupId}</groupId>\n            <artifactId>${artifactId}-share</artifactId>\n            <version>${project.version}</version>\n        </dependency>\n        <dependency>\n            <groupId>io.github.netcorepal</groupId>\n            <artifactId>cap4j-ddd-starter-jpa-rocketmq</artifactId>\n            <version>${cap4j.version}</version>\n        </dependency>\n        <!-- JPA -->\n        <dependency>\n            <groupId>org.springframework.boot</groupId>\n            <artifactId>spring-boot-starter-data-jpa</artifactId>\n        </dependency>\n    </dependencies>\n\n</project>"
+        },
+        {
+          "type": "dir",
+          "name": "src",
+          "children": [
+            {
+              "type": "dir",
+              "name": "main",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": [
+                        {
+                          "type": "dir",
+                          "name": "domain",
+                          "children": [
+                            {
+                              "type": "dir",
+                              "name": "_share"
+                            },
+                            {
+                              "type": "dir",
+                              "name": "aggregates",
+                              "tag": "aggregate,domain_event,factory,specification"
+                            },
+                            {
+                              "type": "dir",
+                              "name": "services",
+                              "tag": "domain_service"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "dir",
+                  "name": "resources",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "type": "dir",
+              "name": "test",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "name": "${artifactId}-share",
+      "children": [
+        {
+          "type": "file",
+          "name": "pom.xml",
+          "format": "raw",
+          "data": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n    <modelVersion>4.0.0</modelVersion>\n    <parent>\n        <groupId>${groupId}</groupId>\n        <artifactId>${artifactId}</artifactId>\n        <version>${version}</version>\n    </parent>\n\n    <artifactId>${artifactId}-share</artifactId>\n\n    <properties>\n        <maven.compiler.source>8</maven.compiler.source>\n        <maven.compiler.target>8</maven.compiler.target>\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n    </properties>\n\n    <dependencies>\n        <dependency>\n            <groupId>io.swagger.core.v3</groupId>\n            <artifactId>swagger-annotations</artifactId>\n            <version>${swagger3.version}</version>\n        </dependency>\n        <!-- 常用工具类 -->\n        <dependency>\n            <groupId>org.apache.commons</groupId>\n            <artifactId>commons-lang3</artifactId>\n            <version>${commons.lang3.version}</version>\n        </dependency>\n        <dependency>\n            <groupId>org.apache.commons</groupId>\n            <artifactId>commons-collections4</artifactId>\n            <version>${commons.collections4.version}</version>\n        </dependency>\n        <dependency>\n            <groupId>com.google.guava</groupId>\n            <artifactId>guava</artifactId>\n            <version>${guava.version}</version>\n        </dependency>\n        <dependency>\n            <groupId>com.alibaba</groupId>\n            <artifactId>fastjson</artifactId>\n            <version>${fastjson.version}</version>\n        </dependency>\n    </dependencies>\n\n</project>"
+        },
+        {
+          "type": "dir",
+          "name": "src",
+          "children": [
+            {
+              "type": "dir",
+              "name": "main",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": [
+                        {
+                          "type": "dir",
+                          "name": "_share",
+                          "children": [
+                            {
+                              "type": "dir",
+                              "name": "exception",
+                              "children": [
+                                {
+                                  "type": "file",
+                                  "name": "ErrorException.java",
+                                  "format": "raw",
+                                  "data": "package ${basePackage}._share.exception;\n\nimport ${basePackage}._share.CodeEnum;\nimport org.slf4j.event.Level;\n\n/**\n * 错误\n * @author cap4j-ddd-codegen\n */\npublic class ErrorException extends KnownException {\n\n    public ErrorException(String msg) {\n        super(CodeEnum.FAIL.getCode(), msg, Level.ERROR.toString());\n    }\n\n    public ErrorException(String msg, Throwable e) {\n        super(CodeEnum.FAIL.getCode(), msg, Level.ERROR.toString(), e);\n    }\n\n    public ErrorException(CodeEnum codeEnum){\n        super(codeEnum, Level.ERROR.toString());\n    }\n\n    public ErrorException(CodeEnum codeEnum, Throwable Throwable){\n        super(codeEnum, Level.ERROR.toString(), Throwable);\n    }\n\n    public ErrorException(Integer code, String msg) {\n        super(code, msg, Level.ERROR.toString());\n    }\n\n    public ErrorException(Integer code, String msg, Throwable Throwable) {\n        super(code, msg, Level.ERROR.toString(), Throwable);\n    }\n}\n"
+                                },
+                                {
+                                  "type": "file",
+                                  "name": "KnownException.java",
+                                  "format": "raw",
+                                  "data": "package ${basePackage}._share.exception;\n\nimport ${basePackage}._share.CodeEnum;\nimport lombok.Data;\nimport lombok.EqualsAndHashCode;\nimport lombok.extern.slf4j.Slf4j;\nimport org.slf4j.event.Level;\n\n/**\n * \n * @author cap4j-gen-arch\n */\n@Data\n@Slf4j\n@EqualsAndHashCode(callSuper = false)\npublic class KnownException extends RuntimeException {\n\n    private Integer code;\n\n    private String msg;\n\n    private String level;\n\n    public KnownException(CodeEnum codeEnum) {\n        this(codeEnum.getCode(), codeEnum.getName());\n    }\n\n    public KnownException(CodeEnum codeEnum, String level){\n        this(codeEnum.getCode(), codeEnum.getName(), level);\n    }\n\n    public KnownException(CodeEnum codeEnum, String level, Throwable Throwable){\n        this(codeEnum.getCode(), codeEnum.getName(), level, Throwable);\n    }\n\n    public KnownException(String msg) {\n        this(CodeEnum.FAIL.getCode(), msg);\n    }\n\n    public KnownException(Integer code, String msg) {\n        this(code, msg, Level.DEBUG.toString());\n    }\n\n    public KnownException(Integer code, String msg, String level) {\n        this(code, msg, level, null);\n    }\n\n    public KnownException(Integer code, String msg, String level, Throwable Throwable) {\n        super(msg, Throwable);\n        this.code = code;\n        this.msg = msg;\n        this.level = level;\n    }\n\n\n    public static KnownException systemError() {\n        return new KnownException(CodeEnum.ERROR.getCode(), CodeEnum.ERROR.getName(), Level.ERROR.toString());\n    }\n\n    public static KnownException systemError(Throwable Throwable) {\n        return new KnownException(CodeEnum.ERROR.getCode(), CodeEnum.ERROR.getName(), Level.ERROR.toString(), Throwable);\n    }\n\n    public static KnownException illegalArgument() {\n        return new KnownException(CodeEnum.PARAM_INVALIDATE.getCode(), CodeEnum.PARAM_INVALIDATE.getName(), Level.ERROR.toString());\n    }\n\n    public static KnownException illegalArgument(String argumentName) {\n        return new KnownException(CodeEnum.PARAM_INVALIDATE.getCode(), CodeEnum.PARAM_INVALIDATE.getName(), Level.ERROR.toString(), new IllegalArgumentException(argumentName));\n    }\n}\n"
+                                },
+                                {
+                                  "type": "file",
+                                  "name": "WarnException.java",
+                                  "format": "raw",
+                                  "data": "package ${basePackage}._share.exception;\n\nimport ${basePackage}._share.CodeEnum;\nimport org.slf4j.event.Level;\n\n/**\n * 告警\n * @author cap4j-gen-arch\n */\npublic class WarnException extends KnownException {\n\n    public WarnException(String msg) {\n        super(CodeEnum.FAIL.getCode(), msg, Level.WARN.toString());\n    }\n\n    public WarnException(String msg, Throwable e) {\n        super(CodeEnum.FAIL.getCode(), msg, Level.WARN.toString(), e);\n    }\n\n    public WarnException(CodeEnum codeEnum) {\n        super(codeEnum, Level.WARN.toString());\n    }\n\n    public WarnException(CodeEnum codeEnum, Throwable Throwable) {\n        super(codeEnum, Level.WARN.toString(), Throwable);\n    }\n\n    public WarnException(Integer code, String msg) {\n        super(code, msg, Level.WARN.toString());\n    }\n\n    public WarnException(Integer code, String msg, Throwable Throwable) {\n        super(code, msg, Level.WARN.toString(), Throwable);\n    }\n}\n"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "file",
+                              "name": "Constants.java",
+                              "format": "raw",
+                              "data": "package ${basePackage}._share;\n\n/**\n * 常量定义\n * @author cap4j-ddd-codegen\n */\npublic class Constants {\n    public final static String UTF_8 = \"UTF-8\";\n}\n"
+                            },
+                            {
+                              "type": "file",
+                              "name": "CodeEnum.java",
+                              "format": "raw",
+                              "data": "package ${basePackage}._share;\n\n/**\n * Api 状态码\n * @author cap4j-gen-arch\n */\npublic enum CodeEnum {\n\n    /**\n     * 成功\n     */\n    SUCCESS(0, \"成功\"),\n    /**\n     * 失败\n     */\n    FAIL(-1, \"失败\"),\n    /**\n     * 参数错误\n     */\n    PARAM_INVALIDATE(-2, \"参数错误\"),\n    /**\n     * 约束未通过\n     */\n    SPECIFICATION_UNSATISFIED(-3, \"约束不满足\"),\n    /**\n     * 系统异常\n     */\n    ERROR(-9, \"系统异常\"),\n    /**\n     * 404\n     */\n    NOT_FOUND(404, \"没找到请求\"),\n    /**\n     * 不支持当前请求方法\n     */\n    METHOD_NOT_SUPPORTED(405, \"不支持当前请求方法\"),\n    /**\n     * 消息不能读取\n     */\n    MESSAGE_NOT_READABLE(407, \"消息不能读取\");\n\n    private final Integer code;\n    private final String name;\n\n    CodeEnum(Integer code, String name) {\n        this.code = code;\n        this.name = name;\n    }\n\n    public Integer getCode() {\n        return code;\n    }\n\n    public String getName() {\n        return name;\n    }\n}\n"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "dir",
+                  "name": "resources",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "type": "dir",
+              "name": "test",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "dir",
+      "name": "${artifactId}-start",
+      "children": [
+        {
+          "type": "file",
+          "name": "pom.xml",
+          "format": "raw",
+          "data": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n    <modelVersion>4.0.0</modelVersion>\n    <parent>\n        <groupId>${groupId}</groupId>\n        <artifactId>${artifactId}</artifactId>\n        <version>${version}</version>\n    </parent>\n\n    <artifactId>${artifactId}-start</artifactId>\n\n    <properties>\n        <maven.compiler.source>8</maven.compiler.source>\n        <maven.compiler.target>8</maven.compiler.target>\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n    </properties>\n\n    <dependencies>\n        <dependency>\n            <groupId>${groupId}</groupId>\n            <artifactId>${artifactId}-share</artifactId>\n            <version>${project.version}</version>\n        </dependency>\n        <dependency>\n            <groupId>${groupId}</groupId>\n            <artifactId>${artifactId}-adapter</artifactId>\n            <version>${project.version}</version>\n        </dependency>\n\n        <dependency>\n            <groupId>net.logstash.logback</groupId>\n            <artifactId>logstash-logback-encoder</artifactId>\n            <version>6.6</version>\n        </dependency>\n    </dependencies>\n    <build>\n        <finalName>${project.artifactId}</finalName>\n        <plugins>\n            <plugin>\n                <groupId>org.springframework.boot</groupId>\n                <artifactId>spring-boot-maven-plugin</artifactId>\n                <version>2.6.3</version>\n                <configuration>\n                </configuration>\n                <executions>\n                    <execution>\n                        <id>repackage</id>\n                        <goals>\n                            <goal>repackage</goal>\n                        </goals>\n                        <configuration>\n                            <mainClass>${groupId}.ddd.multi.StartApplication</mainClass>\n                            <outputDirectory>${project.basedir}/../target</outputDirectory>\n                        </configuration>\n                    </execution>\n                </executions>\n            </plugin>\n        </plugins>\n    </build>\n</project>"
+        },
+        {
+          "type": "dir",
+          "name": "src",
+          "children": [
+            {
+              "type": "dir",
+              "name": "main",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": [
+                        {
+                          "type": "file",
+                          "name": "StartApplication.java",
+                          "format": "raw",
+                          "data": "package ${basePackage};\n\nimport org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\nimport org.springframework.boot.autoconfigure.domain.EntityScan;\nimport org.springframework.cloud.openfeign.EnableFeignClients;\nimport org.springframework.data.jpa.repository.config.EnableJpaRepositories;\nimport org.springframework.scheduling.annotation.EnableScheduling;\n\n/**\n * @author cap4j-ddd-codegen\n */\n@SpringBootApplication\n@EnableFeignClients\n@EnableScheduling\n@EnableJpaRepositories(basePackages = \"${basePackage}.adapter.domain.repositories\")\n@EntityScan(basePackages = \"${basePackage}.domain.aggregates\")\npublic class StartApplication {\n    public static void main(String[] args) {\n        SpringApplication.run(StartApplication.class, args);\n    }\n\n}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "dir",
+                  "name": "resources",
+                  "children": [
+                    {
+                      "type": "file",
+                      "name": "application.properties",
+                      "format": "raw",
+                      "data": "spring.application.name=${artifactId}\n\nlogging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE\nlogging.level.java.sql.PreparedStatement=DEBUG\nlogging.level.org.hibernate.engine.jdbc.batch.internal.BatchingBatch=OFF\n\ncap4j.ddd.distributed.idgenerator.snowflake.enable=true\ncap4j.ddd.domain.event.event-scan-package=${basePackage}\ncap4j.ddd.domain.event.schedule.add-partition-enable=false\ncap4j.ddd.application.saga.schedule.add-partition-enable=false\n\n# server\nserver.port=8081\nserver.tomcat.uri-encoding=UTF-8\nserver.tomcat.threads.max=400\nserver.servlet.context-path=/${artifactId}\nspring.servlet.multipart.max-request-size=50MB\nspring.servlet.multipart.max-file-size = 50MB\nmanagement.endpoint.shutdown.enabled=true\nmanagement.endpoints.web.exposure.include=health,info,prometheus,metrics,shutdown\nmanagement.metrics.tags.application = ${spring.application.name}\nmanagement.health.redis.enabled=false\nspring.jackson.date-format=yyyy-MM-dd HH:mm:ss\nspring.jackson.time-zone=GMT+8\nspring.jackson.default-property-inclusion=non_null\nspring.jackson.serialization.FAIL_ON_EMPTY_BEANS=false\nspring.mvc.log-request-details=true\n\n# api doc\n#springdoc.api-docs.path=/v3/api-docs\nspringdoc.swagger-ui.path=/swagger-ui.html\nspringdoc.swagger-ui.disable-swagger-default-url=true\n\n# feign\nfeign.okhttp.enabled = true\n#feign.hystrix.enabled = true\n#hystrix.shareSecurityContext = true\n#hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds = 3000\n#hystrix.command.default.circuitBreaker.requestVolumeThreshold = 200\n#hystrix.command.default.fallback.isolation.semaphore.maxConcurrentRequests = 50\n#hystrix.threadpool.default.coreSize = 50\n#ribbon.okhttp.enabled = true\n#ribbon.ServerListRefreshInterval = 3000\n#ribbon.ConnectTimeout = 2000\n#ribbon.ReadTimeout = 20000\n#ribbon.MaxAutoRetries = 0\n#ribbon.MaxAutoRetriesNextServer = 0\n#ribbon.OkToRetryOnAllOperations = false\n\n# mysql\nspring.datasource.url=${connectionString}\nspring.datasource.type=com.alibaba.druid.pool.DruidDataSource\nspring.datasource.username=${user}\nspring.datasource.password=${pwd}\nspring.datasource.driver-class-name=com.mysql.jdbc.Driver\nspring.datasource.druid.initial-size=30\nspring.datasource.druid.max-active=100\nspring.datasource.druid.min-idle=30\nspring.datasource.druid.max-wait=1000\nspring.datasource.druid.use-unfair-lock=true\nspring.datasource.druid.pool-prepared-statements = false\nspring.datasource.druid.validation-query = select 1\nspring.datasource.druid.validation-query-timeout = 2\nspring.datasource.druid.keep-alive=true\nspring.datasource.druid.test-on-borrow = false\nspring.datasource.druid.test-on-return = false\nspring.datasource.druid.test-while-idle = true\nspring.datasource.druid.min-evictable-idle-time-millis = 43200000\nspring.datasource.druid.max-evictable-idle-time-millis = 86400000\n#spring.datasource.druid.filters=stat,wall\n#spring.datasource.druid.connection-properties=druid.stat.mergeSql=true;druid.stat.showSqlMillis=500\n#spring.datasource.druid.web-stat-filter.enabled=true\n#spring.datasource.druid.web-stat-filter.url-pattern=/*\n#spring.datasource.druid.stat-view-servlet.enabled=true\n#spring.datasource.druid.stat-view-servlet.url-pattern=/druid/*\n#spring.datasource.druid.stat-view-servlet.reset-enable=false\n#spring.datasource.druid.stat-view-servlet.login-username=admin\n#spring.datasource.druid.stat-view-servlet.login-password=123\n\n# jpa\nspring.jpa.open-in-view=false\nspring.jpa.hibernate.ddl-auto=none\nspring.jpa.show-sql=true\nspring.jpa.properties.hibernate.dialect.storage_engine=innodb\nspring.jpa.properties.hibernate.jdbc.batch_size=5000\nspring.jpa.properties.hibernate.jdbc.batch_versioned_data=true\nspring.jpa.database-platform=org.hibernate.dialect.MySQL5Dialect\n\n# mybatis\nmybatis.mapper-locations=classpath:mapper/*.xml\nmybatis.configuration.map-underscore-to-camel-case=true\nmybatis.configuration.default-enum-type-handler=${basePackage}.adapter.infra.mybatis._share.MyEnumTypeHandler\n\n# rocketmq\nrocketmq.name-server=localhost:9876\nrocketmq.producer.group=${spring.application.name}\n\n## redis\n#spring.redis.host = localhost\n#spring.redis.port = 6379\n#spring.redis.password =\n#spring.redis.database = 0\n#spring.redis.jedis.pool.max-active = 50\n#spring.redis.jedis.pool.max-idle = 10\n#spring.redis.jedis.pool.max-wait = -1ms\n#spring.redis.jedis.pool.min-idle = 5\n#spring.redis.timeout = 5000ms\n#spring.cache.redis.key-prefix = ${spring.application.name}:local\n\n# elasticsearch\n#management.health.elasticsearch.enabled=false\n#spring.elasticsearch.uris = http://localhost:9200\n#spring.elasticsearch.username =\n#spring.elasticsearch.password ="
+                    },
+                    {
+                      "type": "file",
+                      "name": "logback.xml",
+                      "format": "raw",
+                      "data": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration debug=\"false\" scan=\"false\" scanPeriod=\"60 seconds\">\n    <property resource=\"application.properties\"/>\n\n    <conversionRule conversionWord=\"clr\"\n                    converterClass=\"org.springframework.boot.logging.logback.ColorConverter\"/>\n    <conversionRule conversionWord=\"wex\"\n                    converterClass=\"org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter\"/>\n    <conversionRule conversionWord=\"wEx\"\n                    converterClass=\"org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter\"/>\n\n    <!-- 控制台JSON输出 -->\n    <!--\n    将下面依赖添加到项目中\n    <dependency>\n        <groupId>net.logstash.logback</groupId>\n        <artifactId>logstash-logback-encoder</artifactId>\n        <version>6.6</version>\n    </dependency>\n    -->\n    <appender name=\"JsonConsole\" class=\"ch.qos.logback.core.ConsoleAppender\">\n        <encoder charset=\"UTF-8\" class=\"net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder\">\n            <providers>\n                <pattern>\n                    <pattern>\n                        {\n                        \"time\": \"%d{yyyy-MM-dd HH:mm:ss.SSS}\",\n                        \"level\": \"%level\",\n                        \"thread\": \"%thread\",\n                        \"logger\": \"%logger\",\n                        \"file\": \"%file %L\",\n                        \"traceId\": \"%X{traceId}\",\n                        \"sourceApp\": \"%X{sourceApp}\",\n                        \"content\": \"%msg\",\n                        \"stackTrace\":\"%wEx\"\n                        }\n                    </pattern>\n                </pattern>\n            </providers>\n        </encoder>\n    </appender>\n    <property name=\"CONSOLE_LOG_PATTERN\"\n              value=\"${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(traceId:[%X{traceId}]) %clr(%-5level) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}\"/>\n    <!-- 控制台输出 -->\n    <appender name=\"CONSOLE\" class=\"ch.qos.logback.core.ConsoleAppender\">\n        <encoder>\n            <pattern>${CONSOLE_LOG_PATTERN}</pattern>\n            <charset>UTF-8</charset>\n        </encoder>\n    </appender>\n\n    <!-- 日志数据级别 -->\n    <root level=\"INFO\">\n        <appender-ref ref=\"CONSOLE\"/>\n    </root>\n\n</configuration>\n"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "dir",
+              "name": "test",
+              "children": [
+                {
+                  "type": "dir",
+                  "name": "java",
+                  "children": [
+                    {
+                      "type": "dir",
+                      "name": "${basePackage}",
+                      "children": [
+                        {
+                          "type": "file",
+                          "name": "StartApplicationTest.java",
+                          "format": "raw",
+                          "data": "package ${basePackage};\n\nimport junit.framework.Test;\nimport junit.framework.TestCase;\nimport junit.framework.TestSuite;\n\n/**\n * Unit test for simple App.\n */\npublic class StartApplicationTest \n    extends TestCase\n{\n    /**\n     * Create the test case\n     *\n     * @param testName name of the test case\n     */\n    public StartApplicationTest( String testName )\n    {\n        super( testName );\n    }\n\n    /**\n     * @return the suite of tests being tested\n     */\n    public static Test suite()\n    {\n        return new TestSuite( StartApplicationTest.class );\n    }\n\n    /**\n     * Rigourous Test :-)\n     */\n    public void testApp()\n    {\n        assertTrue( true );\n    }\n}\n"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "name": "ddl.sql",
+      "format": "raw",
+      "data": "-- Create syntax for TABLE '__event'\nCREATE TABLE `__event` (\n                           `id` bigint(20) NOT NULL AUTO_INCREMENT,\n                           `event_uuid` varchar(64) NOT NULL DEFAULT '' COMMENT '事件uuid',\n                           `svc_name` varchar(255) NOT NULL DEFAULT '' COMMENT '服务',\n                           `event_type` varchar(255) NOT NULL DEFAULT '' COMMENT '事件类型',\n                           `data` text COMMENT '事件数据',\n                           `data_type` varchar(255) NOT NULL DEFAULT '' COMMENT '事件数据类型',\n                           `exception` text COMMENT '事件发送异常',\n                           `expire_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '过期时间',\n                           `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                           `event_state` int(11) NOT NULL DEFAULT '0' COMMENT '分发状态',\n                           `last_try_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上次尝试时间',\n                           `next_try_time` datetime NOT NULL DEFAULT '0001-01-01 00:00:00' COMMENT '下次尝试时间',\n                           `tried_times` int(11) NOT NULL DEFAULT '0' COMMENT '已尝试次数',\n                           `try_times` int(11) NOT NULL DEFAULT '0' COMMENT '尝试次数',\n                           `version` int(11) NOT NULL DEFAULT '0',\n                           `db_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                           `db_updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',\n                           PRIMARY KEY (`id`\n#   , `db_created_at`\n                               ),\n                           KEY `idx_db_created_at` (`db_created_at`),\n                           KEY `idx_db_updated_at` (`db_updated_at`),\n                           KEY `idx_event_uuid` (`event_uuid`),\n                           KEY `idx_event_type` (`event_type`,`svc_name`),\n                           KEY `idx_create_at` (`create_at`),\n                           KEY `idx_expire_at` (`expire_at`),\n                           KEY `idx_next_try_time` (`next_try_time`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='事件发件箱 support by cap4j\\n@I;'\n# partition by range(to_days(db_created_at))\n# (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)\n;\n-- Create syntax for TABLE '__achrived_event'\nCREATE TABLE `__achrived_event` (\n                           `id` bigint(20) NOT NULL AUTO_INCREMENT,\n                           `event_uuid` varchar(64) NOT NULL DEFAULT '' COMMENT '事件uuid',\n                           `svc_name` varchar(255) NOT NULL DEFAULT '' COMMENT '服务',\n                           `event_type` varchar(255) NOT NULL DEFAULT '' COMMENT '事件类型',\n                           `data` text COMMENT '事件数据',\n                           `data_type` varchar(255) NOT NULL DEFAULT '' COMMENT '事件数据类型',\n                           `exception` text COMMENT '事件发送异常',\n                           `expire_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '过期时间',\n                           `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                           `event_state` int(11) NOT NULL DEFAULT '0' COMMENT '分发状态',\n                           `last_try_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上次尝试时间',\n                           `next_try_time` datetime NOT NULL DEFAULT '0001-01-01 00:00:00' COMMENT '下次尝试时间',\n                           `tried_times` int(11) NOT NULL DEFAULT '0' COMMENT '已尝试次数',\n                           `try_times` int(11) NOT NULL DEFAULT '0' COMMENT '尝试次数',\n                           `version` int(11) NOT NULL DEFAULT '0',\n                           `db_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                           `db_updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',\n                           PRIMARY KEY (`id`\n#   , `db_created_at`\n                               ),\n                           KEY `idx_db_created_at` (`db_created_at`),\n                           KEY `idx_db_updated_at` (`db_updated_at`),\n                           KEY `idx_event_uuid` (`event_uuid`),\n                           KEY `idx_event_type` (`event_type`,`svc_name`),\n                           KEY `idx_create_at` (`create_at`),\n                           KEY `idx_expire_at` (`expire_at`),\n                           KEY `idx_next_try_time` (`next_try_time`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='事件发件箱存档 support by cap4j\\n@I;'\n# partition by range(to_days(db_created_at))\n# (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)\n;\n\n-- Create syntax for TABLE '__saga'\nCREATE TABLE `__saga` (\n                          `id` bigint NOT NULL AUTO_INCREMENT,\n                          `saga_uuid` varchar(64) NOT NULL DEFAULT '' COMMENT 'SAGA uuid',\n                          `svc_name` varchar(255) NOT NULL DEFAULT '' COMMENT '服务',\n                          `saga_type` varchar(255) NOT NULL DEFAULT '' COMMENT 'SAGA类型',\n                          `param` text COMMENT '参数',\n                          `param_type` varchar(255) NOT NULL DEFAULT '' COMMENT '参数类型',\n                          `result` text COMMENT '结果',\n                          `result_type` varchar(255) NOT NULL DEFAULT '' COMMENT '结果类型',\n                          `exception` text COMMENT '执行异常',\n                          `expire_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '过期时间',\n                          `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                          `saga_state` int NOT NULL DEFAULT '0' COMMENT '执行状态@E=0:INIT:init|-1:EXECUTING:executing|-2:CANCEL:cancel|-3:EXPIRED:expired|-4:EXHAUSTED:exhausted|-9:EXCEPTION:exception|1:EXECUTED:executed;@T=SagaState;',\n                          `last_try_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上次尝试时间',\n                          `next_try_time` datetime NOT NULL DEFAULT '0001-01-01 00:00:00' COMMENT '下次尝试时间',\n                          `tried_times` int(11) NOT NULL DEFAULT '0' COMMENT '已尝试次数',\n                          `try_times` int(11) NOT NULL DEFAULT '0' COMMENT '尝试次数',\n                          `version` int NOT NULL DEFAULT '0',\n                          `db_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                          `db_updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',\n                          PRIMARY KEY (`id`\n#   , `db_created_at`\n                              ),\n                          KEY `idx_db_created_at` (`db_created_at`),\n                          KEY `idx_db_updated_at` (`db_updated_at`),\n                          KEY `idx_saga_uuid` (`saga_uuid`),\n                          KEY `idx_saga_type` (`saga_type`,`svc_name`),\n                          KEY `idx_create_at` (`create_at`),\n                          KEY `idx_expire_at` (`expire_at`),\n                          KEY `idx_next_try_time` (`next_try_time`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SAGA事务 support by cap4j\\n@I;'\n# partition by range(to_days(db_created_at))\n# (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)\n;\n\n-- Create syntax for TABLE '__saga_process'\nCREATE TABLE `__saga_process` (\n                          `id` bigint NOT NULL AUTO_INCREMENT,\n                          `saga_id` bigint NOT NULL DEFAULT '0',\n                          `process_code` varchar(255) NOT NULL DEFAULT '' COMMENT 'SAGA处理环节代码',\n                          `param` text COMMENT '参数',\n                          `param_type` varchar(255) NOT NULL DEFAULT '' COMMENT '参数类型',\n                          `result` text COMMENT '结果',\n                          `result_type` varchar(255) NOT NULL DEFAULT '' COMMENT '结果类型',\n                          `exception` text COMMENT '执行异常',\n                          `process_state` int NOT NULL DEFAULT '0' COMMENT '执行状态@E=0:INIT:init|-1:EXECUTING:executing|-9:EXCEPTION:exception|1:EXECUTED:executed;@T=SagaProcessState;',\n                          `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n                          `last_try_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上次尝试时间',\n                          `tried_times` int NOT NULL DEFAULT '0' COMMENT '尝试次数',\n                          `db_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                          `db_updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',\n                          PRIMARY KEY (`id`\n#   , `db_created_at`\n                              ),\n                          KEY `idx_db_created_at` (`db_created_at`),\n                          KEY `idx_db_updated_at` (`db_updated_at`),\n                          KEY `idx_saga_id` (`saga_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SAGA事务-子环节 support by cap4j\\n@I;'\n# partition by range(to_days(db_created_at))\n# (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)\n;\n\n-- Create syntax for TABLE '__archived_saga'\nCREATE TABLE `__archived_saga` (\n                          `id` bigint NOT NULL AUTO_INCREMENT,\n                          `saga_uuid` varchar(64) NOT NULL DEFAULT '' COMMENT 'SAGA uuid',\n                          `svc_name` varchar(255) NOT NULL DEFAULT '' COMMENT '服务',\n                          `saga_type` varchar(255) NOT NULL DEFAULT '' COMMENT 'SAGA类型',\n                          `param` text COMMENT '参数',\n                          `param_type` varchar(255) NOT NULL DEFAULT '' COMMENT '参数类型',\n                          `result` text COMMENT '结果',\n                          `result_type` varchar(255) NOT NULL DEFAULT '' COMMENT '结果类型',\n                          `exception` text COMMENT '执行异常',\n                          `expire_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '过期时间',\n                          `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                          `saga_state` int NOT NULL DEFAULT '0' COMMENT '执行状态@E=0:INIT:init|-1:EXECUTING:executing|-2:CANCEL:cancel|-3:EXPIRED:expired|-4:EXHAUSTED:exhausted|-9:EXCEPTION:exception|1:EXECUTED:executed;@T=SagaState;',\n                          `last_try_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上次尝试时间',\n                          `next_try_time` datetime NOT NULL DEFAULT '0001-01-01 00:00:00' COMMENT '下次尝试时间',\n                          `tried_times` int(11) NOT NULL DEFAULT '0' COMMENT '已尝试次数',\n                          `try_times` int(11) NOT NULL DEFAULT '0' COMMENT '尝试次数',\n                          `version` int NOT NULL DEFAULT '0',\n                          `db_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                          `db_updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',\n                          PRIMARY KEY (`id`\n#   , `db_created_at`\n                              ),\n                          KEY `idx_db_created_at` (`db_created_at`),\n                          KEY `idx_db_updated_at` (`db_updated_at`),\n                          KEY `idx_saga_uuid` (`saga_uuid`),\n                          KEY `idx_saga_type` (`saga_type`,`svc_name`),\n                          KEY `idx_create_at` (`create_at`),\n                          KEY `idx_expire_at` (`expire_at`),\n                          KEY `idx_next_try_time` (`next_try_time`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SAGA事务(存档) support by cap4j\\n@I;'\n# partition by range(to_days(db_created_at))\n# (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)\n;\n\n-- Create syntax for TABLE '__archived_saga_process'\nCREATE TABLE `__archived_saga_process` (\n                          `id` bigint NOT NULL AUTO_INCREMENT,\n                          `saga_id` bigint NOT NULL DEFAULT '0',\n                          `process_code` varchar(255) NOT NULL DEFAULT '' COMMENT 'SAGA处理环节代码',\n                          `param` text COMMENT '参数',\n                          `param_type` varchar(255) NOT NULL DEFAULT '' COMMENT '参数类型',\n                          `result` text COMMENT '结果',\n                          `result_type` varchar(255) NOT NULL DEFAULT '' COMMENT '结果类型',\n                          `exception` text COMMENT '执行异常',\n                          `process_state` int NOT NULL DEFAULT '0' COMMENT '执行状态@E=0:INIT:init|-1:EXECUTING:executing|-9:EXCEPTION:exception|1:EXECUTED:executed;@T=SagaProcessState;',\n                          `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n                          `last_try_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上次尝试时间',\n                          `tried_times` int NOT NULL DEFAULT '0' COMMENT '尝试次数',\n                          `db_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                          `db_updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',\n                          PRIMARY KEY (`id`\n#   , `db_created_at`\n                              ),\n                          KEY `idx_db_created_at` (`db_created_at`),\n                          KEY `idx_db_updated_at` (`db_updated_at`),\n                          KEY `idx_saga_id` (`saga_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='SAGA事务-子环节(存档) support by cap4j\\n@I;'\n# partition by range(to_days(db_created_at))\n# (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)\n;\n\nCREATE TABLE `__locker` (\n                          `id` int(11) unsigned NOT NULL AUTO_INCREMENT,\n                          `name` varchar(100) NOT NULL DEFAULT '' COMMENT '锁名称',\n                          `pwd` varchar(100) NOT NULL DEFAULT '' COMMENT '锁密码',\n                          `lock_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '锁获取时间',\n                          `unlock_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '锁释放时间',\n                          `version` bigint(20) unsigned NOT NULL DEFAULT '0',\n                          `db_created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n                          `db_updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP  COMMENT '更新时间',\n                          PRIMARY KEY (`id`),\n                          KEY `idx_db_created_at` (`db_created_at`),\n                          KEY `idx_db_updated_at` (`db_updated_at`),\n                          UNIQUE `uniq_name` (`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='锁 support by cap4j\\n@I;';"
+    },
+    {
+      "type": "file",
+      "name": ".gitignore",
+      "format": "raw",
+      "data": "target/\n!.mvn/wrapper/maven-wrapper.jar\n!**/src/main/**/target/\n!**/src/test/**/target/\n\n### IntelliJ IDEA ###\n.idea/modules.xml\n.idea/jarRepositories.xml\n.idea/compiler.xml\n.idea/libraries/\n*.iws\n*.iml\n*.ipr\n\n### Eclipse ###\n.apt_generated\n.classpath\n.factorypath\n.project\n.settings\n.springBeans\n.sts4-cache\n\n### NetBeans ###\n/nbproject/private/\n/nbbuild/\n/dist/\n/nbdist/\n/.nb-gradle/\nbuild/\n!**/src/main/**/build/\n!**/src/test/**/build/\n\n### VS Code ###\n.vscode/\n\n### Mac OS ###\n.DS_Store"
+    },
+    {
+      "type": "file",
+      "name": "pom.xml",
+      "format": "raw",
+      "conflict": "overwrite",
+      "data": "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n    <!-- [cap4j-ddd-codegen-maven-plugin:do-not-overwrite] -->\n    <modelVersion>4.0.0</modelVersion>\n\n    <groupId>${groupId}</groupId>\n    <artifactId>${artifactId}</artifactId>\n    <version>${version}</version>\n    <packaging>pom</packaging>\n\n    <name>${artifactId}</name>\n    <modules>\n        <module>${artifactId}-domain</module>\n        <module>${artifactId}-application</module>\n        <module>${artifactId}-adapter</module>\n        <module>${artifactId}-share</module>\n        <module>${artifactId}-start</module>\n    </modules>\n\n    <properties>\n        <maven.compiler.source>8</maven.compiler.source>\n        <maven.compiler.target>8</maven.compiler.target>\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>\n        <java.version>1.8</java.version>\n        <cap4j.version>1.0.0-alpha-3</cap4j.version>\n\n        <org.projectlombok.version>1.18.16</org.projectlombok.version>\n\n        <guava.version>31.1-jre</guava.version>\n        <commons.lang3.version>3.12.0</commons.lang3.version>\n        <commons.collections4.version>4.4</commons.collections4.version>\n        <fastjson.version>1.2.79</fastjson.version>\n\n        <mysql-connector.version>5.1.46</mysql-connector.version>\n        <spring-boot-druid.version>1.2.8</spring-boot-druid.version>\n\n        <spring-boot.version>2.7.6</spring-boot.version>\n        <spring-cloud.version>2021.0.5</spring-cloud.version>\n        <!--        <spring-boot.version>2.2.13.RELEASE</spring-boot.version>-->\n        <!--        <spring-cloud.version>Hoxton.SR11</spring-cloud.version>-->\n\n        <springdoc.version>1.6.14</springdoc.version>\n        <knife4j.version>3.0.3</knife4j.version>\n        <swagger3.version>2.2.7</swagger3.version>\n    </properties>\n\n    <dependencyManagement>\n        <dependencies>\n            <dependency>\n                <groupId>org.springframework.boot</groupId>\n                <artifactId>spring-boot-dependencies</artifactId>\n                <version>${spring-boot.version}</version>\n                <type>pom</type>\n                <scope>import</scope>\n            </dependency>\n            <dependency>\n                <groupId>org.springframework.cloud</groupId>\n                <artifactId>spring-cloud-dependencies</artifactId>\n                <version>${spring-cloud.version}</version>\n                <type>pom</type>\n                <scope>import</scope>\n            </dependency>\n        </dependencies>\n    </dependencyManagement>\n\n    <dependencies>\n        <dependency>\n            <groupId>org.projectlombok</groupId>\n            <artifactId>lombok</artifactId>\n            <optional>true</optional>\n            <version>${org.projectlombok.version}</version>\n        </dependency>\n\n        <dependency>\n            <groupId>io.github.netcorepal</groupId>\n            <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>\n            <version>${cap4j.version}</version>\n            <scope>provided</scope>\n        </dependency>\n\n        <dependency>\n            <groupId>junit</groupId>\n            <artifactId>junit</artifactId>\n            <version>3.8.1</version>\n            <scope>test</scope>\n        </dependency>\n    </dependencies>\n    <build>\n        <plugins>\n            <plugin>\n                <groupId>io.github.netcorepal</groupId>\n                <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>\n                <version>${cap4j.version}</version>\n                ${cap4jPluginConfiguration}\n            </plugin>\n            <plugin>\n                <groupId>org.apache.maven.plugins</groupId>\n                <artifactId>maven-compiler-plugin</artifactId>\n                <version>3.8.1</version>\n                <configuration>\n                    <source>1.8</source>\n                    <target>1.8</target>\n                    <encoding>UTF-8</encoding>\n                </configuration>\n            </plugin>\n        </plugins>\n    </build>\n</project>"
+    }
+  ]
+}
