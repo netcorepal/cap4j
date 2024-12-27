@@ -3,6 +3,7 @@ package org.netcorepal.cap4j.ddd.application.saga.persistence;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.alibaba.fastjson.parser.Feature;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,7 +18,6 @@ import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.annotation.Retry;
 
-import javax.persistence.*;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;

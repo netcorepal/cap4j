@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.event.persistence;
 
 import com.alibaba.fastjson.JSON;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
-import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Date;
 

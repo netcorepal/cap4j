@@ -12,9 +12,9 @@ import org.netcorepal.cap4j.ddd.application.saga.SagaParam;
 import org.netcorepal.cap4j.ddd.application.saga.SagaSupervisor;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import java.util.*;
 
 /**

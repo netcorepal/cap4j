@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.application.saga.persistence;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.Feature;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +14,6 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.netcorepal.cap4j.ddd.application.RequestParam;
 import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;
 
-import javax.persistence.*;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.LocalDateTime;

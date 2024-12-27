@@ -1,5 +1,6 @@
 package org.netcorepal.cap4j.ddd.application.saga.persistence;
 
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,7 +10,6 @@ import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;
 
-import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 

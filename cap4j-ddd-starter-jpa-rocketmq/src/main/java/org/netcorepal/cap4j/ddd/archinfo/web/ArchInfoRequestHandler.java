@@ -7,9 +7,9 @@ import org.netcorepal.cap4j.ddd.archinfo.ArchInfoManager;
 import org.netcorepal.cap4j.ddd.archinfo.model.ArchInfo;
 import org.springframework.web.HttpRequestHandler;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**

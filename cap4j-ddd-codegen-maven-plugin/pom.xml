@@ -6,12 +6,12 @@
     <parent>
         <groupId>io.github.netcorepal</groupId>
         <artifactId>cap4j</artifactId>
-        <version>1.0.0-alpha-3</version>
+        <version>3.1.0-alpha-1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
-    <version>1.0.0-alpha-3</version>
+    <version>3.1.0-alpha-1</version>
 
     <packaging>maven-plugin</packaging>
 
@@ -21,23 +21,21 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.16</version>
         </dependency>
 
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.46</version>
+            <version>8.0.31</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.5.0</version>
+            <version>42.7.2</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.79</version>
         </dependency>
 
 

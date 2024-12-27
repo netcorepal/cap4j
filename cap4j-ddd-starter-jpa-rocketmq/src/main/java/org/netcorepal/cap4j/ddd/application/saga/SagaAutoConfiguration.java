@@ -20,7 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.validation.Validator;
+import jakarta.validation.Validator;
 import java.time.Duration;
 import java.util.List;
 
