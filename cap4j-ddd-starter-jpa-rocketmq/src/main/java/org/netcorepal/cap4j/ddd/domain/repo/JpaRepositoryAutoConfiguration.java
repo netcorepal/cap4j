@@ -79,10 +79,11 @@ public class JpaRepositoryAutoConfiguration {
                 specificationManager,
                 persistListenerManager,
                 applicationEventPublisher,
-                jpaUnitOfWorkProperties.getRetrieveCountWarnThreshold(),
                 jpaUnitOfWorkProperties.isSupportEntityInlinePersistListener(),
                 jpaUnitOfWorkProperties.isSupportValueObjectExistsCheckOnSave());
         UnitOfWorkSupport.configure(unitOfWork);
+        JpaQueryUtils.configure(unitOfWork, jpaUnitOfWorkProperties.getRetrieveCountWarnThreshold());
+        Md5HashIdentifierGenerator.configure(jpaUnitOfWorkProperties.getGeneralIdFieldName());
         return unitOfWork;
     }
 

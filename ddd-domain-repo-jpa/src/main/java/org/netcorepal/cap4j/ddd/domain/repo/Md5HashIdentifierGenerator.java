@@ -24,8 +24,16 @@ import java.util.Map;
  * @date 2024/9/17
  */
 public class Md5HashIdentifierGenerator implements IdentifierGenerator {
-    static final String ID_FIELD_NAME = "id";
+    static String ID_FIELD_NAME = "id";
     static Md5HashIdentifierGenerator instance = null;
+
+    /**
+     * 配置
+     * @param idFieldName ID字段名称
+     */
+    public static void configure(String idFieldName){
+        ID_FIELD_NAME = idFieldName;
+    }
 
     public static Md5HashIdentifierGenerator getInstance() {
         if (instance == null) {
@@ -48,7 +56,7 @@ public class Md5HashIdentifierGenerator implements IdentifierGenerator {
     /**
      * 返回对象MD5哈希值
      *
-     * @param o
+     * @param o 实体对象
      * @param idFieldName ID字段名称
      * @return
      */

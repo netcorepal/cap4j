@@ -31,4 +31,9 @@ public class JpaUnitOfWorkProperties {
      * 是否在保存时检查值对象是否存在
      */
     boolean supportValueObjectExistsCheckOnSave = true;
+
+    /**
+     * 通用主键字段名
+     */
+    String generalIdFieldName = "id";
 }
