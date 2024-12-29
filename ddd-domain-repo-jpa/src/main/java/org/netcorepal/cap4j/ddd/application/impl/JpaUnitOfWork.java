@@ -62,49 +62,61 @@ public class JpaUnitOfWork implements UnitOfWork {
     private static ConcurrentHashMap<Class<?>, EntityInformation> entityInformationCache = new ConcurrentHashMap<>();
 
     private EntityInformation getEntityInformation(Class<?> entityClass) {
-        return entityInformationCache.computeIfAbsent(entityClass, cls -> {
-            return JpaEntityInformationSupport.getEntityInformation(cls, getEntityManager());
-        });
+        return entityInformationCache.computeIfAbsent(
+                entityClass,
+                cls -> JpaEntityInformationSupport.getEntityInformation(cls, getEntityManager())
+        );
+    }
+
+    private boolean isValueObjectAndExists(Object entity) {
+        ValueObject<?> valueObject = entity instanceof ValueObject
+                ? (ValueObject<?>) entity
+                : null;
+        if (null == valueObject) {
+            return false;
+        }
+        return null != getEntityManager().find(entity.getClass(), ((ValueObject<?>) entity).hash());
+    }
+
+    private boolean isExists(Object entity) {
+        EntityInformation entityInformation = getEntityInformation(entity.getClass());
+        boolean isValueObject = entity instanceof ValueObject;
+        if (!isValueObject && entityInformation.isNew(entity)) {
+            return false;
+        }
+        Object id = isValueObject
+                ? ((ValueObject<?>) entity).hash()
+                : entityInformation.getId(entity);
+        if (id == null || null == getEntityManager().find(entity.getClass(), id)) {
+            return false;
+        }
+        return true;
     }
 
     @Override
     public void persist(Object entity) {
-        if (entity instanceof ValueObject) {
-            boolean exists = null != getEntityManager()
-                    .find(entity.getClass(), ((ValueObject<?>) entity).hash());
-            if (exists) {
-                return;
-            }
+        if (isValueObjectAndExists(entity)) {
+            return;
         }
+        attach(entity);
+    }
+
+    @Override
+    public boolean persistIfNotExist(Object entity) {
+        if (isExists(entity)) {
+            return false;
+        }
+        attach(entity);
+        return true;
+    }
+
+    private void attach(Object entity) {
         if (persistedEntitiesThreadLocal.get() == null) {
             persistedEntitiesThreadLocal.set(new LinkedHashSet<>());
         } else if (persistedEntitiesThreadLocal.get().contains(entity)) {
             return;
         }
         persistedEntitiesThreadLocal.get().add(entity);
-    }
-
-    @Override
-    public boolean persistIfNotExist(Object entity) {
-        if (entity instanceof ValueObject) {
-            boolean exists = null != getEntityManager()
-                    .find(entity.getClass(), ((ValueObject<?>) entity).hash());
-            if (!exists) {
-                persist(entity);
-            }
-            return !exists;
-        }
-        EntityInformation entityInformation = getEntityInformation(entity.getClass());
-        if (entityInformation.isNew(entity)) {
-            persist(entity);
-            return true;
-        }
-        Object id = entityInformation.getId(entity);
-        if (id == null || null == getEntityManager().find(entity.getClass(), id)) {
-            persist(entity);
-            return true;
-        }
-        return false;
     }
 
     @Override
@@ -181,23 +193,15 @@ public class JpaUnitOfWork implements UnitOfWork {
             if (persistEntities != null && !persistEntities.isEmpty()) {
                 flush = true;
                 for (Object entity : persistEntities) {
-                    EntityInformation entityInformation = getEntityInformation(entity.getClass());
-                    if (!entityInformation.isNew(entity)) {
-                        if (!getEntityManager().contains(entity)) {
-                            if (supportValueObjectExistsCheckOnSave && entity instanceof ValueObject) {
-                                Object hash = ((ValueObject) entity).hash();
-                                boolean exists = null != getEntityManager().find(entity.getClass(), hash);
-                                if (exists) {
-                                    getEntityManager().merge(entity);
-                                } else {
-                                    getEntityManager().persist(entity);
-                                }
-                            } else {
-                                getEntityManager().merge(entity);
-                            }
+                    if (supportValueObjectExistsCheckOnSave && entity instanceof ValueObject) {
+                        if(!isExists(entity)) {
+                            getEntityManager().persist(entity);
+                            entityPersisttedEventThreadLocal.get().getCreatedEntities().add(entity);
                         }
-                        entityPersisttedEventThreadLocal.get().getUpdatedEntities().add(entity);
-                    } else {
+                        continue;
+                    }
+                    EntityInformation entityInformation = getEntityInformation(entity.getClass());
+                    if (entityInformation.isNew(entity)) {
                         if (!getEntityManager().contains(entity)) {
                             getEntityManager().persist(entity);
                         }
@@ -206,6 +210,11 @@ public class JpaUnitOfWork implements UnitOfWork {
                         }
                         refreshEntityList.add(entity);
                         entityPersisttedEventThreadLocal.get().getCreatedEntities().add(entity);
+                    } else {
+                        if (!getEntityManager().contains(entity)) {
+                            getEntityManager().merge(entity);
+                        }
+                        entityPersisttedEventThreadLocal.get().getUpdatedEntities().add(entity);
                     }
                 }
             }
