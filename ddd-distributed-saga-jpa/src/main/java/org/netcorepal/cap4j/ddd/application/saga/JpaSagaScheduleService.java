@@ -2,15 +2,13 @@ package org.netcorepal.cap4j.ddd.application.saga;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.time.DateFormatUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.netcorepal.cap4j.ddd.application.distributed.Locker;
+import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -44,7 +42,7 @@ public class JpaSagaScheduleService {
         }
         compensationRunning = true;
 
-        String pwd = RandomStringUtils.random(8, true, true);
+        String pwd = TextUtils.randomString(8, true, true);
         String lockerKey = compensationLockerKey;
         try {
             boolean noneSaga = false;
@@ -79,7 +77,7 @@ public class JpaSagaScheduleService {
      * Saga归档
      */
     public void archive(int expireDays, int batchSize, Duration maxLockDuration) {
-        String pwd = RandomStringUtils.random(8, true, true);
+        String pwd = TextUtils.randomString(8, true, true);
         String lockerKey = archiveLockerKey;
 
         if (!locker.acquire(lockerKey, pwd, maxLockDuration)) {
@@ -111,9 +109,9 @@ public class JpaSagaScheduleService {
         if (!enableAddPartition) {
             return;
         }
-        Date now = new Date();
-        addPartition("__saga", DateUtils.addMonths(now, 1));
-        addPartition("__archived_saga", DateUtils.addMonths(now, 1));
+        LocalDateTime now = LocalDateTime.now();
+        addPartition("__saga", now.plusMonths(1));
+        addPartition("__archived_saga", now.plusMonths(1));
     }
 
     /**
@@ -122,13 +120,20 @@ public class JpaSagaScheduleService {
      * @param table
      * @param date
      */
-    private void addPartition(String table, Date date) {
-        String sql = "alter table " + table + " add partition (partition p" + DateFormatUtils.format(date, "yyyyMM") + " values less than (to_days('" + DateFormatUtils.format(DateUtils.addMonths(date, 1), "yyyy-MM") + "-01')) ENGINE=InnoDB)";
+    private void addPartition(String table, LocalDateTime date) {
+        String sql = String.format("alter table %s add partition (partition p%s values less than (to_days('%s-01')) ENGINE=InnoDB)",
+                table,
+                date.format(DateTimeFormatter.ofPattern("yyyyMM")),
+                date.plusMonths(1).format(DateTimeFormatter.ofPattern("yyyy-MM")));
         try {
             jdbcTemplate.execute(sql);
         } catch (Exception ex) {
             if (!ex.getMessage().contains("Duplicate partition")) {
-                log.error("分区创建异常 table = " + table + " partition = p" + DateFormatUtils.format(date, "yyyyMM"), ex);
+                log.error(String.format("分区创建异常 table = %s partition = p%s",
+                                table,
+                                date.format(DateTimeFormatter.ofPattern("yyyyMM"))
+                        ),
+                        ex);
             }
         }
     }

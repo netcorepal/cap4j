@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.netcorepal.cap4j.ddd.application.RequestParam;
@@ -16,6 +15,7 @@ import org.netcorepal.cap4j.ddd.application.saga.SagaParam;
 import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.annotation.Retry;
+import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
 
 import javax.persistence.*;
 import java.io.PrintWriter;
@@ -122,7 +122,7 @@ public class Saga {
         if (this.sagaParam != null) {
             return this.sagaParam;
         }
-        if (StringUtils.isNotBlank(paramType)) {
+        if (TextUtils.isNotBlank(paramType)) {
             Class<?> dataClass = null;
             try {
                 dataClass = Class.forName(paramType);
@@ -139,7 +139,7 @@ public class Saga {
             return this.sagaResult;
         }
 
-        if (StringUtils.isNotBlank(resultType)) {
+        if (TextUtils.isNotBlank(resultType)) {
             Class<?> dataClass = null;
             try {
                 dataClass = Class.forName(resultType);
