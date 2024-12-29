@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
+import org.netcorepal.cap4j.ddd.application.UnitOfWorkInterceptor;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventManager;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Specification;
 import org.netcorepal.cap4j.ddd.domain.aggregate.SpecificationManager;
@@ -13,9 +14,6 @@ import org.netcorepal.cap4j.ddd.domain.event.DomainEventManager;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistListenerManager;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistType;
 import org.netcorepal.cap4j.ddd.share.DomainException;
-import org.springframework.context.ApplicationEvent;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
 import org.springframework.data.jpa.repository.support.JpaEntityInformationSupport;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,11 +35,8 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Slf4j
 public class JpaUnitOfWork implements UnitOfWork {
-    private final DomainEventManager domainEventManager;
-    private final IntegrationEventManager integrationEventManager;
-    private final SpecificationManager specificationManager;
+    private final List<UnitOfWorkInterceptor> uowInterceptors;
     private final PersistListenerManager persistListenerManager;
-    private final ApplicationEventPublisher applicationEventPublisher;
     private final boolean supportEntityInlinePersistListener;
     private final boolean supportValueObjectExistsCheckOnSave;
 
@@ -54,10 +49,9 @@ public class JpaUnitOfWork implements UnitOfWork {
         instance = unitOfWork;
     }
 
-    private static ThreadLocal<Set<Object>> persistedEntitiesThreadLocal = new ThreadLocal<>();
-    private static ThreadLocal<Set<Object>> removedEntitiesThreadLocal = new ThreadLocal<>();
-    private static ThreadLocal<Set<Object>> processingThreadLocal = new ThreadLocal<>();
-    private static ThreadLocal<EntityPersisttedEvent> entityPersisttedEventThreadLocal = new ThreadLocal<>();
+    private static ThreadLocal<Set<Object>> persistEntitiesThreadLocal = ThreadLocal.withInitial(() -> new LinkedHashSet<>());
+    private static ThreadLocal<Set<Object>> removeEntitiesThreadLocal = ThreadLocal.withInitial(() -> new LinkedHashSet<>());
+    private static ThreadLocal<Set<Object>> processingEntitiesThreadLocal = ThreadLocal.withInitial(() -> new LinkedHashSet<>());
 
     private static ConcurrentHashMap<Class<?>, EntityInformation> entityInformationCache = new ConcurrentHashMap<>();
 
@@ -93,12 +87,40 @@ public class JpaUnitOfWork implements UnitOfWork {
         return true;
     }
 
+    protected List<Object> persistenceContextEntities() {
+        try {
+            if (!((SessionImplementor) getEntityManager().getDelegate()).isClosed()) {
+                org.hibernate.engine.spi.PersistenceContext persistenceContext = ((SessionImplementor) getEntityManager().getDelegate()).getPersistenceContext();
+                Stream<Object> entitiesInPersistenceContext = Arrays.stream(persistenceContext.reentrantSafeEntityEntries()).map(e -> e.getKey());
+                return entitiesInPersistenceContext.collect(Collectors.toList());
+            }
+        } catch (Exception ex) {
+            log.debug("跟踪实体获取失败", ex);
+        }
+        return Collections.emptyList();
+    }
+
+    protected void onEntitiesFlushed(Set<Object> createdEntities, Set<Object> updatedEntities, Set<Object> deletedEntities) {
+        if (!supportEntityInlinePersistListener) {
+            return;
+        }
+        for (Object entity : createdEntities) {
+            persistListenerManager.onChange(entity, PersistType.CREATE);
+        }
+        for (Object entity : updatedEntities) {
+            persistListenerManager.onChange(entity, PersistType.UPDATE);
+        }
+        for (Object entity : deletedEntities) {
+            persistListenerManager.onChange(entity, PersistType.DELETE);
+        }
+    }
+
     @Override
     public void persist(Object entity) {
         if (isValueObjectAndExists(entity)) {
             return;
         }
-        attach(entity);
+        persistEntitiesThreadLocal.get().add(entity);
     }
 
     @Override
@@ -106,27 +128,13 @@ public class JpaUnitOfWork implements UnitOfWork {
         if (isExists(entity)) {
             return false;
         }
-        attach(entity);
+        persistEntitiesThreadLocal.get().add(entity);
         return true;
-    }
-
-    private void attach(Object entity) {
-        if (persistedEntitiesThreadLocal.get() == null) {
-            persistedEntitiesThreadLocal.set(new LinkedHashSet<>());
-        } else if (persistedEntitiesThreadLocal.get().contains(entity)) {
-            return;
-        }
-        persistedEntitiesThreadLocal.get().add(entity);
     }
 
     @Override
     public void remove(Object entity) {
-        if (removedEntitiesThreadLocal.get() == null) {
-            removedEntitiesThreadLocal.set(new LinkedHashSet<>());
-        } else if (removedEntitiesThreadLocal.get().contains(entity)) {
-            return;
-        }
-        removedEntitiesThreadLocal.get().add(entity);
+        removeEntitiesThreadLocal.get().add(entity);
     }
 
     @Override
@@ -138,13 +146,8 @@ public class JpaUnitOfWork implements UnitOfWork {
         if (null == entity) {
             return false;
         }
-        if (processingThreadLocal.get() == null) {
-            processingThreadLocal.set(new LinkedHashSet<>());
-            processingThreadLocal.get().add(entity);
-            currentProcessedPersistenceContextEntities.add(entity);
-            return true;
-        } else if (!processingThreadLocal.get().contains(entity)) {
-            processingThreadLocal.get().add(entity);
+        if (!processingEntitiesThreadLocal.get().contains(entity)) {
+            processingEntitiesThreadLocal.get().add(entity);
             currentProcessedPersistenceContextEntities.add(entity);
             return true;
         }
@@ -152,8 +155,8 @@ public class JpaUnitOfWork implements UnitOfWork {
     }
 
     private boolean popProcessingEntities(Set<Object> currentProcessedPersistenceContextEntities) {
-        if (processingThreadLocal.get() != null && currentProcessedPersistenceContextEntities != null) {
-            return processingThreadLocal.get().removeAll(currentProcessedPersistenceContextEntities);
+        if (currentProcessedPersistenceContextEntities != null && currentProcessedPersistenceContextEntities.size() > 0) {
+            return processingEntitiesThreadLocal.get().removeAll(currentProcessedPersistenceContextEntities);
         }
         return true;
     }
@@ -161,42 +164,46 @@ public class JpaUnitOfWork implements UnitOfWork {
     @Override
     public void save(Propagation propagation) {
         Set<Object> currentProcessedEntitySet = new LinkedHashSet<>();
-
-        Set<Object> persistEntitySet = null;
-        if (persistedEntitiesThreadLocal.get() != null) {
-            persistEntitySet = new LinkedHashSet<>(persistedEntitiesThreadLocal.get());
-            persistedEntitiesThreadLocal.get().clear();
+        Set<Object> persistEntitySet = persistEntitiesThreadLocal.get();
+        if (persistEntitySet.size() > 0) {
+            persistEntitiesThreadLocal.remove();
             persistEntitySet.forEach(e -> pushProcessingEntities(e, currentProcessedEntitySet));
-        } else {
-            persistEntitySet = new LinkedHashSet<>();
         }
-        Set<Object> deleteEntitySet = null;
-        if (removedEntitiesThreadLocal.get() != null) {
-            deleteEntitySet = new LinkedHashSet<>(removedEntitiesThreadLocal.get());
-            removedEntitiesThreadLocal.get().clear();
+        Set<Object> deleteEntitySet = removeEntitiesThreadLocal.get();
+        if (deleteEntitySet.size() > 0) {
+            removeEntitiesThreadLocal.remove();
             deleteEntitySet.forEach(e -> pushProcessingEntities(e, currentProcessedEntitySet));
-        } else {
-            deleteEntitySet = new LinkedHashSet<>();
         }
-        if (null == entityPersisttedEventThreadLocal.get()) {
-            entityPersisttedEventThreadLocal.set(new EntityPersisttedEvent(this, new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>()));
+
+        for (UnitOfWorkInterceptor interceptor :
+                uowInterceptors) {
+            interceptor.beforeTransaction(persistEntitySet, deleteEntitySet);
         }
-        specifyEntitiesBeforeTransaction(persistEntitySet);
-        Set<Object>[] saveAndDeleteEntities = new Set[]{persistEntitySet, deleteEntitySet, currentProcessedEntitySet};
+        Set<Object>[] saveAndDeleteEntities = new Set[]{
+                persistEntitySet,
+                deleteEntitySet,
+                currentProcessedEntitySet
+        };
         save(input -> {
             Set<Object> persistEntities = input[0];
             Set<Object> deleteEntities = input[1];
             Set<Object> processedEntities = input[2];
-            specifyEntitiesInTransaction(persistEntities);
+            Set<Object> createdEntities = new LinkedHashSet<>();
+            Set<Object> updatedEntities = new LinkedHashSet<>();
+            Set<Object> deletedEntities = new LinkedHashSet<>();
+            for (UnitOfWorkInterceptor interceptor :
+                    uowInterceptors) {
+                interceptor.preInTransaction(persistEntities, deleteEntities);
+            }
             boolean flush = false;
             List<Object> refreshEntityList = null;
             if (persistEntities != null && !persistEntities.isEmpty()) {
                 flush = true;
                 for (Object entity : persistEntities) {
                     if (supportValueObjectExistsCheckOnSave && entity instanceof ValueObject) {
-                        if(!isExists(entity)) {
+                        if (!isExists(entity)) {
                             getEntityManager().persist(entity);
-                            entityPersisttedEventThreadLocal.get().getCreatedEntities().add(entity);
+                            createdEntities.add(entity);
                         }
                         continue;
                     }
@@ -209,12 +216,12 @@ public class JpaUnitOfWork implements UnitOfWork {
                             refreshEntityList = new ArrayList<>();
                         }
                         refreshEntityList.add(entity);
-                        entityPersisttedEventThreadLocal.get().getCreatedEntities().add(entity);
+                        createdEntities.add(entity);
                     } else {
                         if (!getEntityManager().contains(entity)) {
                             getEntityManager().merge(entity);
                         }
-                        entityPersisttedEventThreadLocal.get().getUpdatedEntities().add(entity);
+                        updatedEntities.add(entity);
                     }
                 }
             }
@@ -226,7 +233,7 @@ public class JpaUnitOfWork implements UnitOfWork {
                     } else {
                         getEntityManager().remove(getEntityManager().merge(entity));
                     }
-                    entityPersisttedEventThreadLocal.get().getDeletedEntities().add(entity);
+                    deletedEntities.add(entity);
                 }
             }
 
@@ -237,10 +244,9 @@ public class JpaUnitOfWork implements UnitOfWork {
                         getEntityManager().refresh(entity);
                     }
                 }
-                EntityPersisttedEvent entityPersisttedEvent = entityPersisttedEventThreadLocal.get();
-                entityPersisttedEventThreadLocal.remove();
-                applicationEventPublisher.publishEvent(entityPersisttedEvent);
+                onEntitiesFlushed(createdEntities, updatedEntities, deletedEntities);
             }
+
             Set<Object> entities = new LinkedHashSet<>();
             if (persistEntities != null && !persistEntities.isEmpty()) {
                 entities.addAll(persistEntities);
@@ -252,18 +258,28 @@ public class JpaUnitOfWork implements UnitOfWork {
                 pushProcessingEntities(entity, processedEntities);
             }
             entities.addAll(processedEntities);
-            domainEventManager.release(entities);
-            integrationEventManager.release();
+            for (UnitOfWorkInterceptor interceptor :
+                    uowInterceptors) {
+                interceptor.postEntitiesPersisted(entities);
+            }
+
+            for (UnitOfWorkInterceptor interceptor :
+                    uowInterceptors) {
+                interceptor.postInTransaction(persistEntities, deleteEntities);
+            }
             return null;
         }, saveAndDeleteEntities, propagation);
+        for (UnitOfWorkInterceptor interceptor :
+                uowInterceptors) {
+            interceptor.afterTransaction(persistEntitySet, deleteEntitySet);
+        }
         popProcessingEntities(currentProcessedEntitySet);
     }
 
     public static void reset() {
-        persistedEntitiesThreadLocal.remove();
-        removedEntitiesThreadLocal.remove();
-        processingThreadLocal.remove();
-        entityPersisttedEventThreadLocal.remove();
+        persistEntitiesThreadLocal.remove();
+        removeEntitiesThreadLocal.remove();
+        processingEntitiesThreadLocal.remove();
     }
 
     /**
@@ -352,85 +368,5 @@ public class JpaUnitOfWork implements UnitOfWork {
             result = transactionHandler.exec(in);
         }
         return result;
-    }
-
-    protected List<Object> persistenceContextEntities() {
-        try {
-            if (!((SessionImplementor) getEntityManager().getDelegate()).isClosed()) {
-                org.hibernate.engine.spi.PersistenceContext persistenceContext = ((SessionImplementor) getEntityManager().getDelegate()).getPersistenceContext();
-                Stream<Object> entitiesInPersistenceContext = Arrays.stream(persistenceContext.reentrantSafeEntityEntries()).map(e -> e.getKey());
-                return entitiesInPersistenceContext.collect(Collectors.toList());
-            }
-        } catch (Exception ex) {
-            log.debug("跟踪实体获取失败", ex);
-        }
-        return Collections.emptyList();
-    }
-
-    /**
-     * 校验持久化实体
-     *
-     * @param entities
-     */
-    protected void specifyEntitiesInTransaction(Collection<Object> entities) {
-        if (entities != null && !entities.isEmpty()) {
-            for (Object entity : entities) {
-                Specification.Result result = specificationManager.specifyInTransaction(entity);
-                if (!result.isPassed()) {
-                    throw new DomainException(result.getMessage());
-                }
-            }
-        }
-    }
-
-    /**
-     * 校验持久化实体(事务开启前)
-     *
-     * @param entities
-     */
-    protected void specifyEntitiesBeforeTransaction(Collection<Object> entities) {
-        if (entities != null && !entities.isEmpty()) {
-            for (Object entity : entities) {
-                Specification.Result result = specificationManager.specifyBeforeTransaction(entity);
-                if (!result.isPassed()) {
-                    throw new DomainException(result.getMessage());
-                }
-            }
-        }
-    }
-
-    /**
-     * UoW实体持久化事件
-     */
-    public static class EntityPersisttedEvent extends ApplicationEvent {
-        @Getter
-        Set<Object> createdEntities;
-        @Getter
-        Set<Object> updatedEntities;
-        @Getter
-        Set<Object> deletedEntities;
-
-        public EntityPersisttedEvent(Object source, Set<Object> createdEntities, Set<Object> updatedEntities, Set<Object> deletedEntities) {
-            super(source);
-            this.createdEntities = createdEntities;
-            this.updatedEntities = updatedEntities;
-            this.deletedEntities = deletedEntities;
-        }
-    }
-
-    @EventListener(classes = EntityPersisttedEvent.class)
-    public void onTransactionCommiting(EntityPersisttedEvent event) {
-        if (!supportEntityInlinePersistListener) {
-            return;
-        }
-        for (Object entity : event.getCreatedEntities()) {
-            persistListenerManager.onChange(entity, PersistType.CREATE);
-        }
-        for (Object entity : event.getUpdatedEntities()) {
-            persistListenerManager.onChange(entity, PersistType.UPDATE);
-        }
-        for (Object entity : event.getDeletedEntities()) {
-            persistListenerManager.onChange(entity, PersistType.DELETE);
-        }
     }
 }

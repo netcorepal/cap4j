@@ -10,9 +10,9 @@ public interface PersistListener<Entity> {
 
     /**
      * 持久化变更
-     * @param entity
+     * @param aggregate
      * @param type
      */
-    void onChange(Entity entity, PersistType type);
+    void onChange(Entity aggregate, PersistType type);
 
 }

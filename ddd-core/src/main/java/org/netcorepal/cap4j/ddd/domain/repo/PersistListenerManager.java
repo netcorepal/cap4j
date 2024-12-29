@@ -7,5 +7,5 @@ package org.netcorepal.cap4j.ddd.domain.repo;
  * @date 2024/1/31
  */
 public interface PersistListenerManager {
-    <Entity> void onChange(Entity entity, PersistType type);
+    <Entity> void onChange(Entity aggregate, PersistType type);
 }

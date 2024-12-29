@@ -89,31 +89,31 @@ public class DefaultPersistListenerManager implements PersistListenerManager {
 
     /**
      * onCreate & onUpdate & onDelete
-     * @param entity
+     * @param aggregate
      * @param type
      * @param <Entity>
      */
     @Override
-    public <Entity> void onChange(Entity entity, PersistType type) {
+    public <Entity> void onChange(Entity aggregate, PersistType type) {
         init();
-        List<PersistListener<?>> listeners = persistListenersMap.get(entity.getClass());
+        List<PersistListener<?>> listeners = persistListenersMap.get(aggregate.getClass());
         if (listeners != null) {
             for (PersistListener<?> listener :
                     listeners) {
                 try {
-                    ((PersistListener<Entity>)listener).onChange(entity, type);
+                    ((PersistListener<Entity>)listener).onChange(aggregate, type);
                 } catch (Exception ex){
                     throw ex;
                 }
             }
         }
-        if(!Object.class.equals(entity.getClass())){
+        if(!Object.class.equals(aggregate.getClass())){
             listeners = persistListenersMap.get(Object.class);
             if (listeners != null) {
                 for (PersistListener<?> listener :
                         listeners) {
                     try {
-                        ((PersistListener<Object>)listener).onChange(entity, type);
+                        ((PersistListener<Object>)listener).onChange(aggregate, type);
                     } catch (Exception ex){
                         throw ex;
                     }

@@ -9,6 +9,7 @@ import org.netcorepal.cap4j.ddd.domain.event.configure.EventScheduleProperties;
 import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultDomainEventSupervisor;
 import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultEventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.impl.DefaultEventSubscriberManager;
+import org.netcorepal.cap4j.ddd.domain.event.impl.DomainEventUnitOfWorkInterceptor;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.ArchivedEventJpaRepository;
 import org.netcorepal.cap4j.ddd.domain.event.persistence.EventJpaRepository;
 import org.netcorepal.cap4j.ddd.impl.DefaultEventInterceptorManager;
@@ -68,6 +69,11 @@ public class DomainEventAutoConfiguration {
         DomainEventSupervisorSupport.configure((DomainEventSupervisor) defaultDomainEventSupervisor);
         DomainEventSupervisorSupport.configure((DomainEventManager) defaultDomainEventSupervisor);
         return defaultDomainEventSupervisor;
+    }
+
+    @Bean
+    public DomainEventUnitOfWorkInterceptor domainEventUnitOfWorkInterceptor(DomainEventManager domainEventManager) {
+        return new DomainEventUnitOfWorkInterceptor(domainEventManager);
     }
 
 

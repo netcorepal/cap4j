@@ -3,6 +3,7 @@ package org.netcorepal.cap4j.ddd.application.event;
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.application.event.impl.DefaultIntegrationEventSupervisor;
+import org.netcorepal.cap4j.ddd.application.event.impl.IntergrationEventUnitOfWorkInterceptor;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,14 @@ public class RocketMqEventAutoConfiguration {
         IntegrationEventSupervisorSupport.configure((IntegrationEventSupervisor) defaultIntegrationEventSupervisor);
         IntegrationEventSupervisorSupport.configure((IntegrationEventManager) defaultIntegrationEventSupervisor);
         return defaultIntegrationEventSupervisor;
+    }
+
+    @Bean
+    public IntergrationEventUnitOfWorkInterceptor intergrationEventUnitOfWorkInterceptor(
+        IntegrationEventManager integrationEventManager
+    ){
+        IntergrationEventUnitOfWorkInterceptor intergrationEventUnitOfWorkInterceptor = new IntergrationEventUnitOfWorkInterceptor(integrationEventManager);
+        return intergrationEventUnitOfWorkInterceptor;
     }
 
     @Bean
