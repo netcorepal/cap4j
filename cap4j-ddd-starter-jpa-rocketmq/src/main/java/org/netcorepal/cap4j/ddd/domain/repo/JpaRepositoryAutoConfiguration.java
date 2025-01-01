@@ -2,23 +2,25 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.netcorepal.cap4j.ddd.application.event.IntegrationEventManager;
-import org.netcorepal.cap4j.ddd.application.impl.JpaUnitOfWork;
+import org.netcorepal.cap4j.ddd.application.UnitOfWorkInterceptor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWorkSupport;
-import org.netcorepal.cap4j.ddd.domain.aggregate.*;
+import org.netcorepal.cap4j.ddd.application.impl.JpaUnitOfWork;
+import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;
+import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisorSupport;
+import org.netcorepal.cap4j.ddd.domain.aggregate.Specification;
+import org.netcorepal.cap4j.ddd.domain.aggregate.SpecificationManager;
 import org.netcorepal.cap4j.ddd.domain.aggregate.impl.DefaultAggregateFactorySupervisor;
-import org.netcorepal.cap4j.ddd.domain.event.*;
+import org.netcorepal.cap4j.ddd.domain.aggregate.impl.DefaultSpecificationManager;
+import org.netcorepal.cap4j.ddd.domain.aggregate.impl.SpecificationUnitOfWorkInterceptor;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
+import org.netcorepal.cap4j.ddd.domain.repo.configure.JpaUnitOfWorkProperties;
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultEntityInlinePersistListener;
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultPersistListenerManager;
-import org.netcorepal.cap4j.ddd.domain.aggregate.impl.DefaultSpecificationManager;
-import org.netcorepal.cap4j.ddd.domain.repo.configure.JpaUnitOfWorkProperties;
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultRepositorySupervisor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -41,9 +43,9 @@ public class JpaRepositoryAutoConfiguration {
 
     @Bean
     public DefaultRepositorySupervisor defaultRepositorySupervisor(
-            List<AbstractJpaRepository<?,?>> repositories,
+            List<AbstractJpaRepository<?, ?>> repositories,
             JpaUnitOfWork unitOfWork
-    ){
+    ) {
         DefaultRepositorySupervisor repositorySupervisor = new DefaultRepositorySupervisor(repositories, unitOfWork);
         repositorySupervisor.init();
         RepositorySupervisorSupport.configure(repositorySupervisor);
@@ -54,7 +56,7 @@ public class JpaRepositoryAutoConfiguration {
     public DefaultAggregateFactorySupervisor defaultAggregateFactorySupervisor(
             List<AggregateFactory<?, ?>> factories,
             JpaUnitOfWork jpaUnitOfWork
-    ){
+    ) {
         DefaultAggregateFactorySupervisor aggregateFactorySupervisor = new DefaultAggregateFactorySupervisor(
                 factories,
                 jpaUnitOfWork
@@ -66,19 +68,13 @@ public class JpaRepositoryAutoConfiguration {
 
     @Bean
     public JpaUnitOfWork jpaUnitOfWork(
-            DomainEventManager domainEventManager,
-            IntegrationEventManager integrationEventManager,
-            ApplicationEventPublisher applicationEventPublisher,
-            SpecificationManager specificationManager,
+            List<UnitOfWorkInterceptor> unitOfWorkInterceptors,
             PersistListenerManager persistListenerManager,
             JpaUnitOfWorkProperties jpaUnitOfWorkProperties
     ) {
         JpaUnitOfWork unitOfWork = new JpaUnitOfWork(
-                domainEventManager,
-                integrationEventManager,
-                specificationManager,
+                unitOfWorkInterceptors,
                 persistListenerManager,
-                applicationEventPublisher,
                 jpaUnitOfWorkProperties.isSupportEntityInlinePersistListener(),
                 jpaUnitOfWorkProperties.isSupportValueObjectExistsCheckOnSave());
         UnitOfWorkSupport.configure(unitOfWork);
@@ -116,6 +112,12 @@ public class JpaRepositoryAutoConfiguration {
         DefaultSpecificationManager specificationManager = new DefaultSpecificationManager(specifications);
         specificationManager.init();
         return specificationManager;
+    }
+
+    @Bean
+    public SpecificationUnitOfWorkInterceptor specificationUnitOfWorkInterceptor(SpecificationManager specificationManager){
+        SpecificationUnitOfWorkInterceptor specificationUnitOfWorkInterceptor = new SpecificationUnitOfWorkInterceptor(specificationManager);
+        return specificationUnitOfWorkInterceptor;
     }
 
     @Bean

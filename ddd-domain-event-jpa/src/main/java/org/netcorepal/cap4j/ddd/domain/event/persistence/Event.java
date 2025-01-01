@@ -9,7 +9,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
@@ -17,6 +16,7 @@ import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.annotation.Retry;
+import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -83,7 +83,7 @@ public class Event {
         if (this.payload != null) {
             return this.payload;
         }
-        if (StringUtils.isNotBlank(dataType)) {
+        if (TextUtils.isNotBlank(dataType)) {
             Class dataClass = null;
             try {
                 dataClass = Class.forName(dataType);

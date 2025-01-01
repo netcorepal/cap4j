@@ -16,20 +16,20 @@ public abstract class AbstractPersistListener<Entity> implements PersistListener
     /**
      * 持久化变更
      *
-     * @param entity
+     * @param aggregate
      * @param type
      */
     @Override
-    public void onChange(Entity entity, PersistType type){
+    public void onChange(Entity aggregate, PersistType type){
         switch (type){
             case CREATE:
-                onCreate(entity);
+                onCreate(aggregate);
                 break;
             case UPDATE:
-                onUpdate(entity);
+                onUpdate(aggregate);
                 break;
             case DELETE:
-                onDelete(entity);
+                onDelete(aggregate);
                 break;
         }
     }
