@@ -1,6 +1,5 @@
 package org.netcorepal.cap4j.ddd.codegen.misc;
 
-import com.sun.org.apache.xml.internal.serialize.LineSeparator;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 
@@ -108,7 +107,7 @@ public class SourceFileUtils {
         StringBuilder stringBuilder = new StringBuilder();
         bufferedReader.lines().forEachOrdered(line -> {
             stringBuilder.append(line);
-            stringBuilder.append(LineSeparator.Unix);
+            stringBuilder.append("\n");
         });
         return stringBuilder.toString();
     }
