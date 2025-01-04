@@ -1905,7 +1905,7 @@ public class GenEntityMojo extends GenArchMojo {
                         "import lombok.Getter;\n" +
                         "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
                         "\n" +
-                        "import javax.persistence.*;\n" +
+                        "import jakarta.persistence.*;\n" +
                         "import java.util.HashMap;\n" +
                         "import java.util.Map;\n" +
                         "\n" +
@@ -2038,7 +2038,7 @@ public class GenEntityMojo extends GenArchMojo {
                 "import org.springframework.data.domain.Sort;\n" +
                 "import org.springframework.data.jpa.domain.Specification;\n" +
                 "\n" +
-                "import javax.persistence.criteria.*;\n" +
+                "import jakarta.persistence.criteria.*;\n" +
                 "import java.util.Arrays;\n" +
                 "import java.util.Collection;\n" +
                 "import java.util.stream.Collectors;\n" +
@@ -2159,10 +2159,10 @@ public class GenEntityMojo extends GenArchMojo {
                 "import org.hibernate.query.criteria.internal.path.SingularAttributePath;\n" +
                 "import org.springframework.data.domain.Sort;\n" +
                 "\n" +
-                "import javax.persistence.criteria.CriteriaBuilder;\n" +
-                "import javax.persistence.criteria.Expression;\n" +
-                "import javax.persistence.criteria.Path;\n" +
-                "import javax.persistence.criteria.Predicate;\n" +
+                "import jakarta.persistence.criteria.CriteriaBuilder;\n" +
+                "import jakarta.persistence.criteria.Expression;\n" +
+                "import jakarta.persistence.criteria.Path;\n" +
+                "import jakarta.persistence.criteria.Predicate;\n" +
                 "import java.util.Collection;\n" +
                 "\n" +
                 "/**\n" +
@@ -2191,15 +2191,15 @@ public class GenEntityMojo extends GenArchMojo {
                 "        LEFT,\n" +
                 "        RIGHT;\n" +
                 "\n" +
-                "        public javax.persistence.criteria.JoinType toJpaJoinType(){\n" +
+                "        public jakarta.persistence.criteria.JoinType toJpaJoinType(){\n" +
                 "            if(this == ${SchemaBase}.JoinType.INNER){\n" +
-                "                return javax.persistence.criteria.JoinType.INNER;\n" +
+                "                return jakarta.persistence.criteria.JoinType.INNER;\n" +
                 "            } else if(this == ${SchemaBase}.JoinType.LEFT){\n" +
-                "                return javax.persistence.criteria.JoinType.LEFT;\n" +
+                "                return jakarta.persistence.criteria.JoinType.LEFT;\n" +
                 "            } else if(this == ${SchemaBase}.JoinType.RIGHT){\n" +
-                "                return javax.persistence.criteria.JoinType.RIGHT;\n" +
+                "                return jakarta.persistence.criteria.JoinType.RIGHT;\n" +
                 "            }\n" +
-                "            return javax.persistence.criteria.JoinType.LEFT;\n" +
+                "            return jakarta.persistence.criteria.JoinType.LEFT;\n" +
                 "        }\n" +
                 "    }\n" +
                 "\n" +

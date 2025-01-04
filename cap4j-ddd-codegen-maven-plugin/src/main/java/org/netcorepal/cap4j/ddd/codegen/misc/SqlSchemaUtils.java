@@ -97,7 +97,7 @@ public class SqlSchemaUtils {
             switch (recognizeDbType(connectionString)) {
                 default:
                 case DB_TYPE_MYSQL:
-                    Class.forName("com.mysql.jdbc.Driver");
+                    Class.forName("com.mysql.cj.jdbc.Driver");
                     break;
                 case DB_TYPE_POSTGRESQL:
                     Class.forName("org.postgresql.Driver");

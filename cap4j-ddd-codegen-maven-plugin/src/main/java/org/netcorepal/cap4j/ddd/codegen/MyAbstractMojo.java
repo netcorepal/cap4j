@@ -219,7 +219,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 "org.hibernate.annotations.SQLDelete",
                 "org.hibernate.annotations.Where",
                 "org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate",
-                "javax.persistence.*"
+                "jakarta.persistence.*"
         );
         List<String> imports = new ArrayList<>(importList);
         imports.addAll(Arrays.stream(entityClassExtraImports.split(";"))
