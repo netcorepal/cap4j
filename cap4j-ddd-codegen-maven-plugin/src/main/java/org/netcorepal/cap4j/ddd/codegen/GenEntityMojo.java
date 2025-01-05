@@ -2210,11 +2210,13 @@ public class GenEntityMojo extends GenArchMojo {
                 "     */\n" +
                 "    public static class Field<T> {\n" +
                 "        private String name;\n" +
-                "        private SingularAttributePath<T> path;\n" +
+                "        private Path<T> path;\n" +
+                "        private CriteriaBuilder _criteriaBuilder;\n" +
                 "\n" +
                 "        public Field(Path<T> path) {\n" +
-                "            this.path = new SingularAttributePath<>(((SingularAttributePath<T>) path).criteriaBuilder(), ((SingularAttributePath<T>) path).getJavaType(), ((SingularAttributePath<T>) path).getPathSource(), ((SingularAttributePath<T>) path).getAttribute());\n" +
-                "            this.name = this.path.getAttribute().getName();\n" +
+                "            this.path = path;\n" +
+                "            this.name = ((SingularAttributePath<T>) path).getAttribute().getName();\n" +
+                "            this._criteriaBuilder = ((SingularAttributePath<T>) path).criteriaBuilder();\n" +
                 "        }\n" +
                 "\n" +
                 "        public Field(String name) {\n" +
@@ -2222,7 +2224,7 @@ public class GenEntityMojo extends GenArchMojo {
                 "        }\n" +
                 "\n" +
                 "        protected CriteriaBuilder criteriaBuilder() {\n" +
-                "            return path == null ? null : path.criteriaBuilder();\n" +
+                "            return _criteriaBuilder;\n" +
                 "        }\n" +
                 "\n" +
                 "        public Path<T> path(){\n" +
