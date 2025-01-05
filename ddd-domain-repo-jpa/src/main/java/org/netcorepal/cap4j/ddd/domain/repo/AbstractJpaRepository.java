@@ -32,21 +32,13 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
         if (null != JpaPredicateSupport.resumeId(predicate)) {
             return jpaRepository.findById((ID) JpaPredicateSupport.resumeId(predicate));
         }
-        if (null != JpaPredicateSupport.resumeIds(predicate)) {
-            if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
-                return Optional.empty();
-            }
-            return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate))
-                    .stream().findFirst();
+        if(null != JpaPredicateSupport.resumeSpecification(predicate)) {
+            return jpaSpecificationExecutor.findOne(JpaPredicateSupport.resumeSpecification(predicate));
         }
-        return jpaSpecificationExecutor.findOne(JpaPredicateSupport.resumeSpecification(predicate));
+        return Optional.empty();
     }
 
     public PageData<Entity> findPage(Predicate<Entity> predicate, PageParam pageParam) {
-        if (null != JpaPredicateSupport.resumeId(predicate)) {
-            List<Entity> entities = jpaRepository.findAllById(Arrays.asList((ID) JpaPredicateSupport.resumeId(predicate)));
-            return PageData.create(pageParam, Long.valueOf(entities.size()), entities);
-        }
         if (null != JpaPredicateSupport.resumeIds(predicate)) {
             if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
                 return PageData.empty(pageParam.getPageSize(), JpaPredicateSupport.reflectEntityClass(predicate));
@@ -58,8 +50,11 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
                     .collect(Collectors.toList());
             return PageData.create(pageParam, Long.valueOf(entities.size()), entities);
         }
-        Page<Entity> page = jpaSpecificationExecutor.findAll(JpaPredicateSupport.resumeSpecification(predicate), convertPageable(pageParam));
-        return convertPageData(page);
+        if(null != JpaPredicateSupport.resumeSpecification(predicate)) {
+            Page<Entity> page = jpaSpecificationExecutor.findAll(JpaPredicateSupport.resumeSpecification(predicate), convertPageable(pageParam));
+            return convertPageData(page);
+        }
+        return PageData.empty(pageParam.getPageSize(), JpaPredicateSupport.reflectEntityClass(predicate));
     }
 
     public List<Entity> find(Predicate<Entity> predicate, List<OrderInfo> orders) {
@@ -67,17 +62,17 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
         if (orders != null && !orders.isEmpty()) {
             sort = convertSort(orders);
         }
-        if (null != JpaPredicateSupport.resumeId(predicate)) {
-            return jpaRepository.findAllById(Arrays.asList((ID) JpaPredicateSupport.resumeId(predicate)));
-        }
         if (null != JpaPredicateSupport.resumeIds(predicate)) {
             if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
                 return Collections.emptyList();
             }
             return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate));
         }
-        List<Entity> entities = jpaSpecificationExecutor.findAll(JpaPredicateSupport.resumeSpecification(predicate), sort);
-        return entities;
+        if(null != JpaPredicateSupport.resumeSpecification(predicate)) {
+            List<Entity> entities = jpaSpecificationExecutor.findAll(JpaPredicateSupport.resumeSpecification(predicate), sort);
+            return entities;
+        }
+        return Collections.emptyList();
     }
 
     public long count(Predicate<Entity> predicate) {
