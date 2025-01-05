@@ -1993,7 +1993,7 @@ public class GenEntityMojo extends GenArchMojo {
         String template = "\n" +
                 "    ${fieldComment}\n" +
                 "    public ${SchemaBase}.Field<${fieldType}> ${fieldName}() {\n" +
-                "        return root == null ? new ${SchemaBase}.Field<>(\"${fieldName}\") : new ${SchemaBase}.Field<>(root.get(\"${fieldName}\"));\n" +
+                "        return root == null ? new ${SchemaBase}.Field<>(\"${fieldName}\") : new ${SchemaBase}.Field<>(root.get(\"${fieldName}\"), criteriaBuilder());\n" +
                 "    }\n";
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("segment");
@@ -2016,7 +2016,7 @@ public class GenEntityMojo extends GenArchMojo {
                 "    public ${joinEntitySchemaPackage}${joinEntityType}Schema join${joinEntityType}(${SchemaBase}.JoinType joinType) {\n" +
                 "        JoinType type = joinType.toJpaJoinType();\n" +
                 "        Join<${Entity}, ${joinEntityPackage}.${joinEntityType}> join = ((Root<${Entity}>) root).join(\"${joinEntityVars}\", type);\n" +
-                "        ${joinEntitySchemaPackage}${joinEntityType}Schema schema = new ${joinEntitySchemaPackage}${joinEntityType}Schema(join, criteriaBuilder);\n" +
+                "        ${joinEntitySchemaPackage}${joinEntityType}Schema schema = new ${joinEntitySchemaPackage}${joinEntityType}Schema(join, criteriaBuilder());\n" +
                 "        return schema;\n" +
                 "    }";
         TemplateNode templateNode = new TemplateNode();
@@ -2053,10 +2053,10 @@ public class GenEntityMojo extends GenArchMojo {
                 "@RequiredArgsConstructor\n" +
                 "public class ${Entity}Schema {\n" +
                 "    private final Path<${Entity}> root;\n" +
-                "    private final CriteriaBuilder criteriaBuilder;\n" +
+                "    private final CriteriaBuilder _criteriaBuilder;\n" +
                 "\n" +
                 "    public CriteriaBuilder criteriaBuilder() {\n" +
-                "        return criteriaBuilder;\n" +
+                "        return _criteriaBuilder;\n" +
                 "    }\n" +
                 "${FIELD_ITEMS}\n" +
                 "\n" +
@@ -2156,7 +2156,7 @@ public class GenEntityMojo extends GenArchMojo {
         String template = "package ${basePackage}${templatePackage};\n" +
                 "\n" +
                 "import com.google.common.collect.Lists;\n" +
-                "import org.hibernate.query.criteria.internal.path.SingularAttributePath;\n" +
+                "import org.hibernate.query.sqm.tree.domain.SqmBasicValuedSimplePath;\n" +
                 "import org.springframework.data.domain.Sort;\n" +
                 "\n" +
                 "import jakarta.persistence.criteria.CriteriaBuilder;\n" +
@@ -2210,11 +2210,13 @@ public class GenEntityMojo extends GenArchMojo {
                 "     */\n" +
                 "    public static class Field<T> {\n" +
                 "        private String name;\n" +
-                "        private SingularAttributePath<T> path;\n" +
+                "        private Path<T> path;\n" +
+                "        private CriteriaBuilder _criteriaBuilder;\n" +
                 "\n" +
-                "        public Field(Path<T> path) {\n" +
-                "            this.path = new SingularAttributePath<>(((SingularAttributePath<T>) path).criteriaBuilder(), ((SingularAttributePath<T>) path).getJavaType(), ((SingularAttributePath<T>) path).getPathSource(), ((SingularAttributePath<T>) path).getAttribute());\n" +
-                "            this.name = this.path.getAttribute().getName();\n" +
+                "        public Field(Path<T> path, CriteriaBuilder criteriaBuilder) {\n" +
+                "            this.path = path;\n" +
+                "            this.name = ((SqmBasicValuedSimplePath) path).getNavigablePath().getLocalName();\n" +
+                "            this._criteriaBuilder = criteriaBuilder;\n" +
                 "        }\n" +
                 "\n" +
                 "        public Field(String name) {\n" +
@@ -2222,7 +2224,7 @@ public class GenEntityMojo extends GenArchMojo {
                 "        }\n" +
                 "\n" +
                 "        protected CriteriaBuilder criteriaBuilder() {\n" +
-                "            return path == null ? null : path.criteriaBuilder();\n" +
+                "            return this._criteriaBuilder;\n" +
                 "        }\n" +
                 "\n" +
                 "        public Path<T> path(){\n" +
