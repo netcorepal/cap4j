@@ -4,6 +4,7 @@ import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,7 +36,7 @@ public interface RepositorySupervisor {
      * @return
      */
     default <ENTITY> List<ENTITY> findWithoutPersist(Predicate<ENTITY> predicate) {
-        return findWithoutPersist(predicate, null);
+        return findWithoutPersist(predicate, (List<OrderInfo>) null);
     }
 
     /**
@@ -47,7 +48,7 @@ public interface RepositorySupervisor {
      * @return
      */
     default <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate) {
-        return find(predicate, null);
+        return find(predicate, (List<OrderInfo>) null);
     }
 
     /**
@@ -62,6 +63,18 @@ public interface RepositorySupervisor {
 
     /**
      * 根据条件获取实体列表
+     *
+     * @param predicate
+     * @param orders
+     * @param <ENTITY>
+     * @return
+     */
+    default <ENTITY> List<ENTITY> findWithoutPersist(Predicate<ENTITY> predicate, OrderInfo... orders){
+        return findWithoutPersist(predicate, Arrays.asList(orders));
+    }
+
+    /**
+     * 根据条件获取实体列表
      * 自动调用 UnitOfWork::persist
      *
      * @param predicate
@@ -70,6 +83,19 @@ public interface RepositorySupervisor {
      * @return
      */
     <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, List<OrderInfo> orders);
+
+    /**
+     * 根据条件获取实体列表
+     * 自动调用 UnitOfWork::persist
+     *
+     * @param predicate
+     * @param orders
+     * @param <ENTITY>
+     * @return
+     */
+    default <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, OrderInfo... orders){
+        return find(predicate, Arrays.asList(orders));
+    }
 
     /**
      * 根据条件获取单个实体

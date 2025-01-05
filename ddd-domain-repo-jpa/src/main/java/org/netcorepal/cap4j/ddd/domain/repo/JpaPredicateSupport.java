@@ -2,8 +2,7 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 
 import org.springframework.data.jpa.domain.Specification;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.Iterator;
 
 /**
  * 断言Support
@@ -17,21 +16,29 @@ public class JpaPredicateSupport {
      * 复原ID
      *
      * @param predicate
-     * @return
      * @param <Entity>
+     * @return
      */
-    public static <Entity> Object resumeId(Predicate<Entity> predicate){
-        return ((JpaPredicate<Entity>) predicate).id;
+    public static <Entity> Object resumeId(Predicate<Entity> predicate) {
+        Iterable<Object> ids = ((JpaPredicate<Entity>) predicate).ids;
+        if (ids == null) {
+            return null;
+        }
+        Iterator<Object> iterator = ids.iterator();
+        if (!iterator.hasNext()){
+            return null;
+        }
+        return iterator.next();
     }
 
     /**
      * 复原IDS
      *
      * @param predicate
-     * @return
      * @param <Entity>
+     * @return
      */
-    public static <Entity> Iterable<Object> resumeIds(Predicate<Entity> predicate){
+    public static <Entity> Iterable<Object> resumeIds(Predicate<Entity> predicate) {
         return ((JpaPredicate<Entity>) predicate).ids;
     }
 
