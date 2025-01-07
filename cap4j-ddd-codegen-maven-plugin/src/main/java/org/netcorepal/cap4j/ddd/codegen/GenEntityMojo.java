@@ -1566,6 +1566,7 @@ public class GenEntityMojo extends GenArchMojo {
         String tag = "schema";
         String fieldTag = "schema_field";
         String joinTag = "schema_join";
+        String rootExtraExtensionTag = "root_schema_extra_extension";
         String tableName = getTableName(table);
         String aggregate = getAggregateWithModule(tableName);
         String schemaPackage = null;
@@ -1591,6 +1592,7 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "package", refPackage(aggregate), context);
         putContext(tag, "path", aggregate.replace(".", File.separator), context);
         putContext(tag, "Aggregate", toUpperCamelCase(aggregate), context);
+        putContext(tag, "isAggregateRoot", isAggregateRoot(table) + "", context);
         putContext(tag, "Comment", comment, context);
         putContext(tag, "CommentEscaped", comment.replaceAll(PATTERN_LINE_BREAK, " "), context);
         putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
@@ -1675,6 +1677,21 @@ public class GenEntityMojo extends GenArchMojo {
 
         putContext(tag, "FIELD_ITEMS", fieldItems, context);
         putContext(tag, "JOIN_ITEMS", joinItems, context);
+
+        String extraExtension = "";
+        try {
+            if(isAggregateRoot(table)) {
+                List<TemplateNode> extraExtensionTemplateNodes = templateNodeMap.containsKey(rootExtraExtensionTag)
+                        ? templateNodeMap.get(rootExtraExtensionTag)
+                        : Arrays.asList(getDefaultRootSchemaExtraExtensionTemplateNode());
+                for (TemplateNode templateNode : extraExtensionTemplateNodes) {
+                    extraExtension += templateNode.clone().resolve(context).getData();
+                }
+            }
+        } catch (IOException e) {
+            getLog().error("SchemaExtraExtension模板文件生成失败！", e);
+        }
+        putContext(tag, "EXTRA_EXTENSION", extraExtension, context);
 
         List<TemplateNode> schemaTemplateNodes = templateNodeMap.containsKey(tag)
                 ? templateNodeMap.get(tag)
@@ -1993,7 +2010,7 @@ public class GenEntityMojo extends GenArchMojo {
         String template = "\n" +
                 "    ${fieldComment}\n" +
                 "    public ${SchemaBase}.Field<${fieldType}> ${fieldName}() {\n" +
-                "        return root == null ? new ${SchemaBase}.Field<>(\"${fieldName}\") : new ${SchemaBase}.Field<>(root.get(\"${fieldName}\"));\n" +
+                "        return root == null ? new ${SchemaBase}.Field<>(\"${fieldName}\") : new ${SchemaBase}.Field<>(root.get(\"${fieldName}\"), this.criteriaBuilder);\n" +
                 "    }\n";
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("segment");
@@ -2015,8 +2032,8 @@ public class GenEntityMojo extends GenArchMojo {
                 "     */\n" +
                 "    public ${joinEntitySchemaPackage}${joinEntityType}Schema join${joinEntityType}(${SchemaBase}.JoinType joinType) {\n" +
                 "        JoinType type = joinType.toJpaJoinType();\n" +
-                "        Join<${Entity}, ${joinEntityPackage}.${joinEntityType}> join = ((Root<${Entity}>) root).join(\"${joinEntityVars}\", type);\n" +
-                "        ${joinEntitySchemaPackage}${joinEntityType}Schema schema = new ${joinEntitySchemaPackage}${joinEntityType}Schema(join, criteriaBuilder);\n" +
+                "        Join<${Entity}, ${joinEntityPackage}.${joinEntityType}> join = ((Root<${Entity}>) this.root).join(\"${joinEntityVars}\", type);\n" +
+                "        ${joinEntitySchemaPackage}${joinEntityType}Schema schema = new ${joinEntitySchemaPackage}${joinEntityType}Schema(join, this.criteriaBuilder);\n" +
                 "        return schema;\n" +
                 "    }";
         TemplateNode templateNode = new TemplateNode();
@@ -2035,12 +2052,13 @@ public class GenEntityMojo extends GenArchMojo {
                 "import ${basePackage}${schemaBasePackage}.${SchemaBase};\n" +
                 "import ${basePackage}${entityPackage}.${Entity};\n" +
                 "import lombok.RequiredArgsConstructor;\n" +
-                "import org.springframework.data.domain.Sort;\n" +
                 "import org.springframework.data.jpa.domain.Specification;\n" +
                 "\n" +
                 "import javax.persistence.criteria.*;\n" +
                 "import java.util.Arrays;\n" +
                 "import java.util.Collection;\n" +
+                "import java.util.Collections;\n" +
+                "import java.util.List;\n" +
                 "import java.util.stream.Collectors;\n" +
                 "\n" +
                 "/**\n" +
@@ -2055,8 +2073,12 @@ public class GenEntityMojo extends GenArchMojo {
                 "    private final Path<${Entity}> root;\n" +
                 "    private final CriteriaBuilder criteriaBuilder;\n" +
                 "\n" +
-                "    public CriteriaBuilder criteriaBuilder() {\n" +
+                "    public CriteriaBuilder _criteriaBuilder() {\n" +
                 "        return criteriaBuilder;\n" +
+                "    }\n" +
+                "\n" +
+                "    public Path<${Entity}> _root() {\n" +
+                "        return root;\n" +
                 "    }\n" +
                 "${FIELD_ITEMS}\n" +
                 "\n" +
@@ -2066,7 +2088,7 @@ public class GenEntityMojo extends GenArchMojo {
                 "     * @return\n" +
                 "     */\n" +
                 "    public Predicate all(Predicate... restrictions) {\n" +
-                "        return criteriaBuilder().and(restrictions);\n" +
+                "        return this.criteriaBuilder.and(restrictions);\n" +
                 "    }\n" +
                 "\n" +
                 "    /**\n" +
@@ -2075,7 +2097,7 @@ public class GenEntityMojo extends GenArchMojo {
                 "     * @return\n" +
                 "     */\n" +
                 "    public Predicate any(Predicate... restrictions) {\n" +
-                "        return criteriaBuilder().or(restrictions);\n" +
+                "        return this.criteriaBuilder.or(restrictions);\n" +
                 "    }\n" +
                 "\n" +
                 "    /**\n" +
@@ -2090,57 +2112,94 @@ public class GenEntityMojo extends GenArchMojo {
                 "\n" +
                 "    /**\n" +
                 "     * 构建查询条件\n" +
-                "     * @param builder\n" +
-                "     * @param distinct\n" +
-                "     * @return\n" +
-                "     */\n" +
-                "    public static Specification<${Entity}> specify(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, boolean distinct) {\n" +
-                "        return (root, criteriaQuery, criteriaBuilder) -> {\n" +
-                "            ${Entity}Schema ${EntityVar} = new ${Entity}Schema(root, criteriaBuilder);\n" +
-                "            criteriaQuery.where(builder.build(${EntityVar}));\n" +
-                "            criteriaQuery.distinct(distinct);\n" +
-                "            return null;\n" +
-                "        };\n" +
-                "    }\n" +
-                "    \n" +
-                "    /**\n" +
-                "     * 构建查询条件\n" +
-                "     * @param builder\n" +
+                "     *\n" +
+                "     * @param builder where条件构造器\n" +
                 "     * @return\n" +
                 "     */\n" +
                 "    public static Specification<${Entity}> specify(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder) {\n" +
+                "        return specify(builder, false, Collections.emptyList());\n" +
+                "    }\n" +
+                "\n" +
+                "    /**\n" +
+                "     * 构建查询条件\n" +
+                "     *\n" +
+                "     * @param builder  where条件构造器\n" +
+                "     * @param distinct 是否去重\n" +
+                "     * @return\n" +
+                "     */\n" +
+                "    public static Specification<${Entity}> specify(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, boolean distinct) {\n" +
+                "        return specify(builder, distinct, Collections.emptyList());\n" +
+                "    }\n" +
+                "\n" +
+                "    /**\n" +
+                "     * 构建查询条件\n" +
+                "     *\n" +
+                "     * @param builder       where条件构造器\n" +
+                "     * @param orderBuilders 排序条件构造器\n" +
+                "     * @return\n" +
+                "     */\n" +
+                "    public static Specification<${Entity}> specify(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, ${SchemaBase}.OrderBuilder<${Entity}Schema>... orderBuilders) {\n" +
+                "        return specify(builder, Arrays.asList(orderBuilders));\n" +
+                "    }\n" +
+                "\n" +
+                "    /**\n" +
+                "     * 构建查询条件\n" +
+                "     *\n" +
+                "     * @param builder       where条件构造器\n" +
+                "     * @param orderBuilders 排序条件构造器\n" +
+                "     * @return\n" +
+                "     */\n" +
+                "    public static Specification<${Entity}> specify(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, List<${SchemaBase}.OrderBuilder<${Entity}Schema>> orderBuilders) {\n" +
+                "        return specify(builder, orderBuilders);\n" +
+                "    }\n" +
+                "\n" +
+                "    /**\n" +
+                "     * 构建查询条件\n" +
+                "     *\n" +
+                "     * @param builder       where条件构造器\n" +
+                "     * @param distinct      是否去重\n" +
+                "     * @param orderBuilders 排序条件构造器\n" +
+                "     * @return\n" +
+                "     */\n" +
+                "    public static Specification<${Entity}> specify(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, boolean distinct, ${SchemaBase}.OrderBuilder<${Entity}Schema>... orderBuilders) {\n" +
+                "        return specify(builder, distinct, Arrays.asList(orderBuilders));\n" +
+                "    }\n" +
+                "\n" +
+                "    /**\n" +
+                "     * 构建查询条件\n" +
+                "     *\n" +
+                "     * @param builder       where条件构造器\n" +
+                "     * @param distinct      是否去重\n" +
+                "     * @param orderBuilders 排序条件构造器\n" +
+                "     * @return\n" +
+                "     */\n" +
+                "    public static Specification<${Entity}> specify(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, boolean distinct, List<${SchemaBase}.OrderBuilder<${Entity}Schema>> orderBuilders) {\n" +
+                "        return specify((schema, criteriaQuery) -> {\n" +
+                "            criteriaQuery.where(builder.build(schema));\n" +
+                "            criteriaQuery.distinct(distinct);\n" +
+                "            if (orderBuilders != null && !orderBuilders.isEmpty()) {\n" +
+                "                criteriaQuery.orderBy(orderBuilders.stream()\n" +
+                "                        .map(b -> b.build(schema))\n" +
+                "                        .collect(Collectors.toList())\n" +
+                "                );\n" +
+                "            }\n" +
+                "            return null;\n" +
+                "        });\n" +
+                "    }\n" +
+                "\n" +
+                "    /**\n" +
+                "     * 构建查询条件\n" +
+                "     *\n" +
+                "     * @param specifier 查询条件构造器\n" +
+                "     * @return\n" +
+                "     */\n" +
+                "    public static Specification<${Entity}> specify(${SchemaBase}.Specification<${Entity}, ${Entity}Schema> specifier) {\n" +
                 "        return (root, criteriaQuery, criteriaBuilder) -> {\n" +
                 "            ${Entity}Schema ${EntityVar} = new ${Entity}Schema(root, criteriaBuilder);\n" +
-                "            criteriaQuery.where(builder.build(${EntityVar}));\n" +
-                "            return null;\n" +
+                "            return specifier.toPredicate(${EntityVar}, criteriaQuery);\n" +
                 "        };\n" +
                 "    }\n" +
-                "    \n" +
-                "    /**\n" +
-                "     * 构建排序\n" +
-                "     * @param builders\n" +
-                "     * @return\n" +
-                "     */\n" +
-                "    public static Sort orderBy(${SchemaBase}.OrderBuilder<${Entity}Schema>... builders) {\n" +
-                "        return orderBy(Arrays.asList(builders));\n" +
-                "    }\n" +
-                "\n" +
-                "    /**\n" +
-                "     * 构建排序\n" +
-                "     *\n" +
-                "     * @param builders\n" +
-                "     * @return\n" +
-                "     */\n" +
-                "    public static Sort orderBy(Collection<${SchemaBase}.OrderBuilder<${Entity}Schema>> builders) {\n" +
-                "        if(null == builders || builders.isEmpty()) {\n" +
-                "            return Sort.unsorted();\n" +
-                "        }\n" +
-                "        return Sort.by(builders.stream()\n" +
-                "                .map(builder -> builder.build(new ${Entity}Schema(null, null)))\n" +
-                "                .collect(Collectors.toList())\n" +
-                "        );\n" +
-                "    }\n" +
-                "\n" +
+                "${EXTRA_EXTENSION}\n" +
                 "}\n";
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("file");
@@ -2152,21 +2211,138 @@ public class GenEntityMojo extends GenArchMojo {
         return templateNode;
     }
 
+    public TemplateNode getDefaultRootSchemaExtraExtensionTemplateNode() {
+        String template =
+                "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param id 主键\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicateById(Object id) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.byId(${Entity}.class, id);\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param ids 主键\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicateByIds(Collection<Object> ids) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.byIds(${Entity}.class, ids);\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param ids 主键\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicateByIds(Object... ids) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.byIds(${Entity}.class, Arrays.asList(ids));\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param builder 查询条件构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.bySpecification(${Entity}.class, specify(builder));\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param builder  查询条件构造器\n" +
+                        "     * @param distinct 是否去重\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, boolean distinct) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct));\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param builder       查询条件构造器\n" +
+                        "     * @param orderBuilders 排序构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, List<${SchemaBase}.OrderBuilder<${Entity}Schema>> orderBuilders) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.bySpecification(${Entity}.class, specify(builder, false, orderBuilders));\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param builder       查询条件构造器\n" +
+                        "     * @param orderBuilders 排序构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, ${SchemaBase}.OrderBuilder<${Entity}Schema>... orderBuilders) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.bySpecification(${Entity}.class, specify(builder, false, orderBuilders));\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param builder       查询条件构造器\n" +
+                        "     * @param distinct      是否去重\n" +
+                        "     * @param orderBuilders 排序构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, boolean distinct, List<${SchemaBase}.OrderBuilder<${Entity}Schema>> orderBuilders) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct, orderBuilders));\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param builder       查询条件构造器\n" +
+                        "     * @param distinct      是否去重\n" +
+                        "     * @param orderBuilders 排序构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<${Entity}Schema> builder, boolean distinct, ${SchemaBase}.OrderBuilder<${Entity}Schema>... orderBuilders) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct, orderBuilders));\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建查询条件\n" +
+                        "     *\n" +
+                        "     * @param specifier 查询条件构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicate(${SchemaBase}.Specification<${Entity}, ${Entity}Schema> specifier) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.bySpecification(${Entity}.class, specify(specifier));\n" +
+                        "    }";
+
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("segment");
+        templateNode.setTag("root_schema_extra_extension");
+        templateNode.setName("");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
     public TemplateNode getDefaultSchemaBaseTemplateNode() {
         String template = "package ${basePackage}${templatePackage};\n" +
                 "\n" +
                 "import com.google.common.collect.Lists;\n" +
+                "import org.hibernate.query.criteria.internal.OrderImpl;\n" +
                 "import org.hibernate.query.criteria.internal.path.SingularAttributePath;\n" +
-                "import org.springframework.data.domain.Sort;\n" +
                 "\n" +
-                "import javax.persistence.criteria.CriteriaBuilder;\n" +
-                "import javax.persistence.criteria.Expression;\n" +
-                "import javax.persistence.criteria.Path;\n" +
-                "import javax.persistence.criteria.Predicate;\n" +
+                "import javax.persistence.criteria.*;\n" +
                 "import java.util.Collection;\n" +
                 "\n" +
                 "/**\n" +
-                " * Schema\n" +
+                " * 实体结构基类\n" +
                 " *\n" +
                 " * @author cap4j-ddd-codegen\n" +
                 " */\n" +
@@ -2179,11 +2355,15 @@ public class GenEntityMojo extends GenArchMojo {
                 "        public Predicate build(S schema);\n" +
                 "    }\n" +
                 "\n" +
+                "    public static interface Specification<E, S> {\n" +
+                "        public Predicate toPredicate(S schema, CriteriaQuery<?> criteriaQuery);\n" +
+                "    }\n" +
+                "\n" +
                 "    /**\n" +
                 "     * 排序构建器\n" +
                 "     */\n" +
                 "    public static interface OrderBuilder<S> {\n" +
-                "        public Sort.Order build(S schema);\n" +
+                "        public Order build(S schema);\n" +
                 "    }\n" +
                 "\n" +
                 "    public enum JoinType {\n" +
@@ -2211,105 +2391,105 @@ public class GenEntityMojo extends GenArchMojo {
                 "    public static class Field<T> {\n" +
                 "        private String name;\n" +
                 "        private Path<T> path;\n" +
-                "        private CriteriaBuilder _criteriaBuilder;\n" +
+                "        private CriteriaBuilder criteriaBuilder;\n" +
                 "\n" +
-                "        public Field(Path<T> path) {\n" +
+                "        public Field(Path<T> path, CriteriaBuilder criteriaBuilder) {\n" +
                 "            this.path = path;\n" +
                 "            this.name = ((SingularAttributePath<T>) path).getAttribute().getName();\n" +
-                "            this._criteriaBuilder = ((SingularAttributePath<T>) path).criteriaBuilder();\n" +
+                "            this.criteriaBuilder = ((SingularAttributePath<T>) path).criteriaBuilder();\n" +
                 "        }\n" +
                 "\n" +
                 "        public Field(String name) {\n" +
                 "            this.name = name;\n" +
                 "        }\n" +
                 "\n" +
-                "        protected CriteriaBuilder criteriaBuilder() {\n" +
-                "            return _criteriaBuilder;\n" +
+                "        protected CriteriaBuilder _criteriaBuilder() {\n" +
+                "            return this.criteriaBuilder;\n" +
                 "        }\n" +
                 "\n" +
-                "        public Path<T> path(){\n" +
+                "        public Path<T> path() {\n" +
                 "            return path;\n" +
                 "        }\n" +
                 "\n" +
-                "        public Sort.Order asc() {\n" +
-                "            return Sort.Order.asc(this.name);\n" +
+                "        public Order asc() {\n" +
+                "            return new OrderImpl(path, true);\n" +
                 "        }\n" +
                 "\n" +
-                "        public Sort.Order desc() {\n" +
-                "            return Sort.Order.desc(this.name);\n" +
+                "        public Order desc() {\n" +
+                "            return new OrderImpl(path, false);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate isTrue() {\n" +
-                "            return criteriaBuilder().isTrue((Expression<Boolean>) this.path);\n" +
+                "            return this.criteriaBuilder.isTrue((Expression<Boolean>) this.path);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate isFalse() {\n" +
-                "            return criteriaBuilder().isTrue((Expression<Boolean>) this.path);\n" +
+                "            return this.criteriaBuilder.isTrue((Expression<Boolean>) this.path);\n" +
                 "\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate equal(Object val) {\n" +
-                "            return criteriaBuilder().equal(this.path, val);\n" +
+                "            return this.criteriaBuilder.equal(this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate equal(Expression<?> val) {\n" +
-                "            return criteriaBuilder().equal(this.path, val);\n" +
+                "            return this.criteriaBuilder.equal(this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate notEqual(Object val) {\n" +
-                "            return criteriaBuilder().notEqual(this.path, val);\n" +
+                "            return this.criteriaBuilder.notEqual(this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate notEqual(Expression<?> val) {\n" +
-                "            return criteriaBuilder().notEqual(this.path, val);\n" +
+                "            return this.criteriaBuilder.notEqual(this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate isNull() {\n" +
-                "            return criteriaBuilder().isNull(this.path);\n" +
+                "            return this.criteriaBuilder.isNull(this.path);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate isNotNull() {\n" +
-                "            return criteriaBuilder().isNotNull(this.path);\n" +
+                "            return this.criteriaBuilder.isNotNull(this.path);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate greaterThan(Y val) {\n" +
-                "            return criteriaBuilder().greaterThan((Expression<Y>) this.path, val);\n" +
+                "            return this.criteriaBuilder.greaterThan((Expression<Y>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate greaterThan(Expression<? extends Y> val) {\n" +
-                "            return criteriaBuilder().greaterThan((Expression<Y>) this.path, val);\n" +
+                "            return this.criteriaBuilder.greaterThan((Expression<Y>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate greaterThanOrEqualTo(Y val) {\n" +
-                "            return criteriaBuilder().greaterThan((Expression<Y>) this.path, val);\n" +
+                "            return this.criteriaBuilder.greaterThan((Expression<Y>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate greaterThanOrEqualTo(Expression<? extends Y> val) {\n" +
-                "            return criteriaBuilder().greaterThanOrEqualTo((Expression<Y>) this.path, val);\n" +
+                "            return this.criteriaBuilder.greaterThanOrEqualTo((Expression<Y>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate lessThan(Y val) {\n" +
-                "            return criteriaBuilder().lessThan((Expression<Y>) this.path, val);\n" +
+                "            return this.criteriaBuilder.lessThan((Expression<Y>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate lessThan(Expression<? extends Y> val) {\n" +
-                "            return criteriaBuilder().lessThan((Expression<Y>) this.path, val);\n" +
+                "            return this.criteriaBuilder.lessThan((Expression<Y>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate lessThanOrEqualTo(Y val) {\n" +
-                "            return criteriaBuilder().lessThanOrEqualTo((Expression<Y>) this.path, val);\n" +
+                "            return this.criteriaBuilder.lessThanOrEqualTo((Expression<Y>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate lessThanOrEqualTo(Expression<? extends Y> val) {\n" +
-                "            return criteriaBuilder().lessThanOrEqualTo((Expression<Y>) this.path, val);\n" +
+                "            return this.criteriaBuilder.lessThanOrEqualTo((Expression<Y>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate between(Y val1, Y val2) {\n" +
-                "            return criteriaBuilder().between((Expression<Y>) this.path, val1, val2);\n" +
+                "            return this.criteriaBuilder.between((Expression<Y>) this.path, val1, val2);\n" +
                 "        }\n" +
                 "\n" +
                 "        public <Y extends Comparable<? super Y>> Predicate between(Expression<? extends Y> val1, Expression<? extends Y> val2) {\n" +
-                "            return criteriaBuilder().between((Expression<Y>) this.path, val1, val2);\n" +
+                "            return this.criteriaBuilder.between((Expression<Y>) this.path, val1, val2);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate in(Object... vals) {\n" +
@@ -2317,7 +2497,7 @@ public class GenEntityMojo extends GenArchMojo {
                 "        }\n" +
                 "\n" +
                 "        public Predicate in(Collection<Object> vals) {\n" +
-                "            CriteriaBuilder.In predicate = criteriaBuilder().in(this.path);\n" +
+                "            CriteriaBuilder.In predicate = criteriaBuilder.in(this.path);\n" +
                 "            for (Object o : vals) {\n" +
                 "                predicate.value(o);\n" +
                 "            }\n" +
@@ -2329,24 +2509,24 @@ public class GenEntityMojo extends GenArchMojo {
                 "        }\n" +
                 "\n" +
                 "        public Predicate notIn(Collection<Object> vals) {\n" +
-                "            return criteriaBuilder().not(in(vals));\n" +
+                "            return this.criteriaBuilder.not(in(vals));\n" +
                 "        }\n" +
                 "\n" +
                 "\n" +
                 "        public Predicate like(String val) {\n" +
-                "            return criteriaBuilder().like((Expression<String>) this.path, val);\n" +
+                "            return this.criteriaBuilder.like((Expression<String>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate like(Expression<String> val) {\n" +
-                "            return criteriaBuilder().like((Expression<String>) this.path, val);\n" +
+                "            return this.criteriaBuilder.like((Expression<String>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate notLike(String val) {\n" +
-                "            return criteriaBuilder().notLike((Expression<String>) this.path, val);\n" +
+                "            return this.criteriaBuilder.notLike((Expression<String>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "        public Predicate notLike(Expression<String> val) {\n" +
-                "            return criteriaBuilder().notLike((Expression<String>) this.path, val);\n" +
+                "            return this.criteriaBuilder.notLike((Expression<String>) this.path, val);\n" +
                 "        }\n" +
                 "\n" +
                 "\n" +

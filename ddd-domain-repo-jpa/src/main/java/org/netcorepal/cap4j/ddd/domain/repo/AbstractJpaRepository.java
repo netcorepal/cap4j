@@ -11,7 +11,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +31,7 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
         if (null != JpaPredicateSupport.resumeId(predicate)) {
             return jpaRepository.findById((ID) JpaPredicateSupport.resumeId(predicate));
         }
-        if(null != JpaPredicateSupport.resumeSpecification(predicate)) {
+        if (null != JpaPredicateSupport.resumeSpecification(predicate)) {
             return jpaSpecificationExecutor.findOne(JpaPredicateSupport.resumeSpecification(predicate));
         }
         return Optional.empty();
@@ -50,7 +49,7 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
                     .collect(Collectors.toList());
             return PageData.create(pageParam, Long.valueOf(entities.size()), entities);
         }
-        if(null != JpaPredicateSupport.resumeSpecification(predicate)) {
+        if (null != JpaPredicateSupport.resumeSpecification(predicate)) {
             Page<Entity> page = jpaSpecificationExecutor.findAll(JpaPredicateSupport.resumeSpecification(predicate), convertPageable(pageParam));
             return convertPageData(page);
         }
@@ -68,7 +67,7 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
             }
             return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate));
         }
-        if(null != JpaPredicateSupport.resumeSpecification(predicate)) {
+        if (null != JpaPredicateSupport.resumeSpecification(predicate)) {
             List<Entity> entities = jpaSpecificationExecutor.findAll(JpaPredicateSupport.resumeSpecification(predicate), sort);
             return entities;
         }
@@ -108,16 +107,16 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
     }
 
     private Sort convertSort(List<OrderInfo> orders) {
-        Sort sort = Sort.unsorted();
-        if (orders != null && !orders.isEmpty()) {
-            Sort.by(orders.stream().map(order -> {
-                if (order.getDesc()) {
-                    return Sort.Order.desc(order.getField());
-                } else {
-                    return Sort.Order.asc(order.getField());
-                }
-            }).collect(Collectors.toList()));
+        if (orders == null || orders.isEmpty()) {
+            return Sort.unsorted();
         }
+        Sort sort = Sort.by(orders.stream().map(order -> {
+            if (order.getDesc()) {
+                return Sort.Order.desc(order.getField());
+            } else {
+                return Sort.Order.asc(order.getField());
+            }
+        }).collect(Collectors.toList()));
         return sort;
     }
 
