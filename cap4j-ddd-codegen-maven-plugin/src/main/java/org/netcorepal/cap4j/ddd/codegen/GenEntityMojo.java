@@ -1566,6 +1566,7 @@ public class GenEntityMojo extends GenArchMojo {
         String tag = "schema";
         String fieldTag = "schema_field";
         String joinTag = "schema_join";
+        String propertyNameTag = "schema_property_name";
         String rootExtraExtensionTag = "root_schema_extra_extension";
         String tableName = getTableName(table);
         String aggregate = getAggregateWithModule(tableName);
@@ -1602,6 +1603,7 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "SchemaBase", DEFAULT_SCHEMA_BASE_CLASS_NAME, context);
 
         String fieldItems = "";
+        String propertyNameItems = "";
         for (Map<String, Object> column : columns) {
             if (!isColumnNeedGenerate(table, column, relations)) {
                 continue;
@@ -1609,14 +1611,21 @@ public class GenEntityMojo extends GenArchMojo {
             String fieldType = getColumnJavaType(column);
             String fieldName = toLowerCamelCase(getColumnName(column));
             String fieldComment = generateFieldComment(column).stream().reduce((a, b) -> a + "\n    " + b).orElse("");
+            String fieldDescription = getComment(column).replaceAll(PATTERN_LINE_BREAK, "");
             Map<String, String> itemContext = new HashMap<>(context);
             putContext(fieldTag, "fieldType", fieldType, itemContext);
             putContext(fieldTag, "fieldName", fieldName, itemContext);
             putContext(fieldTag, "fieldComment", fieldComment, itemContext);
+            putContext(fieldTag, "fieldDescription", fieldDescription, itemContext);
             fieldItems += (
                     templateNodeMap.containsKey(fieldTag) && templateNodeMap.get(fieldTag).size() > 0
                             ? templateNodeMap.get(fieldTag).get(templateNodeMap.get(fieldTag).size() - 1)
                             : getDefaultSchemaFieldTemplateNode().clone()
+            ).resolve(itemContext).getData();
+            propertyNameItems += (
+                    templateNodeMap.containsKey(propertyNameTag) && templateNodeMap.get(propertyNameTag).size() > 0
+                            ? templateNodeMap.get(propertyNameTag).get(templateNodeMap.get(propertyNameTag).size() - 1)
+                            : getDefaultSchemaPropertyNameTemplateNode().clone()
             ).resolve(itemContext).getData();
         }
 
@@ -1675,6 +1684,7 @@ public class GenEntityMojo extends GenArchMojo {
             }
         }
 
+        putContext(tag, "PROPERTY_NAMES", propertyNameItems, context);
         putContext(tag, "FIELD_ITEMS", fieldItems, context);
         putContext(tag, "JOIN_ITEMS", joinItems, context);
 
@@ -2010,11 +2020,27 @@ public class GenEntityMojo extends GenArchMojo {
         String template = "\n" +
                 "    ${fieldComment}\n" +
                 "    public ${SchemaBase}.Field<${fieldType}> ${fieldName}() {\n" +
-                "        return root == null ? new ${SchemaBase}.Field<>(\"${fieldName}\") : new ${SchemaBase}.Field<>(root.get(\"${fieldName}\"), this.criteriaBuilder);\n" +
+                "        return new ${SchemaBase}.Field<>(root.get(\"${fieldName}\"), this.criteriaBuilder);\n" +
                 "    }\n";
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("segment");
         templateNode.setTag("schema_field");
+        templateNode.setName("");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
+    }
+
+    public TemplateNode getDefaultSchemaPropertyNameTemplateNode() {
+        String template = "\n" +
+                "        /**\n" +
+                "         * ${fieldDescription}\n" +
+                "         */\n" +
+                "        public static final String ${fieldName} = \"${fieldName}\";\n";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("segment");
+        templateNode.setTag("schema_property_name");
         templateNode.setName("");
         templateNode.setFormat("raw");
         templateNode.setData(template);
@@ -2070,6 +2096,13 @@ public class GenEntityMojo extends GenArchMojo {
                 " */\n" +
                 "@RequiredArgsConstructor\n" +
                 "public class ${Entity}Schema {\n" +
+                "    /**\n" +
+                "     * 属性字段集合\n" +
+                "     */\n" +
+                "    public static class PROPERTY_NAMES {\n" +
+                "        ${PROPERTY_NAMES}\n" +
+                "    }\n" +
+                "\n" +
                 "    private final Path<${Entity}> root;\n" +
                 "    private final CriteriaBuilder criteriaBuilder;\n" +
                 "\n" +
