@@ -8,6 +8,7 @@ import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -22,13 +23,10 @@ import static org.netcorepal.cap4j.ddd.share.Constants.*;
 /**
  * 基于RocketMq的领域事件（集成事件）实现自动配置类
  *
- *
- *
  * @author binking338
  * @date 2023/9/10
  */
 @Configuration
-@ConditionalOnProperty(name = "rocketmq.name-server")
 @RequiredArgsConstructor
 public class RocketMqEventAutoConfiguration {
 
@@ -64,6 +62,8 @@ public class RocketMqEventAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "rocketmq.name-server")
+    @ConditionalOnMissingBean(IntegrationEventPublisher.class)
     public RocketMqIntegrationEventPublisher rocketMqIntegrationEventPublisher(
         RocketMQTemplate rocketMQTemplate,
         Environment environment
@@ -75,6 +75,7 @@ public class RocketMqEventAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "rocketmq.name-server")
     public RocketMqDomainEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter(
             EventSubscriberManager eventSubscriberManager,
             List<EventMessageInterceptor> eventMessageInterceptors,
