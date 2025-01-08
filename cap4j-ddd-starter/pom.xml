@@ -8,7 +8,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>cap4j-ddd-starter-jpa-rocketmq</artifactId>
+    <artifactId>cap4j-ddd-starter</artifactId>
     <packaging>jar</packaging>
 
     <name>cap4j-ddd-domain-starter-jpa-rocketmq</name>
