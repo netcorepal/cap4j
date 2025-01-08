@@ -10,6 +10,7 @@ import org.netcorepal.cap4j.ddd.application.saga.impl.DefaultSagaSupervisor;
 import org.netcorepal.cap4j.ddd.application.saga.persistence.ArchivedSagaJpaRepository;
 import org.netcorepal.cap4j.ddd.application.saga.persistence.SagaJpaRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -82,7 +83,7 @@ public class SagaAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(JpaSagaScheduleService.class)
+    @ConditionalOnBean(JpaSagaRecordRepository.class)
     public JpaSagaScheduleService jpaSagaScheduleService(
             SagaRecordRepository sagaRecordRepository,
             Locker locker,
@@ -114,6 +115,7 @@ public class SagaAutoConfiguration {
     @RequiredArgsConstructor
     @Service
     @EnableScheduling
+    @ConditionalOnBean(JpaSagaScheduleService.class)
     private static class __SagaScheduleLoader {
 
         private static final String CONFIG_KEY_4_COMPENSE_CRON = "${cap4j.ddd.application.saga.schedule.compenseCron:${cap4j.ddd.application.saga.schedule.compense-cron:0 */1 * * * ?}}";
