@@ -34,7 +34,7 @@
         <module>ddd-distributed-locker-jdbc</module>
         <module>ddd-distributed-idgenerator-snowflake</module>
         <module>ddd-distributed-saga-jpa</module>
-        <module>cap4j-ddd-starter-jpa-rocketmq</module>
+        <module>cap4j-ddd-starter</module>
         <module>cap4j-ddd-codegen-maven-plugin</module>
     </modules>
 
