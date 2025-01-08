@@ -77,17 +77,4 @@ public class JpaPageUtils {
         }
         return pageRequest;
     }
-
-    /**
-     * @param param
-     * @param sort
-     * @return
-     */
-    public static Pageable toSpringData(PageParam param, Sort sort) {
-        if (sort != null) {
-            return PageRequest.of(param.getPageNum() - 1, param.getPageSize(), sort);
-        } else {
-            return toSpringData(param);
-        }
-    }
 }
