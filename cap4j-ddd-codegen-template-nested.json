@@ -178,6 +178,19 @@
     },
     {
       "type": "dir",
+      "tag": "aggregate",
+      "name": "${path}",
+      "children": [
+        {
+          "type": "file",
+          "name": "Aggregated${Entity}.java",
+          "format": "raw",
+          "data": "package ${basePackage}.domain.aggregates${package};\n\nimport lombok.NoArgsConstructor;\nimport org.netcorepal.cap4j.ddd.Mediator;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;\nimport static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events;\nimport ${basePackage}.domain.aggregates${package}.factory.${Entity}Factory;\n\n/**\n * ${Entity}聚合封装\n * ${Comment}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@NoArgsConstructor\npublic class Aggregated${Entity} extends Aggregate.Default<${Entity}> {\n    public Aggregated${Entity}(${Entity}Factory.Payload payload){\n        ${Entity} root = Mediator.factories().create(payload);\n        _wrap(root);\n    }\n\n}\n"
+        }
+      ]
+    },
+    {
+      "type": "dir",
       "tag": "factory",
       "name": "${path}${SEPARATOR}factory",
       "children": [

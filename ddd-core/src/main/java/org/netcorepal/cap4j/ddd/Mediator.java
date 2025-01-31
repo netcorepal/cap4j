@@ -5,6 +5,7 @@ import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
 import org.netcorepal.cap4j.ddd.application.saga.SagaSupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
+import org.netcorepal.cap4j.ddd.domain.repo.AggregateSupervisor;
 import org.netcorepal.cap4j.ddd.domain.repo.RepositorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.service.DomainServiceSupervisor;
 import org.springframework.context.ApplicationContext;
@@ -15,7 +16,7 @@ import org.springframework.context.ApplicationContext;
  * @author binking338
  * @date 2024/8/24
  */
-public interface Mediator extends AggregateFactorySupervisor, RepositorySupervisor, DomainServiceSupervisor, UnitOfWork, IntegrationEventSupervisor, RequestSupervisor {
+public interface Mediator extends AggregateFactorySupervisor, RepositorySupervisor, AggregateSupervisor, DomainServiceSupervisor, UnitOfWork, IntegrationEventSupervisor, RequestSupervisor {
     static Mediator getInstance() {
         return MediatorSupport.instance;
     }
@@ -45,6 +46,15 @@ public interface Mediator extends AggregateFactorySupervisor, RepositorySupervis
      */
     static RepositorySupervisor repositories() {
         return RepositorySupervisor.getInstance();
+    }
+
+    /**
+     * 获取聚合管理器
+     *
+     * @return
+     */
+    static AggregateSupervisor aggregates() {
+        return AggregateSupervisor.getInstance();
     }
 
     /**
@@ -122,6 +132,10 @@ public interface Mediator extends AggregateFactorySupervisor, RepositorySupervis
 
     default RepositorySupervisor getRepositorySupervisor() {
         return RepositorySupervisor.getInstance();
+    }
+
+    default AggregateSupervisor getAggregateSupervisor() {
+        return AggregateSupervisor.getInstance();
     }
 
     default UnitOfWork getUnitOfWork() {

@@ -5,11 +5,10 @@ import org.netcorepal.cap4j.ddd.application.RequestParam;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
+import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
-import org.netcorepal.cap4j.ddd.domain.repo.Predicate;
-import org.netcorepal.cap4j.ddd.domain.repo.Repository;
-import org.netcorepal.cap4j.ddd.domain.repo.RepositorySupervisor;
+import org.netcorepal.cap4j.ddd.domain.repo.*;
 import org.netcorepal.cap4j.ddd.domain.service.DomainServiceSupervisor;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
@@ -126,5 +125,35 @@ public class DefaultMediator implements Mediator {
     @Override
     public <INTEGRATION_EVENT> void detach(INTEGRATION_EVENT integrationEventPayload) {
         IntegrationEventSupervisor.getInstance().detach(integrationEventPayload);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, List<OrderInfo> orders) {
+        return AggregateSupervisor.getInstance().find(predicate, orders);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate) {
+        return AggregateSupervisor.getInstance().findOne(predicate);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam) {
+        return AggregateSupervisor.getInstance().findPage(predicate, pageParam);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE> predicate, int limit) {
+        return AggregateSupervisor.getInstance().remove(predicate, limit);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> long count(AggregatePredicate<AGGREGATE> predicate) {
+        return AggregateSupervisor.getInstance().count(predicate);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> boolean exists(AggregatePredicate<AGGREGATE> predicate) {
+        return AggregateSupervisor.getInstance().exists(predicate);
     }
 }

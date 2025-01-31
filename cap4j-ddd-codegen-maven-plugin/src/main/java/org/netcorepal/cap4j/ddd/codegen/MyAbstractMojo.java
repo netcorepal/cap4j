@@ -347,6 +347,13 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     @Parameter(property = "generateSchema", defaultValue = "false")
     public Boolean generateSchema = false;
     /**
+     * 是否生成聚合封装类
+     *
+     * @parameter expression="${generateAggregate}"
+     */
+    @Parameter(property = "generateAggregate", defaultValue = "false")
+    public Boolean generateAggregate = false;
+    /**
      * 是否生成关联父实体字段
      *
      * @parameter expression="${generateParent}"
@@ -1112,6 +1119,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         context.put("generateDefault", generateDefault ? "true" : "false");
         context.put("generateDbType", generateDbType ? "true" : "false");
         context.put("generateSchema", generateSchema ? "true" : "false");
+        context.put("generateAggregate", generateAggregate ? "true" : "false");
         context.put("generateParent", generateParent ? "true" : "false");
         context.put("aggregateRootAnnotation", aggregateRootAnnotation);
         context.put("aggregateRepositoryBaseClass", aggregateRepositoryBaseClass);
@@ -1214,6 +1222,9 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (!generateSchema
                         ? ""
                         : "                    <generateSchema>" + generateSchema + "</generateSchema>\n") +
+                (!generateAggregate
+                        ? ""
+                        : "                    <generateAggregate>" + generateAggregate + "</generateAggregate>\n") +
                 (!generateParent
                         ? ""
                         : "                    <generateParent>" + generateParent + "</generateParent>\n") +
