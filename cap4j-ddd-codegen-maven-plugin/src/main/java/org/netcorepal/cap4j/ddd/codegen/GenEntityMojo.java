@@ -173,6 +173,7 @@ public class GenEntityMojo extends GenArchMojo {
             getLog().info("  输出模式：" + getEntitySchemaOutputMode());
             getLog().info("  输出路径：" + getEntitySchemaOutputPackage());
         }
+        getLog().info("生产聚合封装类：" + (generateAggregate ? "是" : "否"));
         getLog().info("");
         getLog().info("");
 
@@ -1032,10 +1033,13 @@ public class GenEntityMojo extends GenArchMojo {
             writeSchemaSourceFile(table, columns, tablePackageMap, relations, basePackage, baseDir);
         }
         if (isAggregateRoot(table)) {
-            if (hasFactory(table)) {
+            if (generateAggregate) {
+                writeAggregateSourceFile(table, tablePackageMap, baseDir);
+            }
+            if (hasFactory(table) || generateAggregate) {
                 writeFactorySourceFile(table, tablePackageMap, baseDir);
             }
-            if (hasSpecification(table)) {
+            if (hasSpecification(table) || generateAggregate) {
                 writeSpecificationSourceFile(table, tablePackageMap, baseDir);
             }
             if (hasDomainEvent(table)) {
@@ -1335,6 +1339,52 @@ public class GenEntityMojo extends GenArchMojo {
                 }
 
             }
+        }
+    }
+
+    public void writeAggregateSourceFile(Map<String, Object> table, Map<String, String> tablePackageMap, String baseDir) throws IOException {
+        String tag = "aggregate";
+        String tableName = getTableName(table);
+        String aggregate = getAggregateWithModule(tableName);
+
+        String entityFullPackage = tablePackageMap.get(tableName);
+        String entityType = getEntityJavaType(tableName);
+        String entityVar = toLowerCamelCase(entityType);
+
+        Map<String, String> context = getEscapeContext();
+        putContext(tag, "Name", entityType, context);
+        putContext(tag, "Entity", entityType, context);
+        putContext(tag, "AggregateRoot", context.get("Entity"), context);
+        putContext(tag, "templatePackage", refPackage(getAggregatesPackage()), context);
+        putContext(tag, "package", refPackage(aggregate), context);
+        putContext(tag, "path", aggregate.replace(".", File.separator), context);
+        putContext(tag, "Aggregate", toUpperCamelCase(aggregate), context);
+        putContext(tag, "Comment", "", context);
+        putContext(tag, "CommentEscaped", "", context);
+        putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
+        putContext(tag, "EntityVar", entityVar, context);
+
+        List<TemplateNode> aggregateTemplateNodes = templateNodeMap.containsKey(tag)
+                ? templateNodeMap.get(tag)
+                : Arrays.asList(getDefaultAggregateTemplateNode());
+        try {
+            for (TemplateNode templateNode : aggregateTemplateNodes) {
+                PathNode pathNode = templateNode.clone().resolve(context);
+                String path = forceRender(
+                        pathNode,
+                        SourceFileUtils.resolveDirectory(
+                                baseDir,
+                                concatPackage(basePackage, context.get("templatePackage"))
+                        )
+                );
+                getLog().info(SourceFileUtils.resolveDirectory(
+                        baseDir,
+                        concatPackage(basePackage, context.get("templatePackage"))
+                ));
+                getLog().info("开始生成聚合封装类：" + path);
+            }
+        } catch (IOException e) {
+            getLog().error("聚合封装模板文件写入失败！", e);
         }
     }
 
@@ -1690,10 +1740,10 @@ public class GenEntityMojo extends GenArchMojo {
 
         String extraExtension = "";
         try {
-            if(isAggregateRoot(table)) {
+            if (isAggregateRoot(table)) {
                 List<TemplateNode> extraExtensionTemplateNodes = templateNodeMap.containsKey(rootExtraExtensionTag)
                         ? templateNodeMap.get(rootExtraExtensionTag)
-                        : Arrays.asList(getDefaultRootSchemaExtraExtensionTemplateNode());
+                        : Arrays.asList(getDefaultRootSchemaExtraExtensionTemplateNode(generateAggregate));
                 for (TemplateNode templateNode : extraExtensionTemplateNodes) {
                     extraExtension += templateNode.clone().resolve(context).getData();
                 }
@@ -1747,6 +1797,41 @@ public class GenEntityMojo extends GenArchMojo {
         } catch (IOException e) {
             getLog().error("模板文件写入失败！", e);
         }
+    }
+
+    public TemplateNode getDefaultAggregateTemplateNode() {
+        String template = "package ${basePackage}${templatePackage}${package};\n" +
+                "\n" +
+                "import lombok.NoArgsConstructor;\n" +
+                "import org.netcorepal.cap4j.ddd.Mediator;\n" +
+                "import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;\n" +
+                "import static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events;\n" +
+                "import ${basePackage}${templatePackage}${package}." + DEFAULT_FAC_PACKAGE + ".${Entity}Payload;\n" +
+                "\n" +
+                "/**\n" +
+                " * ${Entity}聚合封装\n" +
+                " * ${Comment}\n" +
+                " *\n" +
+                " * @author cap4j-ddd-codegen\n" +
+                " * @date ${date}\n" +
+                " */\n" +
+                "@NoArgsConstructor\n" +
+                "public class Aggregated${Entity} extends Aggregate.Default<${Entity}> {\n" +
+                "\n" +
+                "    public Aggregated${Entity}(${Entity}Payload payload){\n" +
+                "        ${Entity} root = Mediator.factories().create(payload);\n" +
+                "        _wrap(root);\n" +
+                "    }\n" +
+                "\n" +
+                "}\n";
+        TemplateNode templateNode = new TemplateNode();
+        templateNode.setType("file");
+        templateNode.setTag("aggregate");
+        templateNode.setName("${path}${SEPARATOR}Aggregated${Entity}.java");
+        templateNode.setFormat("raw");
+        templateNode.setData(template);
+        templateNode.setConflict("skip");
+        return templateNode;
     }
 
     public TemplateNode getDefaultFactoryTemplateNode() {
@@ -2245,7 +2330,7 @@ public class GenEntityMojo extends GenArchMojo {
         return templateNode;
     }
 
-    public TemplateNode getDefaultRootSchemaExtraExtensionTemplateNode() {
+    public TemplateNode getDefaultRootSchemaExtraExtensionTemplateNode(boolean generateAggregate) {
         String template =
                 "\n" +
                         "    /**\n" +
@@ -2354,6 +2439,116 @@ public class GenEntityMojo extends GenArchMojo {
                         "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicate(${SchemaBase}.Specification<${Entity}, ${Entity}Schema> specifier) {\n" +
                         "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.bySpecification(${Entity}.class, specify(specifier));\n" +
                         "    }";
+        if(generateAggregate){
+            template += "\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param id 主键\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregateById(Object id) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.byId(${basePackage}${entityPackage}.Aggregated${Entity}.class, id);\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param ids 主键\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregateByIds(Collection<Object> ids) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.byIds(${basePackage}${entityPackage}.Aggregated${Entity}.class, ids);\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param ids 主键\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregateByIds(Object... ids) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.byIds(${basePackage}${entityPackage}.Aggregated${Entity}.class, Arrays.asList(ids));\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param builder 查询条件构造器\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregate(Schema.PredicateBuilder<${Entity}Schema> builder) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}.Aggregated${Entity}.class, specify(builder));\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param builder  查询条件构造器\n" +
+                    "     * @param distinct 是否去重\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregate(Schema.PredicateBuilder<${Entity}Schema> builder, boolean distinct) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}.Aggregated${Entity}.class, specify(builder, distinct));\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param builder       查询条件构造器\n" +
+                    "     * @param orderBuilders 排序构造器\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregate(Schema.PredicateBuilder<${Entity}Schema> builder, List<Schema.OrderBuilder<${Entity}Schema>> orderBuilders) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}.Aggregated${Entity}.class, specify(builder, false, orderBuilders));\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param builder       查询条件构造器\n" +
+                    "     * @param orderBuilders 排序构造器\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregate(Schema.PredicateBuilder<${Entity}Schema> builder, Schema.OrderBuilder<${Entity}Schema>... orderBuilders) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}.Aggregated${Entity}.class, specify(builder, false, orderBuilders));\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param builder       查询条件构造器\n" +
+                    "     * @param distinct      是否去重\n" +
+                    "     * @param orderBuilders 排序构造器\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregate(Schema.PredicateBuilder<${Entity}Schema> builder, boolean distinct, List<Schema.OrderBuilder<${Entity}Schema>> orderBuilders) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}.Aggregated${Entity}.class, specify(builder, distinct, orderBuilders));\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param builder       查询条件构造器\n" +
+                    "     * @param distinct      是否去重\n" +
+                    "     * @param orderBuilders 排序构造器\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregate(Schema.PredicateBuilder<${Entity}Schema> builder, boolean distinct, Schema.OrderBuilder<${Entity}Schema>... orderBuilders) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}.Aggregated${Entity}.class, specify(builder, distinct, orderBuilders));\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    /**\n" +
+                    "     * 构建查询条件\n" +
+                    "     *\n" +
+                    "     * @param specifier 查询条件构造器\n" +
+                    "     * @return\n" +
+                    "     */\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregate(Schema.Specification<${Entity}, ${Entity}Schema> specifier) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}.Aggregated${Entity}.class, specify(specifier));\n" +
+                    "    }";
+        }
 
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("segment");

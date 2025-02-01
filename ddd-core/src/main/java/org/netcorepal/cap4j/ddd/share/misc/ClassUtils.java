@@ -30,6 +30,10 @@ public class ClassUtils {
      */
     public static Class<?> resolveGenericTypeClass(Object obj, int typeArgumentIndex, Class<?>... superClasses) {
         Class<?> clazz = AopUtils.getTargetClass(obj);
+        return resolveGenericTypeClass(clazz, typeArgumentIndex, superClasses);
+    }
+
+    public static Class<?> resolveGenericTypeClass(Class<?> clazz, int typeArgumentIndex, Class<?>... superClasses) {
         ParameterizedType parameterizedType = null;
         if (Arrays.stream(superClasses).anyMatch(
                 superClass -> superClass.equals(ResolvableType.forType(clazz.getGenericSuperclass()).toClass()))
@@ -51,6 +55,7 @@ public class ClassUtils {
                 parameterizedType.getActualTypeArguments()[typeArgumentIndex]
         ).toClass();
     }
+
 
     /**
      * 查找方法
@@ -102,8 +107,8 @@ public class ClassUtils {
                         && srcClass.isAssignableFrom(m.getParameterTypes()[0])
                         && destClass.isAssignableFrom(m.getReturnType())
         );
-        if(null != method) {
-            return (src) ->{
+        if (null != method) {
+            return (src) -> {
                 Object dest = null;
                 try {
                     dest = method.invoke(destClass.newInstance(), src);

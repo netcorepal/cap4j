@@ -14,6 +14,7 @@ import org.netcorepal.cap4j.ddd.domain.aggregate.impl.DefaultSpecificationManage
 import org.netcorepal.cap4j.ddd.domain.aggregate.impl.SpecificationUnitOfWorkInterceptor;
 import org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties;
 import org.netcorepal.cap4j.ddd.domain.repo.configure.JpaUnitOfWorkProperties;
+import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultAggregateSupervisor;
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultEntityInlinePersistListener;
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultPersistListenerManager;
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultRepositorySupervisor;
@@ -50,6 +51,17 @@ public class JpaRepositoryAutoConfiguration {
         repositorySupervisor.init();
         RepositorySupervisorSupport.configure(repositorySupervisor);
         return repositorySupervisor;
+    }
+
+    @Bean
+    public DefaultAggregateSupervisor defaultAggregateSupervisor(
+            DefaultRepositorySupervisor repositorySupervisor
+    ) {
+        DefaultAggregateSupervisor aggregateSupervisor = new DefaultAggregateSupervisor(
+                repositorySupervisor
+        );
+        AggregateSupervisorSupport.configure(aggregateSupervisor);
+        return aggregateSupervisor;
     }
 
     @Bean

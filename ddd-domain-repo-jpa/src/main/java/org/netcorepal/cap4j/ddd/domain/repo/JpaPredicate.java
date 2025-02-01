@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Jpa仓储检索断言
@@ -13,25 +13,25 @@ import java.util.Arrays;
  * @date 2024/9/8
  */
 @RequiredArgsConstructor
-public class JpaPredicate<Entity> implements Predicate<Entity> {
-    final Class<Entity> entityClass;
-    final Specification<Entity> spec;
+public class JpaPredicate<ENTITY> implements Predicate<ENTITY> {
+    final Class<ENTITY> entityClass;
+    final Specification<ENTITY> spec;
     final Iterable<Object> ids;
     final ValueObject valueObject;
 
-    public static <Entity> Predicate<Entity> byId(Class<Entity> entityClass, Object id) {
-        return new JpaPredicate<>(entityClass, null, Arrays.asList(id), null);
+    public static <ENTITY> Predicate<ENTITY> byId(Class<ENTITY> entityClass, Object id) {
+        return new JpaPredicate<>(entityClass, null, Collections.singletonList(id), null);
     }
 
-    public static <Entity> Predicate<Entity> byIds(Class<Entity> entityClass, Iterable<Object> ids) {
+    public static <ENTITY> Predicate<ENTITY> byIds(Class<ENTITY> entityClass, Iterable<Object> ids) {
         return new JpaPredicate<>(entityClass, null, ids, null);
     }
 
     public static <VALUE_OBJECT extends ValueObject> Predicate<VALUE_OBJECT> byValueObject(VALUE_OBJECT valueObject){
-        return new JpaPredicate<>((Class<VALUE_OBJECT>) valueObject.getClass(), null, Arrays.asList(valueObject.hash()), valueObject);
+        return new JpaPredicate<>((Class<VALUE_OBJECT>) valueObject.getClass(), null, Collections.singletonList(valueObject.hash()), valueObject);
     }
 
-    public static <Entity> Predicate<Entity> bySpecification(Class<Entity> entityClass, Specification<Entity> specification) {
+    public static <ENTITY> Predicate<ENTITY> bySpecification(Class<ENTITY> entityClass, Specification<ENTITY> specification) {
         return new JpaPredicate<>(entityClass, specification, null, null);
     }
 }

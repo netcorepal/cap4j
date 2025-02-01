@@ -98,6 +98,8 @@ public class HelpMojo extends AbstractMojo {
                 "                    <generateDbType>true</generateDbType>\n" +
                 "                    <!-- [gen-entity]是否生成Schema类，辅助Jpa查询 -->\n" +
                 "                    <generateSchema>true</generateSchema>\n" +
+                "                    <!-- [gen-entity]是否生成聚合封装类 -->\n" +
+                "                    <generateAggregate>false</generateAggregate>\n" +
                 "                    <!-- [gen-entity]是否生成关联父实体字段 -->\n" +
                 "                    <generateParent>false</generateParent>\n" +
                 "                    <!-- [gen-entity]聚合根注解 -->\n" +

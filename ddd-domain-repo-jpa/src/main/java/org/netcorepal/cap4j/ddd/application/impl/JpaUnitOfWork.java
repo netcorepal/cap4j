@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.UnitOfWorkInterceptor;
+import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistListenerManager;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistType;
@@ -110,8 +111,15 @@ public class JpaUnitOfWork implements UnitOfWork {
         }
     }
 
+    private Object unwrapEntity(Object entity){
+        return entity instanceof Aggregate
+                ? ((Aggregate) entity)._unwrap()
+                : entity;
+    }
+
     @Override
     public void persist(Object entity) {
+        entity = unwrapEntity(entity);
         if (isValueObjectAndExists(entity)) {
             return;
         }
@@ -120,6 +128,7 @@ public class JpaUnitOfWork implements UnitOfWork {
 
     @Override
     public boolean persistIfNotExist(Object entity) {
+        entity = unwrapEntity(entity);
         if (isExists(entity)) {
             return false;
         }
@@ -129,6 +138,7 @@ public class JpaUnitOfWork implements UnitOfWork {
 
     @Override
     public void remove(Object entity) {
+        entity = unwrapEntity(entity);
         removeEntitiesThreadLocal.get().add(entity);
     }
 

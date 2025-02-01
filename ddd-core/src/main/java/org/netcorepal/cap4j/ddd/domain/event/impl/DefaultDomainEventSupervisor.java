@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.domain.event.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
+import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.event.EventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
@@ -41,6 +42,12 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
      */
     private static final int DEFAULT_EVENT_RETRY_TIMES = 16;
 
+    private Object unwrapEntity(Object entity){
+        return entity instanceof Aggregate
+                ? ((Aggregate) entity)._unwrap()
+                : entity;
+    }
+
     @Override
     public void attach(Object eventPayload, Object entity, LocalDateTime schedule) {
         // 判断领域事件，不支持集成事件。
@@ -50,6 +57,7 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
         if (eventPayload.getClass().isAnnotationPresent(IntegrationEvent.class)) {
             throw new DomainException("事件类型不能为集成事件");
         }
+        entity = unwrapEntity(entity);
         Map<Object, Set<Object>> entityEventPayloads = TL_ENTITY_EVENT_PAYLOADS.get();
         if (entityEventPayloads == null) {
             entityEventPayloads = new HashMap<>();
@@ -61,7 +69,8 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
         entityEventPayloads.get(entity).add(eventPayload);
 
         putDeliverTime(eventPayload, schedule);
-        domainEventInterceptorManager.getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onAttach(eventPayload, entity, schedule));
+        Object finalEntity = entity;
+        domainEventInterceptorManager.getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onAttach(eventPayload, finalEntity, schedule));
     }
 
     @Override
@@ -70,13 +79,15 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
         if (entityEventPayloads == null) {
             return;
         }
+        entity = unwrapEntity(entity);
         Set<Object> eventPayloads = entityEventPayloads.containsKey(entity) ? entityEventPayloads.get(entity) : null;
         if (eventPayloads == null) {
             return;
         }
 
         eventPayloads.remove(eventPayload);
-        domainEventInterceptorManager.getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onDetach(eventPayload, entity));
+        Object finalEntity = entity;
+        domainEventInterceptorManager.getOrderedDomainEventInterceptors().forEach(interceptor -> interceptor.onDetach(eventPayload, finalEntity));
     }
 
     @Override
