@@ -206,15 +206,15 @@ public class GenDesignMojo extends GenArchMojo {
                             }
                         }
                     }
-                    if (designMap.containsKey("domain_event_handler")) {
-                        for (String literalDesign : designMap.get("domain_event_handler")) {
+                    break;
+                case "domain_event_handler":
+                    if (designMap.containsKey("domain_event")) {
+                        for (String literalDesign : designMap.get("domain_event")) {
                             if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
                                 renderDomainLayerDomainEvent(literalDesign, parentPath, templateNode);
                             }
                         }
                     }
-                    break;
-                case "domain_event_handler":
                     if (designMap.containsKey("domain_event_handler")) {
                         for (String literalDesign : designMap.get("domain_event_handler")) {
                             if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
