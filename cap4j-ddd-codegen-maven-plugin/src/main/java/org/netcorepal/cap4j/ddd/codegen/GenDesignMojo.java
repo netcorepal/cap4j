@@ -406,7 +406,7 @@ public class GenDesignMojo extends GenArchMojo {
             putContext(templateNode.getTag(), "Name", Name, context);
             putContext(templateNode.getTag(), "DomainEvent", context.get("Name"), context);
             putContext(templateNode.getTag(), "persist", persist ? "true" : "false", context);
-            putContext(templateNode.getTag(), "Aggregate", context.get("package"), context);
+            putContext(templateNode.getTag(), "Aggregate", entity, context);
             putContext(templateNode.getTag(), "Entity", entity, context);
             putContext(templateNode.getTag(), "EntityVar", NamingUtils.toLowerCamelCase(entity), context);
             putContext(templateNode.getTag(), "AggregateRoot", context.get("Entity"), context);
@@ -433,7 +433,7 @@ public class GenDesignMojo extends GenArchMojo {
             String Name = entity + "Factory";
             putContext(templateNode.getTag(), "Name", Name, context);
             putContext(templateNode.getTag(), "Factory", context.get("Name"), context);
-            putContext(templateNode.getTag(), "Aggregate", context.get("package"), context);
+            putContext(templateNode.getTag(), "Aggregate", entity, context);
             putContext(templateNode.getTag(), "Entity", entity, context);
             putContext(templateNode.getTag(), "EntityVar", NamingUtils.toLowerCamelCase(entity), context);
             putContext(templateNode.getTag(), "AggregateRoot", context.get("Entity"), context);
@@ -456,7 +456,7 @@ public class GenDesignMojo extends GenArchMojo {
             String Name = entity + "Specification";
             putContext(templateNode.getTag(), "Name", Name, context);
             putContext(templateNode.getTag(), "Specification", context.get("Name"), context);
-            putContext(templateNode.getTag(), "Aggregate", context.get("package"), context);
+            putContext(templateNode.getTag(), "Aggregate", entity, context);
             putContext(templateNode.getTag(), "Entity", entity, context);
             putContext(templateNode.getTag(), "EntityVar", NamingUtils.toLowerCamelCase(entity), context);
             putContext(templateNode.getTag(), "AggregateRoot", context.get("Entity"), context);
