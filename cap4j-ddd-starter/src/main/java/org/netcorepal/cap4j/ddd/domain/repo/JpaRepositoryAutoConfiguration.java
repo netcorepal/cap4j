@@ -1,7 +1,6 @@
 package org.netcorepal.cap4j.ddd.domain.repo;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.application.UnitOfWorkInterceptor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWorkSupport;
 import org.netcorepal.cap4j.ddd.application.impl.JpaUnitOfWork;
@@ -19,7 +18,6 @@ import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultEntityInlinePersistListe
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultPersistListenerManager;
 import org.netcorepal.cap4j.ddd.domain.repo.impl.DefaultRepositorySupervisor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -38,7 +36,6 @@ import java.util.List;
  * @date 2023/9/10
  */
 @Configuration
-@ConditionalOnBean(RocketMQTemplate.class)
 @RequiredArgsConstructor
 public class JpaRepositoryAutoConfiguration {
 
