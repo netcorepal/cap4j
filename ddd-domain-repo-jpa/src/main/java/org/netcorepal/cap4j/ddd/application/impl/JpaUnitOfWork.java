@@ -48,6 +48,7 @@ public class JpaUnitOfWork implements UnitOfWork {
     private static ThreadLocal<Set<Object>> persistEntitiesThreadLocal = ThreadLocal.withInitial(() -> new LinkedHashSet<>());
     private static ThreadLocal<Set<Object>> removeEntitiesThreadLocal = ThreadLocal.withInitial(() -> new LinkedHashSet<>());
     private static ThreadLocal<Set<Object>> processingEntitiesThreadLocal = ThreadLocal.withInitial(() -> new LinkedHashSet<>());
+    private static ThreadLocal<Map<Object, Aggregate>> wrapperMapThreadLocal = ThreadLocal.withInitial(() -> new HashMap<>());
 
     private static ConcurrentHashMap<Class<?>, EntityInformation> entityInformationCache = new ConcurrentHashMap<>();
 
@@ -111,10 +112,23 @@ public class JpaUnitOfWork implements UnitOfWork {
         }
     }
 
-    private Object unwrapEntity(Object entity){
-        return entity instanceof Aggregate
-                ? ((Aggregate) entity)._unwrap()
-                : entity;
+    private Object unwrapEntity(Object entity) {
+        if (!(entity instanceof Aggregate)) {
+            return entity;
+        }
+        Aggregate<?> aggregate = (Aggregate<?>) entity;
+        Object unwrappedEntity = aggregate._unwrap();
+        wrapperMapThreadLocal.get().put(unwrappedEntity, aggregate);
+        return unwrappedEntity;
+    }
+
+    private void updateWrappedEntity(Object entity, Object updatedEntity) {
+        if (!wrapperMapThreadLocal.get().containsKey(entity)) {
+            return;
+        }
+        Aggregate aggregate = wrapperMapThreadLocal.get().remove(entity);
+        aggregate._wrap(updatedEntity);
+        wrapperMapThreadLocal.get().put(updatedEntity, aggregate);
     }
 
     @Override
@@ -224,7 +238,8 @@ public class JpaUnitOfWork implements UnitOfWork {
                         createdEntities.add(entity);
                     } else {
                         if (!getEntityManager().contains(entity)) {
-                            getEntityManager().merge(entity);
+                            Object mergedEntity = getEntityManager().merge(entity);
+                            updateWrappedEntity(entity, mergedEntity);
                         }
                         updatedEntities.add(entity);
                     }
@@ -236,7 +251,9 @@ public class JpaUnitOfWork implements UnitOfWork {
                     if (getEntityManager().contains(entity)) {
                         getEntityManager().remove(entity);
                     } else {
-                        getEntityManager().remove(getEntityManager().merge(entity));
+                        Object mergedEntity = getEntityManager().merge(entity);
+                        updateWrappedEntity(entity, mergedEntity);
+                        getEntityManager().remove(mergedEntity);
                     }
                     deletedEntities.add(entity);
                 }
@@ -285,6 +302,7 @@ public class JpaUnitOfWork implements UnitOfWork {
         persistEntitiesThreadLocal.remove();
         removeEntitiesThreadLocal.remove();
         processingEntitiesThreadLocal.remove();
+        wrapperMapThreadLocal.remove();
     }
 
     /**
