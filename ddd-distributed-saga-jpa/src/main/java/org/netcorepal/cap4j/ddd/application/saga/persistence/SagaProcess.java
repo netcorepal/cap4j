@@ -64,6 +64,8 @@ public class SagaProcess {
     }
 
     public void occuredException(LocalDateTime now, Throwable ex){
+        this.result = JSON.toJSONString(null);
+        this.resultType = Object.class.getName();
         this.processState = SagaProcessState.EXCEPTION;
         StringWriter sw = new StringWriter();
         ex.printStackTrace(new PrintWriter(sw, true));
