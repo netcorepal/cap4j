@@ -1126,7 +1126,7 @@ public class GenEntityMojo extends GenArchMojo {
                             "        if (null == o) {\n" +
                             "            return false;\n" +
                             "        }\n" +
-                            "        if (!(o instanceof Address)) {\n" +
+                            "        if (!(o instanceof " + entityType + ")) {\n" +
                             "            return false;\n" +
                             "        }\n" +
                             "        return hashCode() == o.hashCode();\n" +
@@ -2438,7 +2438,7 @@ public class GenEntityMojo extends GenArchMojo {
                         "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicate(${SchemaBase}.Specification<${Entity}, ${Entity}Schema> specifier) {\n" +
                         "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.bySpecification(${Entity}.class, specify(specifier));\n" +
                         "    }";
-        if(generateAggregate){
+        if (generateAggregate) {
             template += "\n" +
                     "\n" +
                     "    /**\n" +
