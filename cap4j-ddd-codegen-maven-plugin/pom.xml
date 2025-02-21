@@ -6,12 +6,12 @@
     <parent>
         <groupId>io.github.netcorepal</groupId>
         <artifactId>cap4j</artifactId>
-        <version>3.1.0-alpha-1</version>
+        <version>3.1.0-alpha-2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
-    <version>3.1.0-alpha-1</version>
+    <version>3.1.0-alpha-2</version>
 
     <packaging>maven-plugin</packaging>
 

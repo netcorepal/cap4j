@@ -7,7 +7,7 @@ package org.netcorepal.cap4j.ddd.share;
  * @date 2023/11/2
  */
 public class Constants {
-    public static final String ARCH_INFO_VERSION = "3.1.0-alpha-1";
+    public static final String ARCH_INFO_VERSION = "3.1.0-alpha-2";
     public static final String HEADER_KEY_CAP4J_EVENT_ID = "cap4j-event-id";
     public static final String HEADER_KEY_CAP4J_EVENT_TYPE = "cap4j-event-type";
     public static final String HEADER_VALUE_CAP4J_EVENT_TYPE_DOMAIN = "domain";

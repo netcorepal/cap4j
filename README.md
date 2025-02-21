@@ -38,7 +38,7 @@ Mediator中介者模式、
         <dependency>
             <groupId>io.github.netcorepal</groupId>
             <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
-            <version>3.1.0-alpha-1</version>
+            <version>3.1.0-alpha-2</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -47,10 +47,10 @@ Mediator中介者模式、
             <plugin>
                 <groupId>io.github.netcorepal</groupId>
                 <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
-                <version>3.1.0-alpha-1</version>
+                <version>3.1.0-alpha-2</version>
                 <configuration>
                     <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>
-                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/3.1.0-alpha-1/cap4j-ddd-codegen-template.json</archTemplate>
+                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/3.1.0-alpha-2/cap4j-ddd-codegen-template.json</archTemplate>
                     <multiModule>false</multiModule>
                     <moduleNameSuffix4Adapter>-adapter</moduleNameSuffix4Adapter>
                     <moduleNameSuffix4Domain>-domain</moduleNameSuffix4Domain>
