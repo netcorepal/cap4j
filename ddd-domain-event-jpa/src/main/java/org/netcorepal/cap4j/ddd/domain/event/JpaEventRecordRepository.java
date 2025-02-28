@@ -37,7 +37,7 @@ public class JpaEventRecordRepository implements EventRecordRepository {
     public void save(EventRecord eventRecord) {
         EventRecordImpl eventRecordImpl = (EventRecordImpl) eventRecord;
         Event event = eventRecordImpl.getEvent();
-        event = eventJpaRepository.saveAndFlush(event);
+        event = eventJpaRepository.save(event);
         eventRecordImpl.resume(event);
     }
 
