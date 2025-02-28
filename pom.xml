@@ -28,7 +28,6 @@
 
     <modules>
         <module>ddd-core</module>
-        <module>ddd-domain-event-rocketmq</module>
         <module>ddd-domain-event-jpa</module>
         <module>ddd-domain-repo-jpa</module>
         <module>ddd-distributed-locker-jdbc</module>
@@ -36,6 +35,8 @@
         <module>ddd-distributed-saga-jpa</module>
         <module>cap4j-ddd-starter</module>
         <module>cap4j-ddd-codegen-maven-plugin</module>
+        <module>ddd-domain-event-rabbitmq</module>
+        <module>ddd-domain-event-rocketmq</module>
     </modules>
 
     <properties>
@@ -177,30 +178,30 @@
                     <publishingServerId>io.github.netcorepal</publishingServerId>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.6</version>
-                <executions>
-                    <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                        <configuration>
-                            <keyname>netcorepal</keyname>
-                        </configuration>
-                    </execution>
-                </executions>
-                <configuration>
-                    <gpgArguments>
-                        <argument>--no-tty</argument>
-                        <argument>--pinentry-mode</argument>
-                        <argument>loopback</argument>
-                    </gpgArguments>
-                </configuration>
-            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-gpg-plugin</artifactId>-->
+<!--                <version>1.6</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>sign-artifacts</id>-->
+<!--                        <phase>verify</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>sign</goal>-->
+<!--                        </goals>-->
+<!--                        <configuration>-->
+<!--                            <keyname>netcorepal</keyname>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--                <configuration>-->
+<!--                    <gpgArguments>-->
+<!--                        <argument>&#45;&#45;no-tty</argument>-->
+<!--                        <argument>&#45;&#45;pinentry-mode</argument>-->
+<!--                        <argument>loopback</argument>-->
+<!--                    </gpgArguments>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>

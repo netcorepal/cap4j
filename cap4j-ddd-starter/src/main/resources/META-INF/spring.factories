@@ -16,4 +16,6 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   org.netcorepal.cap4j.ddd.domain.service.DomainServiceAutoConfiguration,\
   org.netcorepal.cap4j.ddd.domain.web.ClearDomainContextInterceptor,\
   org.netcorepal.cap4j.ddd.archinfo.configure.ArchInfoProperties,\
-  org.netcorepal.cap4j.ddd.archinfo.ArchInfoAutoConfiguration
+  org.netcorepal.cap4j.ddd.archinfo.ArchInfoAutoConfiguration,\
+  org.netcorepal.cap4j.ddd.application.event.IntegrationEventAutoConfiguration,\
+  org.netcorepal.cap4j.ddd.application.event.RabbitMqEventAutoConfiguration
