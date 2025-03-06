@@ -66,7 +66,7 @@ public class RabbitMQConsumer {
                     try {
                         consumer.accept(body);
                         channel.basicAck(envelope.getDeliveryTag(), false);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         channel.basicNack(envelope.getDeliveryTag(), false, true);
                     }
                 }

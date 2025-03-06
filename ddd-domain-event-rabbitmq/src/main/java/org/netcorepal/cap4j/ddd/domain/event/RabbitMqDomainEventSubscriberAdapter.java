@@ -16,6 +16,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -103,10 +104,10 @@ public class RabbitMqDomainEventSubscriberAdapter {
         target = TextUtils.resolvePlaceholderWithCache(target, environment);
         String topic = target.lastIndexOf(':') > 0 ? target.substring(0, target.lastIndexOf(':')) : target;
         RabbitMQConsumer mqPushConsumer = new RabbitMQConsumer(this.connectionFactory);
-        mqPushConsumer.subscribe(topic);
-        mqPushConsumer.registerMessageListener((msg) -> {
-            try {
-                String strMsg = new String(msg, msgCharset);
+        try {
+            mqPushConsumer.subscribe(topic);
+            mqPushConsumer.registerMessageListener((msg) -> {
+                String strMsg = new String(msg, Charset.forName(msgCharset));
                 Object eventPayload = JSON.parseObject(strMsg, integrationEventClass, Feature.SupportNonPublicField);
                 if (getOrderedEventMessageInterceptors().isEmpty()) {
                     eventSubscriberManager.dispatch(eventPayload);
@@ -118,15 +119,8 @@ public class RabbitMqDomainEventSubscriberAdapter {
                     eventSubscriberManager.dispatch(eventPayload);
                     getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.postSubscribe(message));
                 }
-
-            } catch (Exception ex) {
-                log.error("集成事件消息消费异常", ex);
-            }
-        });
-        try {
-
-        } catch (
-                AmqpException e) {
+            });
+        } catch (RuntimeException e) {
             log.error("集成事件消息监听订阅失败", e);
         }
         return mqPushConsumer;
