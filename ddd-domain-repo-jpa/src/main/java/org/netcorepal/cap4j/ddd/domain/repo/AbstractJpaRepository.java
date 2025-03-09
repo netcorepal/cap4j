@@ -42,7 +42,7 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
             if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
                 return PageData.empty(pageParam.getPageSize(), JpaPredicateSupport.reflectEntityClass(predicate));
             }
-            List<Entity> entities = jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate))
+            List<Entity> entities = jpaRepository.findAllById((Iterable<ID>) JpaPredicateSupport.resumeIds(predicate))
                     .stream()
                     .skip((pageParam.getPageNum() - 1) * pageParam.getPageSize())
                     .limit(pageParam.getPageSize())
@@ -65,7 +65,7 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
             if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
                 return Collections.emptyList();
             }
-            return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate));
+            return jpaRepository.findAllById((Iterable<ID>) JpaPredicateSupport.resumeIds(predicate));
         }
         if (null != JpaPredicateSupport.resumeSpecification(predicate)) {
             List<Entity> entities = jpaSpecificationExecutor.findAll(JpaPredicateSupport.resumeSpecification(predicate), sort);
@@ -84,7 +84,7 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
             if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
                 return 0L;
             }
-            return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate))
+            return jpaRepository.findAllById((Iterable<ID>) JpaPredicateSupport.resumeIds(predicate))
                     .size();
         }
         long result = jpaSpecificationExecutor.count(JpaPredicateSupport.resumeSpecification(predicate));
@@ -99,7 +99,7 @@ public class AbstractJpaRepository<Entity, ID> implements Repository<Entity> {
             if (!JpaPredicateSupport.resumeIds(predicate).iterator().hasNext()) {
                 return false;
             }
-            return jpaRepository.findAllById((List<ID>) JpaPredicateSupport.resumeIds(predicate))
+            return jpaRepository.findAllById((Iterable<ID>) JpaPredicateSupport.resumeIds(predicate))
                     .size() > 0;
         }
         boolean result = jpaSpecificationExecutor.exists(JpaPredicateSupport.resumeSpecification(predicate));
