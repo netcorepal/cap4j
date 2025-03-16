@@ -32,6 +32,14 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
     }
 
     @Override
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> findWithoutPersist(AggregatePredicate<AGGREGATE> aggregatePredicate, List<OrderInfo> orders) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
+        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+        List<?> entitys = repositorySupervisor.findWithoutPersist(predicate, orders);
+        return entitys.stream().map(o -> newInstance(clazz, o)).collect(Collectors.toList());
+    }
+
+    @Override
     public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> aggregatePredicate, List<OrderInfo> orders) {
         Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
         Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
@@ -40,11 +48,27 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
     }
 
     @Override
+    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOneWithoutPersist(AggregatePredicate<AGGREGATE> aggregatePredicate) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
+        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+        Optional<?> entity = repositorySupervisor.findOneWithoutPersist(predicate);
+        return entity.map(o -> newInstance(clazz, o));
+    }
+
+    @Override
     public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> aggregatePredicate) {
         Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
         Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
         Optional<?> entity = repositorySupervisor.findOne(predicate);
         return entity.map(o -> newInstance(clazz, o));
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPageWithoutPersist(AggregatePredicate<AGGREGATE> aggregatePredicate, PageParam pageParam) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
+        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+        PageData<?> pageData = repositorySupervisor.findPageWithoutPersist(predicate, pageParam);
+        return pageData.transform(o -> newInstance(clazz, o));
     }
 
     @Override

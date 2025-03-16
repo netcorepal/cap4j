@@ -1285,7 +1285,7 @@ public class GenEntityMojo extends GenArchMojo {
                             writeLine(out, "    @Getter(lombok.AccessLevel.PROTECTED)");
                         }
                         String fieldName = Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey())));
-                        writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + fieldName + ";");
+                        writeLine(out, "    java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + fieldName + ";");
                         if (countIsOne) {
                             writeLine(out, "");
                             writeLine(out, "    public " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " get" + getEntityJavaType(entry.getKey()) + "() {\n" +
@@ -1296,28 +1296,28 @@ public class GenEntityMojo extends GenArchMojo {
                     case "*ManyToOne":
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
                         writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false, insertable = false, updatable = false)");
-                        writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
+                        writeLine(out, "    " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                         break;
                     case "ManyToOne":
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
                         writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
-                        writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
+                        writeLine(out, "    " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                         break;
                     case "*OneToMany":// 当前不会用到，无法控制集合数量规模
                         writeLine(out, "    @" + relation.replace("*", "") + "(mappedBy = \"" + toLowerCamelCase(getEntityJavaType(tableName)) + "\"" +
                                 ", cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
                         writeLine(out, "    @Fetch(FetchMode.SUBSELECT)");
-                        writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
+                        writeLine(out, "    java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                         break;
                     case "OneToOne":
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
                         writeLine(out, "    @JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)");
-                        writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
+                        writeLine(out, "    " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                         break;
                     case "*OneToOne":
                         writeLine(out, "    @" + relation.replace("*", "") + "(mappedBy = \"" + toLowerCamelCase(getEntityJavaType(tableName)) + "\"" +
                                 ", cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
-                        writeLine(out, "    private " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
+                        writeLine(out, "    " + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + " " + toLowerCamelCase(getEntityJavaType(entry.getKey())) + ";");
                         break;
                     case "ManyToMany":
                         writeLine(out, "    @" + relation.replace("*", "") + "(cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
@@ -1325,13 +1325,13 @@ public class GenEntityMojo extends GenArchMojo {
                         writeLine(out, "    @JoinTable(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[3] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\"" +
                                 ", joinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + joinColumn + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)}" +
                                 ", inverseJoinColumns = {@JoinColumn(name = \"" + LEFT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + refInfos[2] + RIGHT_QUOTES_4_ID_ALIAS.replace("\"", "\\\"") + "\", nullable = false)})");
-                        writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
+                        writeLine(out, "    java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                         break;
                     case "*ManyToMany":
                         writeLine(out, "    @" + relation.replace("*", "") + "(mappedBy = \"" + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(tableName))) + "\"" +
                                 ", cascade = { }, fetch = FetchType." + fetchType + ")" + fetchAnnotation);
                         writeLine(out, "    @Fetch(FetchMode.SUBSELECT)");
-                        writeLine(out, "    private java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
+                        writeLine(out, "    java.util.List<" + tablePackageMap.get(entry.getKey()) + "." + getEntityJavaType(entry.getKey()) + "> " + Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))) + ";");
                         break;
                     default:
 
@@ -2348,8 +2348,8 @@ public class GenEntityMojo extends GenArchMojo {
                         "     * @param ids 主键\n" +
                         "     * @return\n" +
                         "     */\n" +
-                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicateByIds(Collection<Object> ids) {\n" +
-                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.byIds(${Entity}.class, ids);\n" +
+                        "    public static org.netcorepal.cap4j.ddd.domain.repo.Predicate<${Entity}> predicateByIds(Iterable<?> ids) {\n" +
+                        "        return org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate.byIds(${Entity}.class, (Iterable<Object>)ids);\n" +
                         "    }\n" +
                         "\n" +
                         "    /**\n" +
@@ -2457,8 +2457,8 @@ public class GenEntityMojo extends GenArchMojo {
                     "     * @param ids 主键\n" +
                     "     * @return\n" +
                     "     */\n" +
-                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregateByIds(Collection<Object> ids) {\n" +
-                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.byIds(${basePackage}${entityPackage}.Aggregated${Entity}.class, ids);\n" +
+                    "    public static org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate<${basePackage}${entityPackage}.Aggregated${Entity}> predicateAggregateByIds(Iterable<?> ids) {\n" +
+                    "        return org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate.byIds(${basePackage}${entityPackage}.Aggregated${Entity}.class, (Iterable<Object>)ids);\n" +
                     "    }\n" +
                     "\n" +
                     "    /**\n" +
@@ -2725,9 +2725,9 @@ public class GenEntityMojo extends GenArchMojo {
                 "            return in(Lists.newArrayList(vals));\n" +
                 "        }\n" +
                 "\n" +
-                "        public Predicate in(Collection<Object> vals) {\n" +
+                "        public Predicate in(Collection<?> vals) {\n" +
                 "            CriteriaBuilder.In predicate = criteriaBuilder.in(this.path);\n" +
-                "            for (Object o : vals) {\n" +
+                "            for (Object o : (Collection<Object>)vals) {\n" +
                 "                predicate.value(o);\n" +
                 "            }\n" +
                 "            return predicate;\n" +
@@ -2737,8 +2737,8 @@ public class GenEntityMojo extends GenArchMojo {
                 "            return notIn(Lists.newArrayList(vals));\n" +
                 "        }\n" +
                 "\n" +
-                "        public Predicate notIn(Collection<Object> vals) {\n" +
-                "            return this.criteriaBuilder.not(in(vals));\n" +
+                "        public Predicate notIn(Collection<?> vals) {\n" +
+                "            return this.criteriaBuilder.not(in((Collection<Object>)vals));\n" +
                 "        }\n" +
                 "\n" +
                 "\n" +

@@ -22,6 +22,39 @@ public interface AggregateSupervisor {
 
     /**
      * 根据条件获取实体列表
+     *
+     * @param predicate
+     * @param <AGGREGATE>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> findWithoutPersist(AggregatePredicate<AGGREGATE> predicate) {
+        return findWithoutPersist(predicate, (List<OrderInfo>) null);
+    }
+
+    /**
+     * 根据条件获取实体列表
+     *
+     * @param predicate
+     * @param orders
+     * @param <AGGREGATE>
+     * @return
+     */
+    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> findWithoutPersist(AggregatePredicate<AGGREGATE> predicate, List<OrderInfo> orders);
+
+    /**
+     * 根据条件获取实体列表
+     *
+     * @param predicate
+     * @param orders
+     * @param <AGGREGATE>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> findWithoutPersist(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders){
+        return findWithoutPersist(predicate, Arrays.asList(orders));
+    }
+    
+    /**
+     * 根据条件获取实体列表
      * 自动调用 UnitOfWork::persist
      *
      * @param predicate
@@ -31,7 +64,6 @@ public interface AggregateSupervisor {
     default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate) {
         return find(predicate, (List<OrderInfo>) null);
     }
-
 
     /**
      * 根据条件获取实体列表
@@ -56,6 +88,15 @@ public interface AggregateSupervisor {
     default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders) {
         return find(predicate, Arrays.asList(orders));
     }
+    
+    /**
+     * 根据条件获取单个实体
+     *
+     * @param predicate
+     * @param <AGGREGATE>
+     * @return
+     */
+    <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOneWithoutPersist(AggregatePredicate<AGGREGATE> predicate);
 
     /**
      * 根据条件获取单个实体
@@ -66,6 +107,16 @@ public interface AggregateSupervisor {
      * @return
      */
     <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate);
+
+    /**
+     * 根据条件获取实体分页列表
+     *
+     * @param predicate
+     * @param pageParam
+     * @param <AGGREGATE>
+     * @return
+     */
+    <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPageWithoutPersist(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam);
 
     /**
      * 根据条件获取实体分页列表

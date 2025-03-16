@@ -128,13 +128,28 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> findWithoutPersist(AggregatePredicate<AGGREGATE> predicate, List<OrderInfo> orders) {
+        return AggregateSupervisor.getInstance().findWithoutPersist(predicate, orders);
+    }
+
+    @Override
     public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, List<OrderInfo> orders) {
         return AggregateSupervisor.getInstance().find(predicate, orders);
     }
 
     @Override
+    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOneWithoutPersist(AggregatePredicate<AGGREGATE> predicate) {
+        return AggregateSupervisor.getInstance().findOneWithoutPersist(predicate);
+    }
+
+    @Override
     public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate) {
         return AggregateSupervisor.getInstance().findOne(predicate);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPageWithoutPersist(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam) {
+        return AggregateSupervisor.getInstance().findPageWithoutPersist(predicate, pageParam);
     }
 
     @Override
