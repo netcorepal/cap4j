@@ -38,6 +38,8 @@ public class GenDesignMojo extends GenArchMojo {
             case "command":
             case "cmd":
                 return "command";
+            case "saga":
+                return "saga";
             case "queries":
             case "query":
             case "qry":
@@ -148,6 +150,15 @@ public class GenDesignMojo extends GenArchMojo {
                         for (String literalDesign : designMap.get("command")) {
                             if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
                                 renderAppLayerCommand(literalDesign, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    break;
+                case "saga":
+                    if(designMap.containsKey("saga")) {
+                        for(String literalDesign : designMap.get("saga")) {
+                            if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
+                                renderAppLayerSaga(literalDesign, parentPath, templateNode);
                             }
                         }
                     }
@@ -284,6 +295,25 @@ public class GenDesignMojo extends GenArchMojo {
             return context;
         });
         getLog().info("生成命令代码：" + path);
+    }
+
+    public void renderAppLayerSaga(String literalSagaDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
+        getLog().info("解析Saga设计：" + literalSagaDeclaration);
+        String path = internalRenderGenericDesign(literalSagaDeclaration, parentPath, templateNode, context -> {
+            String Name = context.get("Name");
+            if (!Name.endsWith("Saga")){
+                Name += "Saga";
+            }
+            putContext(templateNode.getTag(), "Name", Name, context);
+            putContext(templateNode.getTag(), "Saga", context.get("Name"), context);
+            putContext(templateNode.getTag(), "Request", context.get("Saga") + "Request", context);
+            putContext(templateNode.getTag(), "Response", context.get("Saga") + "Response", context);
+
+            putContext(templateNode.getTag(), "Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: Saga描述", context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replace(PATTERN_LINE_BREAK, " "), context);
+            return context;
+        });
+        getLog().info("生成Saga代码：" + path);
     }
 
     /**

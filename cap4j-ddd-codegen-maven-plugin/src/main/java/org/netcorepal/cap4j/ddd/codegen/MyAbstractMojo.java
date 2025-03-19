@@ -995,6 +995,8 @@ public abstract class MyAbstractMojo extends AbstractMojo {
             case "query_handler.Response":
             case "command.Response":
             case "command_handler.Response":
+            case "saga.Response":
+            case "saga_handler.Response":
                 aliases = Arrays.asList(
                         var,
                         "response",
