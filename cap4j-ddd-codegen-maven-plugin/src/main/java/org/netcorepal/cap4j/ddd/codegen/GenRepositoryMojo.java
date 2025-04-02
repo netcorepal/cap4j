@@ -19,7 +19,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.toSnakeCase;
 import static org.netcorepal.cap4j.ddd.codegen.misc.NamingUtils.toUpperCamelCase;
 import static org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils.*;
 
@@ -59,31 +58,45 @@ public class GenRepositoryMojo extends GenArchMojo {
                 "import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\n" +
                 "import org.netcorepal.cap4j.ddd.domain.repo.AbstractJpaRepository;\n" +
                 "import org.netcorepal.cap4j.ddd.domain.repo.AggregateRepository;\n" +
+                (!repositorySupportQuerydsl ? "" :
+                        "import org.netcorepal.cap4j.ddd.domain.repo.querydsl.AbstractQuerydslRepository;\n"
+                ) +
                 "import org.springframework.data.jpa.repository.JpaRepository;\n" +
                 "import org.springframework.data.jpa.repository.JpaSpecificationExecutor;\n" +
-                "import org.springframework.stereotype.Component;" +
+                (!repositorySupportQuerydsl ? "" :
+                        "import org.springframework.data.querydsl.QuerydslPredicateExecutor;\n"
+                ) +
+                "import org.springframework.stereotype.Component;\n" +
                 "\n" +
                 "/**\n" +
                 " * 本文件由[cap4j-ddd-codegen-maven-plugin]生成\n" +
                 " * @author cap4j-ddd-codegen\n" +
                 " * @date ${date}\n" +
                 " */\n" +
-                "public interface ${Entity}Repository extends AggregateRepository<${Entity}, ${Identity}> {\n" +
+                "public interface " + repositoryNameTemplate + " extends AggregateRepository<${Entity}, ${IdentityType}>, JpaSpecificationExecutor<${Entity}>, JpaRepository<${Entity}, ${IdentityType}>" + (!repositorySupportQuerydsl ? "" : ", QuerydslPredicateExecutor<${Entity}>") + " {\n" +
                 "\n" +
                 "    @Component\n" +
-                "    @Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}\", type = Aggregate.TYPE_REPOSITORY, description = \"\")\n" +
-                "    public static class ${Entity}JpaRepositoryAdapter extends AbstractJpaRepository<${Entity}, ${IdentityType}>\n" +
-                "    {\n" +
+                "    @Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Repo\", type = Aggregate.TYPE_REPOSITORY, description = \"\")\n" +
+                "    public static class ${Entity}JpaRepositoryAdapter extends AbstractJpaRepository<${Entity}, ${IdentityType}> {\n" +
                 "        public ${Entity}JpaRepositoryAdapter(JpaSpecificationExecutor<${Entity}> jpaSpecificationExecutor, JpaRepository<${Entity}, ${IdentityType}> jpaRepository) {\n" +
                 "            super(jpaSpecificationExecutor, jpaRepository);\n" +
                 "        }\n" +
                 "    }\n" +
+                (!repositorySupportQuerydsl ? "" : ("\n" +
+                        "    @Component\n" +
+                        "    @Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}QuerydslRepo\", type = Aggregate.TYPE_REPOSITORY, description = \"\")\n" +
+                        "    public static class ${Entity}QuerydslRepositoryAdapter extends AbstractQuerydslRepository<${Entity}> {\n" +
+                        "        public ${Entity}QuerydslRepositoryAdapter(QuerydslPredicateExecutor<${Entity}> querydslPredicateExecutor) {\n" +
+                        "            super(querydslPredicateExecutor);\n" +
+                        "        }\n" +
+                        "    }\n"
+                )) +
                 "\n" +
                 "}\n";
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("file");
         templateNode.setTag("repository");
-        templateNode.setName("${Entity}Repository.java");
+        templateNode.setName(repositoryNameTemplate + ".java");
         templateNode.setFormat("raw");
         templateNode.setData(template);
         templateNode.setConflict("skip");
@@ -97,7 +110,6 @@ public class GenRepositoryMojo extends GenArchMojo {
                 hasRepositoryTemplate = true;
                 getLog().info("开始生成仓储代码");
                 getLog().info("聚合根标注注解：" + getAggregateRootAnnotation());
-                getLog().info("聚合根基类：" + getAggregateRepositoryBaseClass());
                 getLog().info("");
 
                 List<File> files = SourceFileUtils.loadFiles(

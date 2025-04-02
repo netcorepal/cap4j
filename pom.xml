@@ -36,6 +36,7 @@
         <module>ddd-distributed-saga-jpa</module>
         <module>cap4j-ddd-starter</module>
         <module>cap4j-ddd-codegen-maven-plugin</module>
+        <module>ddd-domain-repo-jpa-querydsl</module>
     </modules>
 
     <properties>

@@ -265,7 +265,7 @@
           "type": "file",
           "name": "${Entity}Specification.java",
           "format": "raw",
-          "data": "package ${basePackage}.domain.aggregates${package}.specs;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.Specification;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}规格约束\n * ${CommentEscaped}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Specification\", type = Aggregate.TYPE_SPECIFICATION, description = \"\")\n@Service\npublic class ${Entity}Specification implements Specification<${Entity}> {\n    @Override\n    public Result specify(${Entity} entity) {\n        return Result.fail(\"未实现\");\n    }\n}\n"
+          "data": "package ${basePackage}.domain.aggregates${package}.specs;\n\nimport ${basePackage}.domain.aggregates${package}.${Entity};\nimport org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;\nimport org.netcorepal.cap4j.ddd.domain.aggregate.Specification;\nimport org.springframework.stereotype.Service;\n\n/**\n * ${Entity}规格约束\n * ${CommentEscaped}\n *\n * @author cap4j-ddd-codegen\n * @date ${date}\n */\n@Aggregate(aggregate = \"${Aggregate}\", name = \"${Entity}Specification\", type = Aggregate.TYPE_SPECIFICATION, description = \"\")\n@Service\npublic class ${Entity}Specification implements Specification<${Entity}> {\n    @Override\n    public Result specify(${Entity} entity) {\n        return Result.pass();\n    }\n}\n"
         }
       ]
     },

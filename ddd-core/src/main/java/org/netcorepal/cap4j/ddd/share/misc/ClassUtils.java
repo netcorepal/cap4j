@@ -66,7 +66,7 @@ public class ClassUtils {
      * @return
      */
     public static Method findMethod(Class clazz, String name, Predicate<Method> methodPredicate) {
-        Method[] methods = clazz.getMethods();
+        Method[] methods = clazz.getDeclaredMethods();
         for (Method method : methods) {
             if (Objects.equals(method.getName(), name)) {
                 if (methodPredicate != null) {

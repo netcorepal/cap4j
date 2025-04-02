@@ -11,5 +11,6 @@ import org.springframework.data.repository.NoRepositoryBean;
  * @date 2024/4/17
  */
 @NoRepositoryBean
+@Deprecated
 public interface AggregateRepository<T, ID> extends JpaRepository<T, ID>, JpaSpecificationExecutor<T> {
 }

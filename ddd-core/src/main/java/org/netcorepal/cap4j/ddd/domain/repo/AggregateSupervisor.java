@@ -1,13 +1,12 @@
 package org.netcorepal.cap4j.ddd.domain.repo;
 
 import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
+import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 聚合管理器
@@ -20,75 +19,86 @@ public interface AggregateSupervisor {
         return AggregateSupervisorSupport.instance;
     }
 
-    /**
-     * 根据条件获取实体列表
-     *
-     * @param predicate
-     * @param <AGGREGATE>
-     * @return
-     */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> findWithoutPersist(AggregatePredicate<AGGREGATE> predicate) {
-        return findWithoutPersist(predicate, (List<OrderInfo>) null);
-    }
+    <AGGREGATE extends Aggregate<ENTITY>, ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> AGGREGATE create(Class<AGGREGATE> clazz, ENTITY_PAYLOAD payload);
 
     /**
-     * 根据条件获取实体列表
-     *
-     * @param predicate
-     * @param orders
-     * @param <AGGREGATE>
-     * @return
-     */
-    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> findWithoutPersist(AggregatePredicate<AGGREGATE> predicate, List<OrderInfo> orders);
-
-    /**
-     * 根据条件获取实体列表
-     *
-     * @param predicate
-     * @param orders
-     * @param <AGGREGATE>
-     * @return
-     */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> findWithoutPersist(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders){
-        return findWithoutPersist(predicate, Arrays.asList(orders));
-    }
-    
-    /**
-     * 根据条件获取实体列表
-     * 自动调用 UnitOfWork::persist
+     * 根据条件获取聚合列表
      *
      * @param predicate
      * @param <AGGREGATE>
      * @return
      */
     default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate) {
-        return find(predicate, (List<OrderInfo>) null);
+        return find(predicate, (List<OrderInfo>) null, true);
     }
 
     /**
-     * 根据条件获取实体列表
-     * 自动调用 UnitOfWork::persist
+     * 根据条件获取聚合列表
+     *
+     * @param predicate
+     * @param persist
+     * @param <AGGREGATE>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, boolean persist) {
+        return find(predicate, (List<OrderInfo>) null, persist);
+    }
+
+    /**
+     * 根据条件获取聚合列表
      *
      * @param predicate
      * @param orders
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, List<OrderInfo> orders);
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders){
+        return find(predicate, orders, true);
+    }
 
     /**
-     * 根据条件获取实体列表
-     * 自动调用 UnitOfWork::persist
+     * 根据条件获取聚合列表
      *
      * @param predicate
      * @param orders
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders) {
-        return find(predicate, Arrays.asList(orders));
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders){
+        return find(predicate, Arrays.asList(orders), true);
     }
-    
+
+    /**
+     * 根据条件获取聚合列表
+     *
+     * @param predicate
+     * @param orders
+     * @param <AGGREGATE>
+     * @return
+     */
+    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders, boolean persist);
+
+    /**
+     * 根据条件获取聚合列表
+     *
+     * @param predicate
+     * @param pageParam
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam) {
+        return find(predicate, pageParam, true);
+    }
+
+    /**
+     * 根据条件获取聚合列表
+     *
+     * @param predicate
+     * @param pageParam
+     * @param persist
+     * @return
+     */
+   <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist);
+
     /**
      * 根据条件获取单个实体
      *
@@ -96,38 +106,109 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOneWithoutPersist(AggregatePredicate<AGGREGATE> predicate);
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate){
+        return findOne(predicate, true);
+    }
 
     /**
      * 根据条件获取单个实体
-     * 自动调用 UnitOfWork::persist
      *
      * @param predicate
+     * @param persist
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate);
+    <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate, boolean persist);
+
+    /**
+     * 根据条件获取实体
+     *
+     * @param predicate
+     * @param orders
+     * @param persist
+     * @param <AGGREGATE>
+     * @return
+     */
+    <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders, boolean persist);
+
+    /**
+     * 根据条件获取实体
+     *
+     * @param predicate
+     * @param orders
+     * @param <AGGREGATE>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders) {
+        return findFirst(predicate, orders, true);
+    }
+
+    /**
+     * 根据条件获取实体
+     *
+     * @param predicate
+     * @param orders
+     * @param <AGGREGATE>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders) {
+        return findFirst(predicate, Arrays.asList(orders), true);
+    }
+
+    /**
+     * 根据条件获取实体
+     *
+     * @param predicate
+     * @param persist
+     * @param <AGGREGATE>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, boolean persist) {
+        return findFirst(predicate, Collections.emptyList(), persist);
+    }
+
+    /**
+     * 根据条件获取实体
+     *
+     * @param predicate
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate) {
+        return findFirst(predicate, true);
+    }
 
     /**
      * 根据条件获取实体分页列表
+     * 自动调用 UnitOfWork::persist
      *
      * @param predicate
      * @param pageParam
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPageWithoutPersist(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam);
+    default <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam){
+        return findPage(predicate, pageParam, true);
+    }
 
     /**
      * 根据条件获取实体分页列表
-     * 自动调用 UnitOfWork::persist
      *
      * @param predicate
      * @param pageParam
+     * @param persist
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam);
+    <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist);
+
+    /**
+     * 根据条件删除实体
+     *
+     * @param predicate
+     * @param <AGGREGATE>
+     * @return
+     */
+    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE> predicate);
 
     /**
      * 根据条件删除实体

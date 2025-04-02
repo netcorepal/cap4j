@@ -15,30 +15,34 @@ import java.util.Collections;
  * @date 2025/1/12
  */
 @RequiredArgsConstructor
-public class JpaAggregatePredicate<XENTITY extends Aggregate<ENTITY>, ENTITY> implements AggregatePredicate<XENTITY> {
-    final Class<XENTITY> xEntityClass;
-    final JpaPredicate<ENTITY> jpaPredicate;
+public class JpaAggregatePredicate<AGGREGATE extends Aggregate<ENTITY>, ENTITY> implements AggregatePredicate<AGGREGATE> {
+    final Class<AGGREGATE> aggregateClass;
+    final Predicate<ENTITY> predicate;
 
-    private static <XENTITY extends Aggregate<ENTITY>, ENTITY> Class<ENTITY> getEntityClass(Class<XENTITY> xEntityClass) {
+    private static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> Class<ENTITY> getEntityClass(Class<AGGREGATE> aggregateClass) {
         Class<ENTITY> entityClass = (Class<ENTITY>) ClassUtils.resolveGenericTypeClass(
-                xEntityClass, 0,
+                aggregateClass, 0,
                 Aggregate.class, Aggregate.Default.class);
         return entityClass;
     }
 
-    public static <XENTITY extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<XENTITY> byId(Class<XENTITY> xEntityClass, Object id) {
-        return new JpaAggregatePredicate<>(xEntityClass, new JpaPredicate<>(getEntityClass(xEntityClass), null, Collections.singletonList(id), null));
+    public static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<AGGREGATE> byId(Class<AGGREGATE> aggregateClass, Object id) {
+        return new JpaAggregatePredicate<>(aggregateClass, new JpaPredicate<>(getEntityClass(aggregateClass), null, Collections.singletonList(id), null));
     }
 
-    public static <XENTITY extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<XENTITY> byIds(Class<XENTITY> xEntityClass, Iterable<Object> ids) {
-        return new JpaAggregatePredicate<>(xEntityClass, new JpaPredicate<>(getEntityClass(xEntityClass), null, ids, null));
+    public static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<AGGREGATE> byIds(Class<AGGREGATE> aggregateClass, Iterable<Object> ids) {
+        return new JpaAggregatePredicate<>(aggregateClass, new JpaPredicate<>(getEntityClass(aggregateClass), null, ids, null));
     }
 
-    public static <XENTITY extends Aggregate<VALUE_OBJECT>, VALUE_OBJECT extends ValueObject> AggregatePredicate<XENTITY> byValueObject(XENTITY valueObject) {
+    public static <AGGREGATE extends Aggregate<VALUE_OBJECT>, VALUE_OBJECT extends ValueObject> AggregatePredicate<AGGREGATE> byValueObject(AGGREGATE valueObject) {
         return new JpaAggregatePredicate<>(valueObject.getClass(), new JpaPredicate<>(getEntityClass(valueObject.getClass()), null, Collections.singletonList(valueObject._unwrap().hash()), valueObject._unwrap()));
     }
 
-    public static <XENTITY extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<XENTITY> bySpecification(Class<XENTITY> xEntityClass, Specification<ENTITY> specification) {
-        return new JpaAggregatePredicate<>(xEntityClass, new JpaPredicate<>(getEntityClass(xEntityClass), specification, null, null));
+    public static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<AGGREGATE> bySpecification(Class<AGGREGATE> aggregateClass, Specification<ENTITY> specification) {
+        return new JpaAggregatePredicate<>(aggregateClass, new JpaPredicate<>(getEntityClass(aggregateClass), specification, null, null));
+    }
+
+    public static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<AGGREGATE> byPredicate(Class<AGGREGATE> aggregateClass, Predicate<ENTITY> predicate) {
+        return new JpaAggregatePredicate<>(aggregateClass, predicate);
     }
 }

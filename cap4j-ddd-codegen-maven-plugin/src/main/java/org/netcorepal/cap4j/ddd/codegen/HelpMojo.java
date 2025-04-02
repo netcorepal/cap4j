@@ -70,10 +70,14 @@ public class HelpMojo extends AbstractMojo {
                 "                    <ignoreFields></ignoreFields>\n" +
                 "                    <!-- [gen-entity]实体基类 -->\n" +
                 "                    <entityBaseClass></entityBaseClass>\n" +
+                "                    <!-- [gen-entity]根实体基类 -->\n" +
+                "                    <rootEntityBaseClass></rootEntityBaseClass>\n" +
                 "                    <!-- [gen-entity]实体辅助类输出模式，绝对路径或相对路径，abs | ref -->\n" +
                 "                    <entitySchemaOutputMode>abs</entitySchemaOutputMode>\n" +
                 "                    <!-- [gen-entity]实体辅助类输出包 -->\n" +
                 "                    <entitySchemaOutputPackage>domain._share.meta</entitySchemaOutputPackage>\n" +
+                "                    <!-- [gen-entity]实体辅助类名称模板 -->\n" +
+                "                    <entitySchemaNameTemplate>S${Entity}</entitySchemaNameTemplate>\n" +
                 "                    <!-- [gen-entity]关联实体加载模式 LAZY | EAGER -->\n" +
                 "                    <fetchType>EAGER</fetchType>\n" +
                 "                    <!-- [gen-entity]主键生成器 默认自增策略 -->\n" +
@@ -104,8 +108,12 @@ public class HelpMojo extends AbstractMojo {
                 "                    <generateParent>false</generateParent>\n" +
                 "                    <!-- [gen-entity]聚合根注解 -->\n" +
                 "                    <aggregateRootAnnotation></aggregateRootAnnotation>\n" +
-                "                    <!-- [gen-repository]聚合仓储基类型 -->\n" +
-                "                    <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>\n" +
+                "                    <!-- [gen-entity]聚合类名称模板 -->\n" +
+                "                    <aggregateNameTemplate>Agg${Entity}</aggregateNameTemplate>\n" +
+                "                    <!-- [gen-entity]仓储类名称模板 -->\n" +
+                "                    <repositoryNameTemplate>${Entity}Repository</repositoryNameTemplate>\n" +
+                "                    <!-- [gen-entity]仓储支持Querydsl -->\n" +
+                "                    <repositorySupportQuerydsl>true</repositorySupportQuerydsl>\n" +
                 "                    <!-- [gen-design]应用架构设计，通常通过命令行参数 -Ddesign= 传入-->\n" +
                 "                    <design></design>\n" +
                 "                    <!-- [gen-design]应用架构设计文件，每行一个LiteralDesign-->\n" +
