@@ -19,7 +19,7 @@ public class JpaAggregatePredicateSupport {
      * @param <ENTITY>
      */
     public static <XENTITY extends Aggregate<ENTITY>, ENTITY> Predicate<ENTITY> getPredicate(AggregatePredicate<XENTITY> predicate) {
-        return ((JpaAggregatePredicate<XENTITY, ENTITY>) predicate).jpaPredicate;
+        return ((JpaAggregatePredicate<XENTITY, ENTITY>) predicate).predicate;
     }
 
 
@@ -31,6 +31,6 @@ public class JpaAggregatePredicateSupport {
      * @param <XENTITY>
      */
     public static <XENTITY extends Aggregate<?>> Class<XENTITY> reflectXEntityClass(AggregatePredicate<XENTITY> predicate) {
-        return ((JpaAggregatePredicate<XENTITY, ?>) predicate).xEntityClass;
+        return ((JpaAggregatePredicate<XENTITY, ?>) predicate).aggregateClass;
     }
 }

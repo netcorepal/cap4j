@@ -9,16 +9,10 @@
         <version>3.1.0-alpha-2</version>
     </parent>
 
-    <artifactId>ddd-distributed-saga-jpa</artifactId>
+    <artifactId>ddd-domain-repo-jpa-querydsl</artifactId>
     <packaging>jar</packaging>
 
-    <name>ddd-distributed-saga-jpa</name>
-
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <name>ddd-domain-repo-jpa-querydsl</name>
 
     <dependencies>
         <dependency>
@@ -27,13 +21,11 @@
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
+            <groupId>io.github.netcorepal</groupId>
+            <artifactId>ddd-domain-repo-jpa</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-        </dependency>
+
         <!-- JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -41,9 +33,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
+            <groupId>com.querydsl</groupId>
+            <artifactId>querydsl-core</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

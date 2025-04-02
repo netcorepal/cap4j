@@ -50,7 +50,7 @@ Mediator中介者模式、
                 <version>3.1.0-alpha-2</version>
                 <configuration>
                     <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>
-                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/3.1.0-alpha-2/cap4j-ddd-codegen-template.json</archTemplate>
+                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/3.1.0-alpha-2/cap4j-ddd-codegen-template-nested.json</archTemplate>
                     <multiModule>false</multiModule>
                     <moduleNameSuffix4Adapter>-adapter</moduleNameSuffix4Adapter>
                     <moduleNameSuffix4Domain>-domain</moduleNameSuffix4Domain>
@@ -82,8 +82,9 @@ Mediator中介者模式、
                     <generateDbType>true</generateDbType>
                     <generateSchema>true</generateSchema>
                     <generateParent>false</generateParent>
+                    <generateAggregate>true</generateAggregate>
+                    <repositorySupportQuerydsl>true</repositorySupportQuerydsl>
                     <aggregateRootAnnotation></aggregateRootAnnotation>
-                    <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>
                 </configuration>
             </plugin>
         </plugins>

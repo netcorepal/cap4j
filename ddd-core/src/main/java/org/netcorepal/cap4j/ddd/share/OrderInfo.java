@@ -5,6 +5,10 @@ import io.swagger.annotations.ApiModelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * 排序定义
  *
@@ -34,6 +38,16 @@ public class OrderInfo {
      * @param field
      * @return
      */
+    public static OrderInfo desc(Object field) {
+        return desc(field.toString());
+    }
+
+    /**
+     * 降序
+     *
+     * @param field
+     * @return
+     */
     public static OrderInfo desc(String field) {
         OrderInfo orderInfo = new OrderInfo();
         orderInfo.field = field;
@@ -47,10 +61,52 @@ public class OrderInfo {
      * @param field
      * @return
      */
+    public static OrderInfo asc(Object field) {
+        return asc(field.toString());
+    }
+
+    /**
+     * 升序
+     *
+     * @param field
+     * @return
+     */
     public static OrderInfo asc(String field) {
         OrderInfo orderInfo = new OrderInfo();
         orderInfo.field = field;
         orderInfo.desc = false;
         return orderInfo;
+    }
+
+    public static class OrderInfosBuilder {
+        List<OrderInfo> orderInfos = new ArrayList<>();
+
+        public OrderInfosBuilder asc(String field){
+            orderInfos.add(OrderInfo.asc(field));
+            return this;
+        }
+
+        public OrderInfosBuilder desc(String field){
+            orderInfos.add(OrderInfo.desc(field));
+            return this;
+        }
+
+        public OrderInfosBuilder asc(Object field){
+            orderInfos.add(OrderInfo.desc(field));
+            return this;
+        }
+
+        public OrderInfosBuilder desc(Object field){
+            orderInfos.add(OrderInfo.desc(field));
+            return this;
+        }
+
+        public Collection<OrderInfo> build() {
+            return orderInfos;
+        }
+    }
+
+    public static OrderInfosBuilder sortBuilder() {
+        return new OrderInfosBuilder();
     }
 }

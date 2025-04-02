@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -37,7 +38,7 @@ public class PageParam {
      */
     @Schema(description = "排序")
     @ApiModelProperty(value = "排序")
-    private List<OrderInfo> sort;
+    private Collection<OrderInfo> sort;
 
     /**
      * 添加排序字段
@@ -58,6 +59,21 @@ public class PageParam {
      * 添加排序字段
      *
      * @param field
+     * @param desc
+     * @return
+     */
+    public PageParam orderBy(Object field, boolean desc) {
+        if (null == this.sort) {
+            this.sort = new ArrayList<>();
+        }
+        this.sort.add(desc ? OrderInfo.desc(field.toString()) : OrderInfo.asc(field.toString()));
+        return this;
+    }
+
+    /**
+     * 添加排序字段
+     *
+     * @param field
      * @return
      */
     public PageParam orderByDesc(String field) {
@@ -70,7 +86,27 @@ public class PageParam {
      * @param field
      * @return
      */
+    public PageParam orderByDesc(Object field) {
+        return orderBy(field, true);
+    }
+
+    /**
+     * 添加排序字段
+     *
+     * @param field
+     * @return
+     */
     public PageParam orderByAsc(String field) {
+        return orderBy(field, false);
+    }
+
+    /**
+     * 添加排序字段
+     *
+     * @param field
+     * @return
+     */
+    public PageParam orderByAsc(Object field) {
         return orderBy(field, false);
     }
 
@@ -94,9 +130,22 @@ public class PageParam {
      * @return
      */
     public static PageParam of(int pageNum, int pageSize) {
+        return of(pageNum, pageSize, null);
+    }
+
+    /**
+     * 创建分页参数
+     *
+     * @param pageNum
+     * @param pageSize
+     * @param sort
+     * @return
+     */
+    public static PageParam of(int pageNum, int pageSize, List<OrderInfo> sort) {
         PageParam pageParam = new PageParam();
         pageParam.pageNum = pageNum;
         pageParam.pageSize = pageSize;
+        pageParam.sort = sort;
         return pageParam;
     }
 
@@ -108,5 +157,16 @@ public class PageParam {
      */
     public static PageParam limit(int pageSize) {
         return of(1, pageSize);
+    }
+
+    /**
+     * 创建分页参数，pageNum=1
+     *
+     * @param pageSize
+     * @param sort
+     * @return
+     */
+    public static PageParam limit(int pageSize, List<OrderInfo> sort) {
+        return of(1, pageSize, sort);
     }
 }

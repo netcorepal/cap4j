@@ -198,6 +198,14 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     public String entityBaseClass = "";
 
     /**
+     * 根实体基类
+     *
+     * @parameter expression="${rootEntityBaseClass}"
+     */
+    @Parameter(property = "rootEntityBaseClass", defaultValue = "")
+    public String rootEntityBaseClass = "";
+
+    /**
      * 实体类附加导入包
      *
      * @parameter expression="${entityClassExtraImports}"
@@ -257,6 +265,15 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         }
         return entitySchemaOutputPackage;
     }
+
+    /**
+     * 实体辅助类输出名称模板
+     *
+     * @parameter expression="${entitySchemaNameTemplate}"
+     */
+    @Parameter(property = "entitySchemaNameTemplate", defaultValue = "S${Entity}")
+    public String entitySchemaNameTemplate = "S${Entity}";
+
 
     /**
      * 关联实体加载模式 LAZY | EAGER
@@ -362,12 +379,37 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     public Boolean generateParent = false;
 
     /**
+     * 聚合根名称模板
+     *
+     * @parameter expression="${repositoryNameTemplate}"
+     */
+    @Parameter(property = "repositoryNameTemplate", defaultValue = "${Entity}Repository")
+    public String repositoryNameTemplate = "${Entity}Repository";
+
+    /**
+     * 是否支持querydsl方式检索仓储实体
+     *
+     * @parameter expression="${generateRepository}"
+     */
+    @Parameter(property = "repositorySupportQuerydsl", defaultValue = "true")
+    public Boolean repositorySupportQuerydsl = true;
+
+    /**
+     * 聚合根名称模板
+     *
+     * @parameter expression="${aggregateNameTemplate}"
+     */
+    @Parameter(property = "aggregateNameTemplate", defaultValue = "Agg${Entity}")
+    public String aggregateNameTemplate = "Agg${Entity}";
+
+    /**
      * 聚合根注解
      *
      * @parameter expression="${aggregateRootAnnotation}"
      */
     @Parameter(property = "aggregateRootAnnotation", defaultValue = "")
     public String aggregateRootAnnotation = "";
+
 
     public String getAggregateRootAnnotation() {
         if (StringUtils.isNotEmpty(aggregateRootAnnotation)) {
@@ -377,22 +419,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
             }
         }
         return aggregateRootAnnotation;
-    }
-
-    /**
-     * 聚合仓储基类型
-     *
-     * @parameter expression="${aggregateRepositoryBaseClass}"
-     */
-    @Parameter(property = "aggregateRepositoryBaseClass", defaultValue = "")
-    public String aggregateRepositoryBaseClass = "";
-
-    public String getAggregateRepositoryBaseClass() {
-        if (StringUtils.isBlank(aggregateRepositoryBaseClass)) {
-            // 默认聚合仓储基类
-            aggregateRepositoryBaseClass = "org.netcorepal.cap4j.ddd.domain.repo.AggregateRepository<${EntityType}, ${IdentityType}>";
-        }
-        return aggregateRepositoryBaseClass;
     }
 
     public String getProjectDir() {
@@ -1052,7 +1078,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
     protected void resolveMavenProject() {
         MavenProject mavenProject = ((MavenProject) getPluginContext().get("project"));
         if (mavenProject != null && StringUtils.isBlank(projectArtifactId)) {
-            if (multiModule == false || !mavenProject.hasParent()) {
+            if (!multiModule || !mavenProject.hasParent()) {
                 projectGroupId = mavenProject.getGroupId();
                 projectArtifactId = mavenProject.getArtifactId();
                 projectVersion = mavenProject.getVersion();
@@ -1106,9 +1132,11 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         context.put("readonlyFields", readonlyFields);
         context.put("ignoreFields", ignoreFields);
         context.put("entityBaseClass", entityBaseClass);
+        context.put("rootEntityBaseClass", rootEntityBaseClass);
         context.put("entityClassExtraImports", entityClassExtraImports);
         context.put("entitySchemaOutputPackage", entitySchemaOutputPackage);
         context.put("entitySchemaOutputMode", entitySchemaOutputMode);
+        context.put("entitySchemaNameTemplate", entitySchemaNameTemplate);
         context.put("idGenerator", idGenerator);
         context.put("idGenerator4ValueObject", idGenerator4ValueObject);
         context.put("hashMethod4ValueObject", hashMethod4ValueObject);
@@ -1124,13 +1152,12 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         context.put("generateAggregate", generateAggregate ? "true" : "false");
         context.put("generateParent", generateParent ? "true" : "false");
         context.put("aggregateRootAnnotation", aggregateRootAnnotation);
-        context.put("aggregateRepositoryBaseClass", aggregateRepositoryBaseClass);
+        context.put("aggregateNameTemplate", aggregateNameTemplate);
+        context.put("repositoryNameTemplate", repositoryNameTemplate);
+        context.put("repositorySupportQuerydsl", repositorySupportQuerydsl ? "true" : "false");
         context.put("date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
         context.put("SEPARATOR", File.separator);
         context.put("separator", File.separator);
-        context.put("symbol_pound", "#");
-        context.put("symbol_escape", "\\");
-        context.put("symbol_dollar", "$");
         return context;
     }
 
@@ -1179,6 +1206,9 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.isBlank(entityBaseClass)
                         ? ""
                         : "                    <entityBaseClass>" + entityBaseClass + "</entityBaseClass>\n") +
+                (StringUtils.isBlank(rootEntityBaseClass)
+                        ? ""
+                        : "                    <rootEntityBaseClass>" + rootEntityBaseClass + "</rootEntityBaseClass>\n") +
                 (StringUtils.isBlank(entityClassExtraImports)
                         ? ""
                         : "                    <entityClassExtraImports>" + entityClassExtraImports + "</entityClassExtraImports>\n") +
@@ -1188,6 +1218,9 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.isBlank(entitySchemaOutputPackage)
                         ? ""
                         : "                    <entitySchemaOutputPackage>" + entitySchemaOutputPackage + "</entitySchemaOutputPackage>\n") +
+                (StringUtils.isBlank(entitySchemaNameTemplate)
+                        ? ""
+                        : "                    <entitySchemaNameTemplate>" + entitySchemaNameTemplate + "</entitySchemaNameTemplate>\n") +
                 (StringUtils.isBlank(idGenerator)
                         ? ""
                         : "                    <idGenerator>" + idGenerator + "</idGenerator>\n") +
@@ -1230,12 +1263,16 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (!generateParent
                         ? ""
                         : "                    <generateParent>" + generateParent + "</generateParent>\n") +
+                (StringUtils.isBlank(repositoryNameTemplate)
+                        ? ""
+                        : "                    <repositoryNameTemplate>" + repositoryNameTemplate + "</repositoryNameTemplate>\n") +
+                "                    <repositorySupportQuerydsl>" + repositorySupportQuerydsl + "</repositorySupportQuerydsl>\n" +
                 (StringUtils.isBlank(aggregateRootAnnotation)
                         ? ""
                         : "                    <aggregateRootAnnotation>" + aggregateRootAnnotation + "</aggregateRootAnnotation>\n") +
-                (StringUtils.isBlank(aggregateRepositoryBaseClass)
+                (StringUtils.isBlank(aggregateNameTemplate)
                         ? ""
-                        : "                    <aggregateRepositoryBaseClass>" + aggregateRepositoryBaseClass + "</aggregateRepositoryBaseClass>\n") +
+                        : "                    <aggregateNameTemplate>" + aggregateNameTemplate + "</aggregateNameTemplate>\n") +
                 "                </configuration>";
     }
 

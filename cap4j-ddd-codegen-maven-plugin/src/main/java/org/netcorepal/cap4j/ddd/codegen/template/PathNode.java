@@ -5,6 +5,7 @@ import lombok.Data;
 import org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -82,8 +83,22 @@ public class PathNode {
         if (null == content) {
             return "";
         }
+        Map<String, String> escapeCharacters = new HashMap<>();
+        escapeCharacters.put("symbol_pound", "#");
+        escapeCharacters.put("symbol_escape", "\\");
+        escapeCharacters.put("symbol_dollar", "$");
+
+        int max_replace = 10;
         String result = content;
-        for (Map.Entry<String, String> kv : context.entrySet()) {
+        while (max_replace-- > 0) {
+            for (Map.Entry<String, String> kv : context.entrySet()) {
+                result = result.replace("${" + kv.getKey() + "}", kv.getValue() == null ? "" : kv.getValue());
+            }
+            if (!result.contains("${")) {
+                break;
+            }
+        }
+        for (Map.Entry<String, String> kv : escapeCharacters.entrySet()) {
             result = result.replace("${" + kv.getKey() + "}", kv.getValue() == null ? "" : kv.getValue());
         }
         return result;
