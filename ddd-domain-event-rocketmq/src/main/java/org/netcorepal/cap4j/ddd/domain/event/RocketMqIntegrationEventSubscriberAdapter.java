@@ -31,7 +31,7 @@ import java.util.*;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class RocketMqDomainEventSubscriberAdapter {
+public class RocketMqIntegrationEventSubscriberAdapter {
     private final EventSubscriberManager eventSubscriberManager;
     private final List<EventMessageInterceptor> eventMessageInterceptors;
     private final MQConsumerConfigure mqConsumerConfigure;
@@ -50,13 +50,16 @@ public class RocketMqDomainEventSubscriberAdapter {
             IntegrationEvent integrationEvent = cls.getAnnotation(IntegrationEvent.class);
             return !Objects.isNull(integrationEvent) && StringUtils.isNotEmpty(integrationEvent.value())
                     & !IntegrationEvent.NONE_SUBSCRIBER.equalsIgnoreCase(integrationEvent.subscriber());
-        }).forEach(domainEventClass -> {
-            MQPushConsumer mqPushConsumer = mqConsumerConfigure == null ? null : mqConsumerConfigure.get(domainEventClass);
+        }).forEach(integrationEventClass -> {
+            MQPushConsumer mqPushConsumer = mqConsumerConfigure == null ? null : mqConsumerConfigure.get(integrationEventClass);
             if (mqPushConsumer == null) {
-                mqPushConsumer = createDefaultConsumer(domainEventClass);
+                mqPushConsumer = createDefaultConsumer(integrationEventClass);
             }
             try {
                 if (mqPushConsumer != null) {
+                    if(mqPushConsumer instanceof DefaultMQPushConsumer && ((DefaultMQPushConsumer)mqPushConsumer).getMessageListener() == null) {
+                        mqPushConsumer.registerMessageListener((List<MessageExt> msgs, ConsumeConcurrentlyContext context) -> onMessage(integrationEventClass, msgs, context));
+                    }
                     mqPushConsumer.start();
                     mqPushConsumers.add(mqPushConsumer);
                 }
@@ -117,37 +120,38 @@ public class RocketMqDomainEventSubscriberAdapter {
         String nameServerAddr = getTopicNamesrvAddr(topic, defaultNameSrv);
         mqPushConsumer.setNamesrvAddr(nameServerAddr);
         mqPushConsumer.setUnitName(integrationEventClass.getSimpleName());
-        mqPushConsumer.registerMessageListener((List<MessageExt> msgs, ConsumeConcurrentlyContext context) -> {
-            try {
-                for (MessageExt msg : msgs) {
-                    String strMsg = new String(msg.getBody(), msgCharset);
-                    Object eventPayload = JSON.parseObject(strMsg, integrationEventClass, Feature.SupportNonPublicField);
-
-                    if (getOrderedEventMessageInterceptors().isEmpty()) {
-                        eventSubscriberManager.dispatch(eventPayload);
-                    } else {
-                        Map<String, Object> headers = new HashMap<>();
-                        headers.putAll(msg.getProperties());
-                        Message<Object> message = new GenericMessage<>(eventPayload, new EventMessageInterceptor.ModifiableMessageHeaders(headers));
-                        getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.preSubscribe(message));
-                        // 拦截器可能修改消息，重新赋值
-                        eventPayload = message.getPayload();
-                        eventSubscriberManager.dispatch(eventPayload);
-                        getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.postSubscribe(message));
-                    }
-                }
-                return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
-            } catch (Exception ex) {
-                log.error("集成事件消息消费异常", ex);
-                return ConsumeConcurrentlyStatus.RECONSUME_LATER;
-            }
-        });
         try {
             mqPushConsumer.subscribe(topic, tag);
         } catch (MQClientException e) {
             log.error("集成事件消息监听订阅失败", e);
         }
         return mqPushConsumer;
+    }
+
+    private ConsumeConcurrentlyStatus onMessage(Class<?> integrationEventClass, List<MessageExt> msgs, ConsumeConcurrentlyContext context) {
+        try {
+            for (MessageExt msg : msgs) {
+                String strMsg = new String(msg.getBody(), msgCharset);
+                Object eventPayload = JSON.parseObject(strMsg, integrationEventClass, Feature.SupportNonPublicField);
+
+                if (getOrderedEventMessageInterceptors().isEmpty()) {
+                    eventSubscriberManager.dispatch(eventPayload);
+                } else {
+                    Map<String, Object> headers = new HashMap<>();
+                    headers.putAll(msg.getProperties());
+                    Message<Object> message = new GenericMessage<>(eventPayload, new EventMessageInterceptor.ModifiableMessageHeaders(headers));
+                    getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.preSubscribe(message));
+                    // 拦截器可能修改消息，重新赋值
+                    eventPayload = message.getPayload();
+                    eventSubscriberManager.dispatch(eventPayload);
+                    getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.postSubscribe(message));
+                }
+            }
+            return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+        } catch (Exception ex) {
+            log.error("集成事件消息消费异常", ex);
+            return ConsumeConcurrentlyStatus.RECONSUME_LATER;
+        }
     }
 
     private String getTopicConsumerGroup(String topic, String defaultVal) {

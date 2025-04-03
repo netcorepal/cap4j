@@ -76,7 +76,7 @@ public class RocketMqEventAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(name = "rocketmq.name-server")
-    public RocketMqDomainEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter(
+    public RocketMqIntegrationEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter(
             EventSubscriberManager eventSubscriberManager,
             List<EventMessageInterceptor> eventMessageInterceptors,
             @Autowired(required = false)
@@ -90,7 +90,7 @@ public class RocketMqEventAutoConfiguration {
             @Value(CONFIG_KEY_4_ROCKETMQ_MSG_CHARSET)
             String msgCharset
     ) {
-        RocketMqDomainEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter = new RocketMqDomainEventSubscriberAdapter(
+        RocketMqIntegrationEventSubscriberAdapter rocketMqIntegrationEventSubscriberAdapter = new RocketMqIntegrationEventSubscriberAdapter(
                 eventSubscriberManager,
                 eventMessageInterceptors,
                 mqConsumerConfigure,
@@ -100,7 +100,7 @@ public class RocketMqEventAutoConfiguration {
                 defaultNameSrv,
                 msgCharset
         );
-        rocketMqDomainEventSubscriberAdapter.init();
-        return rocketMqDomainEventSubscriberAdapter;
+        rocketMqIntegrationEventSubscriberAdapter.init();
+        return rocketMqIntegrationEventSubscriberAdapter;
     }
 }
