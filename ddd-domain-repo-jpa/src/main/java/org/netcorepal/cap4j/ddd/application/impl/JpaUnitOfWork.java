@@ -66,7 +66,11 @@ public class JpaUnitOfWork implements UnitOfWork {
         if (null == valueObject) {
             return false;
         }
-        return null != getEntityManager().find(entity.getClass(), ((ValueObject<?>) entity).hash());
+        Object id = ((ValueObject<?>) entity).hash();
+        if (null == getEntityManager().find(entity.getClass(), id)) {
+            return false;
+        }
+        return true;
     }
 
     private boolean isExists(Object entity) {

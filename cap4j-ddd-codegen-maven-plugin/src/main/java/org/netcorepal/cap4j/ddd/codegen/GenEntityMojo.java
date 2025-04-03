@@ -1114,7 +1114,7 @@ public class GenEntityMojo extends GenArchMojo {
                 hashTemplate = "    @Override\n" +
                         "    public ${idTypeName} hash() {\n" +
                         "        if(null == ${idField}) {\n" +
-                        "            ${idField} = (${idTypeName}) " + getEntityIdGenerator(table) + ".hash(this, \"${idField}\");\n" +
+                        "            id = (${idTypeName}) " + getEntityIdGenerator(table) + ".hash(this, \"${idField}\");\n" +
                         "        }\n" +
                         "        return ${idField};\n" +
                         "    }";
@@ -1227,7 +1227,9 @@ public class GenEntityMojo extends GenArchMojo {
             writeLine(out, "    @Id");
             if (ids.size() == 1) {
                 String entityIdGenerator = getEntityIdGenerator(table);
-                if (null != entityIdGenerator) {
+                if (isValueObject(table)) {
+                    // 不使用ID生成器
+                } else if (null != entityIdGenerator) {
                     writeLine(out, "    @GeneratedValue(generator = \"" + entityIdGenerator + "\")");
                     writeLine(out, "    @GenericGenerator(name = \"" + entityIdGenerator + "\", strategy = \"" + entityIdGenerator + "\")");
                 } else {
