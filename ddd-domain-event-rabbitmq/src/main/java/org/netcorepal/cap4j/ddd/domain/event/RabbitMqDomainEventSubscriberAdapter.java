@@ -2,6 +2,10 @@ package org.netcorepal.cap4j.ddd.domain.event;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.Feature;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +20,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -103,26 +108,48 @@ public class RabbitMqDomainEventSubscriberAdapter {
         String target = integrationEvent.value();
         target = TextUtils.resolvePlaceholderWithCache(target, environment);
         String topic = target.lastIndexOf(':') > 0 ? target.substring(0, target.lastIndexOf(':')) : target;
-        RabbitMQConsumer mqPushConsumer = new RabbitMQConsumer(this.connectionFactory);
+        String tag = target.lastIndexOf(':') > 0 ? target.substring(target.lastIndexOf(':') + 1) : "";
+        String queue = getExchangeConsumerQueue(topic, integrationEvent.subscriber());
+        RabbitMQConsumer rabbitMQConsumer = new RabbitMQConsumer(this.connectionFactory);
         try {
-            mqPushConsumer.subscribe(topic);
-            mqPushConsumer.registerMessageListener((msg) -> {
-                String strMsg = new String(msg, Charset.forName(msgCharset));
-                Object eventPayload = JSON.parseObject(strMsg, integrationEventClass, Feature.SupportNonPublicField);
-                if (getOrderedEventMessageInterceptors().isEmpty()) {
-                    eventSubscriberManager.dispatch(eventPayload);
-                } else {
-                    Message<Object> message = new GenericMessage<>(eventPayload);
-                    getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.preSubscribe(message));
-                    // 拦截器可能修改消息，重新赋值
-                    eventPayload = message.getPayload();
-                    eventSubscriberManager.dispatch(eventPayload);
-                    getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.postSubscribe(message));
+            rabbitMQConsumer.subscribe(topic, tag, queue);
+            rabbitMQConsumer.configureConsumer(new DefaultConsumer(null) {
+                @Override
+                public Channel getChannel(){
+                    return super.getChannel();
+                }
+                @Override
+                public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+                    try {
+                        String strMsg = new String(body, Charset.forName(msgCharset));
+                        Object eventPayload = JSON.parseObject(strMsg, integrationEventClass, Feature.SupportNonPublicField);
+                        if (getOrderedEventMessageInterceptors().isEmpty()) {
+                            eventSubscriberManager.dispatch(eventPayload);
+                        } else {
+                            Message<Object> message = new GenericMessage<>(eventPayload, new EventMessageInterceptor.ModifiableMessageHeaders(properties.getHeaders()));
+                            getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.preSubscribe(message));
+                            // 拦截器可能修改消息，重新赋值
+                            eventPayload = message.getPayload();
+                            eventSubscriberManager.dispatch(eventPayload);
+                            getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.postSubscribe(message));
+                        }
+                        this.getChannel().basicAck(envelope.getDeliveryTag(), false);
+                    } catch (Exception e) {
+                        this.getChannel().basicNack(envelope.getDeliveryTag(), false, true);
+                    }
                 }
             });
         } catch (RuntimeException e) {
             log.error("集成事件消息监听订阅失败", e);
         }
-        return mqPushConsumer;
+        return rabbitMQConsumer;
+    }
+
+    private String getExchangeConsumerQueue(String exchange, String defaultVal) {
+        if (StringUtils.isBlank(defaultVal)) {
+            defaultVal = exchange + "-4-" + applicationName;
+        }
+        String group = TextUtils.resolvePlaceholderWithCache("${rabbitmq." + exchange + ".consumer.queue:" + defaultVal + "}", environment);
+        return group;
     }
 }

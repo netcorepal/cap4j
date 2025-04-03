@@ -3,7 +3,6 @@ package org.netcorepal.cap4j.ddd.domain.event;
 import com.alibaba.fastjson.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventPublisher;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
@@ -35,10 +34,13 @@ public class RabbitMqIntegrationEventPublisher implements IntegrationEventPublis
             if (destination == null || destination.isEmpty()) {
                 throw new DomainException(String.format("集成事件发布失败: %s 缺失topic", event.getId()));
             }
+            String exchange = destination.lastIndexOf(':') > 0 ? destination.substring(0, destination.lastIndexOf(':')) : destination;
+            String tag = destination.lastIndexOf(':') > 0 ? destination.substring(destination.lastIndexOf(':') + 1) : "";
             String message = JSON.toJSONString(event.getMessage());
+
             // MQ消息通道
-            rabbitTemplate.convertAndSend("crungoo.ddd.event",
-                    "crungoo.ddd.routing",
+            rabbitTemplate.convertAndSend(exchange,
+                    tag,
                     message,
                     new DomainEventSendCallback(event, publishCallback));
         } catch (Exception ex) {
