@@ -28,7 +28,7 @@ public class IntergrationEventUnitOfWorkInterceptor implements UnitOfWorkInterce
 
     @Override
     public void postInTransaction(Set<Object> persistAggregates, Set<Object> removeAggregates) {
-
+        integrationEventManager.release();
     }
 
     @Override
@@ -38,6 +38,5 @@ public class IntergrationEventUnitOfWorkInterceptor implements UnitOfWorkInterce
 
     @Override
     public void postEntitiesPersisted(Set<Object> entities) {
-        integrationEventManager.release();
     }
 }
