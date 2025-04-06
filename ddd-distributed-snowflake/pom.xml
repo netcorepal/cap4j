@@ -7,11 +7,10 @@
         <version>1.0.0-alpha-4</version>
     </parent>
 
-    <groupId>io.github.netcorepal</groupId>
-    <artifactId>ddd-distributed-idgenerator-snowflake</artifactId>
+    <artifactId>ddd-distributed-snowflake</artifactId>
     <packaging>jar</packaging>
 
-    <name>ddd-distributed-idgenerator-snowflake</name>
+    <name>ddd-distributed-snowflake</name>
 
     <dependencies>
         <dependency>
@@ -19,8 +18,18 @@
             <artifactId>lombok</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-logging</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -15,7 +15,19 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties("cap4j.ddd.distributed.idgenerator.snowflake")
 public class SnowflakeProperties {
     boolean enable = true;
+
+    String table = "`__worker_id`";
+    String fieldDatacenterId = "`datacenter_id`";
+    String fieldWorkerId = "`worker_id`";
+    String fieldDispatchTo = "`dispatch_to`";
+    String fieldDispatchAt = "`dispatch_at`";
+    String fieldExpireAt = "`expire_at`";
+
     Long workerId = null;
     Long datacenterId = null;
-    int maxPongContinuousErrorCount = 10;
+    int expireMinutes = 10;
+    /**
+     * 最大连续错误次数
+     */
+    int maxPongContinuousErrorCount = 5;
 }
