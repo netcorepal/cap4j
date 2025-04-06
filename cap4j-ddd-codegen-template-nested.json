@@ -578,7 +578,8 @@
                             },
                             {
                               "type": "dir",
-                              "name": "sagas"
+                              "name": "sagas",
+                              "tag": "saga"
                             }
                           ]
                         },
