@@ -11,4 +11,4 @@ CREATE TABLE `__locker` (
                             UNIQUE KEY `uniq_name` (`name`),
                             KEY `idx_db_created_at` (`db_created_at`),
                             KEY `idx_db_updated_at` (`db_updated_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='锁\n@I;';
+) COMMENT='锁\n@I;';
