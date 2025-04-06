@@ -11,7 +11,7 @@
     <artifactId>cap4j-ddd-starter</artifactId>
     <packaging>jar</packaging>
 
-    <name>cap4j-ddd-domain-starter-jpa-rocketmq</name>
+    <name>cap4j-ddd-starter</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -47,11 +47,13 @@
             <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-integration-event-rocketmq</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-integration-event-rabbitmq</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.github.netcorepal</groupId>
@@ -76,11 +78,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

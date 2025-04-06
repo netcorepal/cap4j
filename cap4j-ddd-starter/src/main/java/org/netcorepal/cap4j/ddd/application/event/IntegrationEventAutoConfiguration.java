@@ -2,7 +2,7 @@ package org.netcorepal.cap4j.ddd.application.event;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.netcorepal.cap4j.ddd.application.event.configure.RabbitMqProperties;
+import org.netcorepal.cap4j.ddd.application.event.configure.RabbitMqIntegrationEventAdapterProperties;
 import org.netcorepal.cap4j.ddd.application.event.impl.DefaultIntegrationEventSupervisor;
 import org.netcorepal.cap4j.ddd.application.event.impl.IntergrationEventUnitOfWorkInterceptor;
 import org.netcorepal.cap4j.ddd.domain.event.EventMessageInterceptor;
@@ -69,100 +69,118 @@ public class IntegrationEventAutoConfiguration {
         return intergrationEventUnitOfWorkInterceptor;
     }
 
-    @Bean
-    @ConditionalOnProperty(name = "rocketmq.name-server")
-    @ConditionalOnMissingBean(IntegrationEventPublisher.class)
-    public RocketMqIntegrationEventPublisher rocketMqIntegrationEventPublisher(
-            RocketMQTemplate rocketMQTemplate,
-            Environment environment
-    ) {
-        RocketMqIntegrationEventPublisher rocketMqIntegrationEventPublisher = new RocketMqIntegrationEventPublisher(
-                rocketMQTemplate,
-                environment);
-        return rocketMqIntegrationEventPublisher;
+    @Configuration
+    @ConditionalOnProperty(
+            prefix = "cap4j.ddd.integration.event",
+            name = "adapterType",
+            havingValue = "rocketmq",
+            matchIfMissing = true
+    )
+    public static class RocketMqAdapterLauncher{
+        @Bean
+        @ConditionalOnProperty(name = "rocketmq.name-server")
+        @ConditionalOnMissingBean(IntegrationEventPublisher.class)
+        public RocketMqIntegrationEventPublisher rocketMqIntegrationEventPublisher(
+                RocketMQTemplate rocketMQTemplate,
+                Environment environment
+        ) {
+            RocketMqIntegrationEventPublisher rocketMqIntegrationEventPublisher = new RocketMqIntegrationEventPublisher(
+                    rocketMQTemplate,
+                    environment);
+            return rocketMqIntegrationEventPublisher;
+        }
+
+        @Bean
+        @ConditionalOnProperty(name = "rocketmq.name-server")
+        public RocketMqIntegrationEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter(
+                EventSubscriberManager eventSubscriberManager,
+                List<EventMessageInterceptor> eventMessageInterceptors,
+                @Autowired(required = false)
+                RocketMqIntegrationEventConfigure rocketMqIntegrationEventConfigure,
+                Environment environment,
+                EventProperties eventProperties,
+                @Value(CONFIG_KEY_4_SVC_NAME)
+                String svcName,
+                @Value(CONFIG_KEY_4_ROCKETMQ_NAME_SERVER)
+                String defaultNameSrv,
+                @Value(CONFIG_KEY_4_ROCKETMQ_MSG_CHARSET)
+                String msgCharset
+        ) {
+            RocketMqIntegrationEventSubscriberAdapter rocketMqIntegrationEventSubscriberAdapter = new RocketMqIntegrationEventSubscriberAdapter(
+                    eventSubscriberManager,
+                    eventMessageInterceptors,
+                    rocketMqIntegrationEventConfigure,
+                    environment,
+                    eventProperties.getEventScanPackage(),
+                    svcName,
+                    defaultNameSrv,
+                    msgCharset
+            );
+            rocketMqIntegrationEventSubscriberAdapter.init();
+            return rocketMqIntegrationEventSubscriberAdapter;
+        }
     }
 
-    @Bean
-    @ConditionalOnProperty(name = "rocketmq.name-server")
-    public RocketMqIntegrationEventSubscriberAdapter rocketMqDomainEventSubscriberAdapter(
-            EventSubscriberManager eventSubscriberManager,
-            List<EventMessageInterceptor> eventMessageInterceptors,
-            @Autowired(required = false)
-            RocketMqIntegrationEventConfigure rocketMqIntegrationEventConfigure,
-            Environment environment,
-            EventProperties eventProperties,
-            @Value(CONFIG_KEY_4_SVC_NAME)
-            String svcName,
-            @Value(CONFIG_KEY_4_ROCKETMQ_NAME_SERVER)
-            String defaultNameSrv,
-            @Value(CONFIG_KEY_4_ROCKETMQ_MSG_CHARSET)
-            String msgCharset
-    ) {
-        RocketMqIntegrationEventSubscriberAdapter rocketMqIntegrationEventSubscriberAdapter = new RocketMqIntegrationEventSubscriberAdapter(
-                eventSubscriberManager,
-                eventMessageInterceptors,
-                rocketMqIntegrationEventConfigure,
-                environment,
-                eventProperties.getEventScanPackage(),
-                svcName,
-                defaultNameSrv,
-                msgCharset
-        );
-        rocketMqIntegrationEventSubscriberAdapter.init();
-        return rocketMqIntegrationEventSubscriberAdapter;
-    }
-
-
-    @Bean
-    @ConditionalOnProperty(name = "spring.rabbitmq.host")
-    public RabbitMqIntegrationEventPublisher rabbitMqIntegrationEventPublisher(
-            RabbitTemplate rabbitTemplate,
-            ConnectionFactory connectionFactory,
-            Environment environment,
-            RabbitMqProperties rabbitMqProperties
-    ) {
-        RabbitMqIntegrationEventPublisher publisher = new RabbitMqIntegrationEventPublisher(
-                rabbitTemplate,
-                connectionFactory,
-                environment,
-                rabbitMqProperties.getPublishThreadPoolSize(),
-                rabbitMqProperties.isAutoDeclareExchange(),
-                rabbitMqProperties.getDefaultExchangeType());
+    @Configuration
+    @ConditionalOnProperty(
+            prefix = "cap4j.ddd.integration.event",
+            name = "adapterType",
+            havingValue = "rabbitmq"
+    )
+    public static class RabbitMqAdapterLauncher {
+        @Bean
+        @ConditionalOnProperty(name = "spring.rabbitmq.host")
+        @ConditionalOnClass(name = "org.springframework.amqp.rabbit.connection.ConnectionFactory")
+        @ConditionalOnMissingBean(IntegrationEventPublisher.class)
+        public RabbitMqIntegrationEventPublisher rabbitMqIntegrationEventPublisher(
+                RabbitTemplate rabbitTemplate,
+                ConnectionFactory connectionFactory,
+                Environment environment,
+                RabbitMqIntegrationEventAdapterProperties rabbitMqIntegrationEventAdapterProperties
+        ) {
+            RabbitMqIntegrationEventPublisher publisher = new RabbitMqIntegrationEventPublisher(
+                    rabbitTemplate,
+                    connectionFactory,
+                    environment,
+                    rabbitMqIntegrationEventAdapterProperties.getPublishThreadPoolSize(),
+                    rabbitMqIntegrationEventAdapterProperties.isAutoDeclareExchange(),
+                    rabbitMqIntegrationEventAdapterProperties.getDefaultExchangeType());
         publisher.init();
         return publisher;
     }
 
-    @Bean
-    @ConditionalOnProperty(name = "spring.rabbitmq.host")
-    public RabbitMqIntegrationEventSubscriberAdapter rabbitMqIntegrationEventSubscriberAdapter(
-            EventSubscriberManager eventSubscriberManager,
-            List<EventMessageInterceptor> eventMessageInterceptors,
-            @Autowired(required = false)
-            RabbitMqIntegrationEventConfigure rabbitMqIntegrationEventConfigure,
-            SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory,
-            ConnectionFactory connectionFactory,
-            Environment environment,
-            EventProperties eventProperties,
-            @Value(CONFIG_KEY_4_SVC_NAME)
-            String svcName,
-            @Value(CONFIG_KEY_4_ROCKETMQ_MSG_CHARSET)
-            String msgCharset,
-            RabbitMqProperties rabbitMqProperties
-    ) {
-        RabbitMqIntegrationEventSubscriberAdapter adapter = new RabbitMqIntegrationEventSubscriberAdapter(
-                eventSubscriberManager,
-                eventMessageInterceptors,
-                rabbitMqIntegrationEventConfigure,
-                simpleRabbitListenerContainerFactory,
-                connectionFactory,
-                environment,
-                eventProperties.getEventScanPackage(),
-                svcName,
-                msgCharset,
-                rabbitMqProperties.isAutoDeclareQueue()
-        );
-        adapter.init();
-        return adapter;
+        @Bean
+        @ConditionalOnProperty(name = "spring.rabbitmq.host")
+        @ConditionalOnClass(name = "org.springframework.amqp.rabbit.connection.ConnectionFactory")
+        public RabbitMqIntegrationEventSubscriberAdapter rabbitMqIntegrationEventSubscriberAdapter(
+                EventSubscriberManager eventSubscriberManager,
+                List<EventMessageInterceptor> eventMessageInterceptors,
+                @Autowired(required = false)
+                RabbitMqIntegrationEventConfigure rabbitMqIntegrationEventConfigure,
+                SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory,
+                ConnectionFactory connectionFactory,
+                Environment environment,
+                EventProperties eventProperties,
+                @Value(CONFIG_KEY_4_SVC_NAME)
+                String svcName,
+                @Value(CONFIG_KEY_4_ROCKETMQ_MSG_CHARSET)
+                String msgCharset,
+                RabbitMqIntegrationEventAdapterProperties rabbitMqIntegrationEventAdapterProperties
+        ) {
+            RabbitMqIntegrationEventSubscriberAdapter adapter = new RabbitMqIntegrationEventSubscriberAdapter(
+                    eventSubscriberManager,
+                    eventMessageInterceptors,
+                    rabbitMqIntegrationEventConfigure,
+                    simpleRabbitListenerContainerFactory,
+                    connectionFactory,
+                    environment,
+                    eventProperties.getEventScanPackage(),
+                    svcName,
+                    msgCharset,
+                    rabbitMqIntegrationEventAdapterProperties.isAutoDeclareQueue()
+            );
+            adapter.init();
+            return adapter;
+        }
     }
-
 }
