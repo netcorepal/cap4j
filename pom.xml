@@ -28,15 +28,16 @@
 
     <modules>
         <module>ddd-core</module>
-        <module>ddd-domain-event-rocketmq</module>
-        <module>ddd-domain-event-jpa</module>
         <module>ddd-domain-repo-jpa</module>
+        <module>ddd-domain-repo-jpa-querydsl</module>
+        <module>ddd-domain-event-jpa</module>
+        <module>ddd-integration-event-rocketmq</module>
+        <module>ddd-integration-event-rabbitmq</module>
         <module>ddd-distributed-locker-jdbc</module>
-        <module>ddd-distributed-idgenerator-snowflake</module>
+        <module>ddd-distributed-snowflake</module>
         <module>ddd-distributed-saga-jpa</module>
         <module>cap4j-ddd-starter</module>
         <module>cap4j-ddd-codegen-maven-plugin</module>
-        <module>ddd-domain-repo-jpa-querydsl</module>
     </modules>
 
     <properties>

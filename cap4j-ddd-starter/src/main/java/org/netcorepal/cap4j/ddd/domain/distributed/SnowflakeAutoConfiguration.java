@@ -6,9 +6,11 @@ import org.netcorepal.cap4j.ddd.domain.distributed.configure.SnowflakeProperties
 import org.netcorepal.cap4j.ddd.domain.distributed.snowflake.DefaultSnowflakeWorkerIdDispatcher;
 import org.netcorepal.cap4j.ddd.domain.distributed.snowflake.SnowflakeIdGenerator;
 import org.netcorepal.cap4j.ddd.domain.distributed.snowflake.SnowflakeWorkerIdDispatcher;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +31,8 @@ import org.springframework.stereotype.Service;
 )
 public class SnowflakeAutoConfiguration {
     private final SnowflakeProperties properties;
+    private static final String CONFIG_KEY_4_JPA_SHOW_SQL = "${spring.jpa.show-sql:${spring.jpa.showSql:false}}";
+
 
     int pongContinuousErrorCount = 0;
     SnowflakeWorkerIdDispatcher snowflakeWorkerIdDispatcher;
@@ -62,12 +66,24 @@ public class SnowflakeAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(SnowflakeWorkerIdDispatcher.class)
-    public DefaultSnowflakeWorkerIdDispatcher defaultSnowflakeWorkerIdDispatcher(SnowflakeProperties properties) {
-        log.warn("注意！！！默认调度器通过手工配置完成WorkerId、DatacenterId分发，有重复分配风险，请根据项目实际情况自行实现SnowflakeWorkerIdDispatcher。");
+    public DefaultSnowflakeWorkerIdDispatcher defaultSnowflakeWorkerIdDispatcher(
+            SnowflakeProperties properties,
+            JdbcTemplate jdbcTemplate,
+            @Value(CONFIG_KEY_4_JPA_SHOW_SQL)
+            boolean showSql) {
+//        log.warn("注意！！！默认调度器通过手工配置完成WorkerId、DatacenterId分发，有重复分配风险，请根据项目实际情况自行实现SnowflakeWorkerIdDispatcher。");
         DefaultSnowflakeWorkerIdDispatcher dispatcher = new DefaultSnowflakeWorkerIdDispatcher(
-                properties.getWorkerId() == null ? 0 : properties.getWorkerId().longValue(),
-                properties.getDatacenterId() == null ? 0 : properties.getDatacenterId().longValue()
+                jdbcTemplate,
+                properties.getTable(),
+                properties.getFieldDatacenterId(),
+                properties.getFieldWorkerId(),
+                properties.getFieldDispatchTo(),
+                properties.getFieldDispatchAt(),
+                properties.getFieldExpireAt(),
+                properties.getExpireMinutes(),
+                showSql
         );
+        dispatcher.init();
         snowflakeWorkerIdDispatcher = dispatcher;
         return dispatcher;
     }
