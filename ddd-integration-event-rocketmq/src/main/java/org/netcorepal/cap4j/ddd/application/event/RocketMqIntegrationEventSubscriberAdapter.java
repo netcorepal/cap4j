@@ -1,4 +1,4 @@
-package org.netcorepal.cap4j.ddd.domain.event;
+package org.netcorepal.cap4j.ddd.application.event;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.Feature;
@@ -13,6 +13,8 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
+import org.netcorepal.cap4j.ddd.domain.event.EventMessageInterceptor;
+import org.netcorepal.cap4j.ddd.domain.event.EventSubscriberManager;
 import org.netcorepal.cap4j.ddd.share.misc.ScanUtils;
 import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
 import org.springframework.core.Ordered;
@@ -34,7 +36,7 @@ import java.util.*;
 public class RocketMqIntegrationEventSubscriberAdapter {
     private final EventSubscriberManager eventSubscriberManager;
     private final List<EventMessageInterceptor> eventMessageInterceptors;
-    private final MQConsumerConfigure mqConsumerConfigure;
+    private final RocketMqIntegrationEventConfigure rocketMqIntegrationEventConfigure;
 
     private final Environment environment;
     private final String scanPath;
@@ -51,7 +53,7 @@ public class RocketMqIntegrationEventSubscriberAdapter {
             return !Objects.isNull(integrationEvent) && StringUtils.isNotEmpty(integrationEvent.value())
                     & !IntegrationEvent.NONE_SUBSCRIBER.equalsIgnoreCase(integrationEvent.subscriber());
         }).forEach(integrationEventClass -> {
-            MQPushConsumer mqPushConsumer = mqConsumerConfigure == null ? null : mqConsumerConfigure.get(integrationEventClass);
+            MQPushConsumer mqPushConsumer = rocketMqIntegrationEventConfigure == null ? null : rocketMqIntegrationEventConfigure.get(integrationEventClass);
             if (mqPushConsumer == null) {
                 mqPushConsumer = createDefaultConsumer(integrationEventClass);
             }
@@ -131,6 +133,7 @@ public class RocketMqIntegrationEventSubscriberAdapter {
     private ConsumeConcurrentlyStatus onMessage(Class<?> integrationEventClass, List<MessageExt> msgs, ConsumeConcurrentlyContext context) {
         try {
             for (MessageExt msg : msgs) {
+                log.info(String.format("集成事件消费，msgId=%s", msg.getMsgId()));
                 String strMsg = new String(msg.getBody(), msgCharset);
                 Object eventPayload = JSON.parseObject(strMsg, integrationEventClass, Feature.SupportNonPublicField);
 

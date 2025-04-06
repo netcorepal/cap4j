@@ -1,4 +1,4 @@
-package org.netcorepal.cap4j.ddd.domain.event;
+package org.netcorepal.cap4j.ddd.application.event;
 
 import com.alibaba.fastjson.JSON;
 import lombok.RequiredArgsConstructor;
@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendCallback;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.netcorepal.cap4j.ddd.application.event.IntegrationEventPublisher;
+import org.netcorepal.cap4j.ddd.domain.event.EventRecord;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
 import org.springframework.core.env.Environment;
@@ -42,7 +42,7 @@ public class RocketMqIntegrationEventPublisher implements IntegrationEventPublis
             rocketMQTemplate.asyncSend(
                     destination,
                     event.getMessage(),
-                    new DomainEventSendCallback(
+                    new IntegrationEventSendCallback(
                             event,
                             publishCallback
                     )
@@ -54,7 +54,7 @@ public class RocketMqIntegrationEventPublisher implements IntegrationEventPublis
 
     @RequiredArgsConstructor
     @Slf4j
-    public static class DomainEventSendCallback implements SendCallback {
+    public static class IntegrationEventSendCallback implements SendCallback {
         private final EventRecord event;
         private final PublishCallback publishCallback;
 

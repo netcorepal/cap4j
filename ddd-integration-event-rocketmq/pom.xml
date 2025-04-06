@@ -7,10 +7,10 @@
         <version>1.0.0-alpha-4</version>
     </parent>
 
-    <artifactId>ddd-domain-event-rocketmq</artifactId>
+    <artifactId>ddd-integration-event-rocketmq</artifactId>
     <packaging>jar</packaging>
 
-    <name>ddd-domain-event-rocketmq</name>
+    <name>ddd-integration-event-rocketmq</name>
 
     <dependencies>
         <dependency>

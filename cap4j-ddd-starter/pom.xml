@@ -20,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.netcorepal</groupId>
-            <artifactId>ddd-distributed-idgenerator-snowflake</artifactId>
+            <artifactId>ddd-distributed-snowflake</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
@@ -45,8 +45,18 @@
         </dependency>
         <dependency>
             <groupId>io.github.netcorepal</groupId>
-            <artifactId>ddd-domain-event-rocketmq</artifactId>
+            <artifactId>ddd-integration-event-rocketmq</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.netcorepal</groupId>
+            <artifactId>ddd-integration-event-rabbitmq</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.github.netcorepal</groupId>
