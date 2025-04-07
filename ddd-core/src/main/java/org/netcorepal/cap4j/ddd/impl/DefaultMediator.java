@@ -127,6 +127,11 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
+    public <EVENT> void publish(EVENT eventPayload, LocalDateTime schedule) {
+        IntegrationEventSupervisor.getInstance().publish(eventPayload, schedule);
+    }
+
+    @Override
     public <AGGREGATE extends Aggregate<ENTITY>, ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> AGGREGATE create(Class<AGGREGATE> clazz, ENTITY_PAYLOAD payload) {
         return AggregateSupervisor.getInstance().create(clazz, payload);
     }

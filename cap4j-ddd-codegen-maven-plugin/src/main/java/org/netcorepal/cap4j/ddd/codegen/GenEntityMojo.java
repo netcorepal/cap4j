@@ -1867,6 +1867,22 @@ public class GenEntityMojo extends GenArchMojo {
                 "        _wrap(root);\n" +
                 "    }\n" +
                 "\n" +
+                "    /**\n" +
+                "     * 注册领域事件到持久化上下文\n" +
+                "     * @param event\n" +
+                "     */\n" +
+                "    protected void registerDomainEvent(Object event){\n" +
+                "        events().attach(event, this);\n" +
+                "    }\n" +
+                "\n" +
+                "    /**\n" +
+                "     * 从当前持久化上下文中取消领域事件\n" +
+                "     * @param event\n" +
+                "     */\n" +
+                "    protected void cancelDomainEvent(Object event){\n" +
+                "        events().detach(event, this);\n" +
+                "    }\n" +
+                "\n" +
                 "}\n";
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("file");
