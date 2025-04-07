@@ -47,11 +47,13 @@
             <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-integration-event-rocketmq</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.github.netcorepal</groupId>
             <artifactId>ddd-integration-event-rabbitmq</artifactId>
             <version>${project.parent.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

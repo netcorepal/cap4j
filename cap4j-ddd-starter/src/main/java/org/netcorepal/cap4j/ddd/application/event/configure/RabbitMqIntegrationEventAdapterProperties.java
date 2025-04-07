@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 @Data
 @Configuration
 @ConfigurationProperties("cap4j.ddd.integration.event.rabbitmq")
-public class RabbitMqProperties {
+public class RabbitMqIntegrationEventAdapterProperties {
     /**
      * 异步发送线程池大小
      */

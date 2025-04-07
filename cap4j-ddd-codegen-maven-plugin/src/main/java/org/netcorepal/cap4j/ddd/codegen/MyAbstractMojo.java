@@ -231,7 +231,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         );
         List<String> imports = new ArrayList<>(importList);
         imports.addAll(Arrays.stream(entityClassExtraImports.split(";"))
-                .map(i -> i.trim())
+                .map(i -> i.trim().replaceAll(PATTERN_LINE_BREAK, ""))
                 .collect(Collectors.toList()));
         return imports.stream().distinct().collect(Collectors.toList());
     }
