@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.application.event;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.application.event.configure.RabbitMqIntegrationEventAdapterProperties;
 import org.netcorepal.cap4j.ddd.application.event.impl.DefaultIntegrationEventSupervisor;
@@ -70,13 +71,9 @@ public class IntegrationEventAutoConfiguration {
     }
 
     @Configuration
-    @ConditionalOnProperty(
-            prefix = "cap4j.ddd.integration.event",
-            name = "adapterType",
-            havingValue = "rocketmq",
-            matchIfMissing = true
-    )
-    public static class RocketMqAdapterLauncher{
+    @ConditionalOnClass(name = "org.netcorepal.cap4j.ddd.application.event.RocketMqIntegrationEventSubscriberAdapter")
+    @Slf4j
+    public static class RocketMqAdapterLauncher {
         @Bean
         @ConditionalOnProperty(name = "rocketmq.name-server")
         @ConditionalOnMissingBean(IntegrationEventPublisher.class)
@@ -117,16 +114,14 @@ public class IntegrationEventAutoConfiguration {
                     msgCharset
             );
             rocketMqIntegrationEventSubscriberAdapter.init();
+            log.info("集成事件适配类型：RocketMQ");
             return rocketMqIntegrationEventSubscriberAdapter;
         }
     }
 
     @Configuration
-    @ConditionalOnProperty(
-            prefix = "cap4j.ddd.integration.event",
-            name = "adapterType",
-            havingValue = "rabbitmq"
-    )
+    @ConditionalOnClass(name = "org.netcorepal.cap4j.ddd.application.event.RabbitMqIntegrationEventSubscriberAdapter")
+    @Slf4j
     public static class RabbitMqAdapterLauncher {
         @Bean
         @ConditionalOnProperty(name = "spring.rabbitmq.host")
@@ -145,9 +140,9 @@ public class IntegrationEventAutoConfiguration {
                     rabbitMqIntegrationEventAdapterProperties.getPublishThreadPoolSize(),
                     rabbitMqIntegrationEventAdapterProperties.isAutoDeclareExchange(),
                     rabbitMqIntegrationEventAdapterProperties.getDefaultExchangeType());
-        publisher.init();
-        return publisher;
-    }
+            publisher.init();
+            return publisher;
+        }
 
         @Bean
         @ConditionalOnProperty(name = "spring.rabbitmq.host")
@@ -180,6 +175,7 @@ public class IntegrationEventAutoConfiguration {
                     rabbitMqIntegrationEventAdapterProperties.isAutoDeclareQueue()
             );
             adapter.init();
+            log.info("集成事件适配类型：RabbitMQ");
             return adapter;
         }
     }
