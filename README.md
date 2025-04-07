@@ -38,7 +38,7 @@ Mediator中介者模式、
         <dependency>
             <groupId>io.github.netcorepal</groupId>
             <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
-            <version>1.0.0-alpha-3</version>
+            <version>1.0.0-alpha-4</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -47,10 +47,10 @@ Mediator中介者模式、
             <plugin>
                 <groupId>io.github.netcorepal</groupId>
                 <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
-                <version>1.0.0-alpha-3</version>
+                <version>1.0.0-alpha-4</version>
                 <configuration>
                     <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>
-                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/main/cap4j-ddd-codegen-template.json</archTemplate>
+                    <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/main/cap4j-ddd-codegen-template-nested.json</archTemplate>
                     <multiModule>false</multiModule>
                     <moduleNameSuffix4Adapter>-adapter</moduleNameSuffix4Adapter>
                     <moduleNameSuffix4Domain>-domain</moduleNameSuffix4Domain>
@@ -71,7 +71,7 @@ Mediator中介者模式、
                     <entityClassExtraImports>static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events</entityClassExtraImports>
                     <entitySchemaOutputMode>ref</entitySchemaOutputMode>
                     <entitySchemaOutputPackage>domain._share.meta</entitySchemaOutputPackage>
-                    <fetchType>LAZY</fetchType>
+                    <fetchType>EAGER</fetchType>
                     <idGenerator>org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator</idGenerator>
                     <enumValueField>code</enumValueField>
                     <enumNameField>name</enumNameField>
@@ -82,8 +82,9 @@ Mediator中介者模式、
                     <generateDbType>true</generateDbType>
                     <generateSchema>true</generateSchema>
                     <generateParent>false</generateParent>
+                    <generateAggregate>true</generateAggregate>
+                    <repositorySupportQuerydsl>true</repositorySupportQuerydsl>
                     <aggregateRootAnnotation></aggregateRootAnnotation>
-                    <aggregateRepositoryBaseClass></aggregateRepositoryBaseClass>
                 </configuration>
             </plugin>
         </plugins>

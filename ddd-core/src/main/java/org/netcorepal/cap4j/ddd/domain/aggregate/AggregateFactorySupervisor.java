@@ -17,6 +17,7 @@ public interface AggregateFactorySupervisor {
      * @param entityPayload
      * @return
      * @param <ENTITY_PAYLOAD>
+     * @param <ENTITY>
      */
     <ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> ENTITY create(ENTITY_PAYLOAD entityPayload);
 

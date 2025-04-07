@@ -7,5 +7,5 @@ package org.netcorepal.cap4j.ddd.domain.aggregate;
  * @author binking338
  * @date 2024/9/6
  */
-public interface AggregatePayload<Entity> {
+public interface AggregatePayload<ENTITY> {
 }

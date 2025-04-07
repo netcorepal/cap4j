@@ -10,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * 分页工具类
@@ -26,6 +25,9 @@ public class JpaPageUtils {
      * @return
      */
     public static <T> PageData<T> fromSpringData(Page<T> page) {
+        if (page == null) {
+            return PageData.empty(10, null);
+        }
         return PageData.create(page.getPageable().getPageSize(), page.getPageable().getPageNumber() + 1, page.getTotalElements(), page.getContent());
     }
 
@@ -39,12 +41,10 @@ public class JpaPageUtils {
             D d = null;
             try {
                 d = (D) desClass.newInstance();
-            } catch (InstantiationException e) {
-                throw new DomainException("分页类型转换异常", e);
-            } catch (IllegalAccessException e) {
-                throw new DomainException("分页类型转换异常", e);
+                BeanUtils.copyProperties(s, d);
+            } catch (Throwable throwable) {
+                throw new DomainException("分页类型转换异常", throwable);
             }
-            BeanUtils.copyProperties(s, d);
             return d;
         });
     }
@@ -64,15 +64,14 @@ public class JpaPageUtils {
      * @return
      */
     public static Pageable toSpringData(PageParam param) {
+        if (param == null) {
+            return PageRequest.of(0, 10);
+        }
         PageRequest pageRequest = null;
         if (param.getSort() == null || param.getSort().size() == 0) {
             pageRequest = PageRequest.of(param.getPageNum() - 1, param.getPageSize());
         } else {
-            Sort orders = Sort.by(param.getSort()
-                    .stream()
-                    .map(s -> new Sort.Order(s.getDesc() ? Sort.Direction.DESC : Sort.Direction.ASC, s.getField()))
-                    .collect(Collectors.toList())
-            );
+            Sort orders = JpaSortUtils.toSpringData(param.getSort());
             pageRequest = PageRequest.of(param.getPageNum() - 1, param.getPageSize(), orders);
         }
         return pageRequest;

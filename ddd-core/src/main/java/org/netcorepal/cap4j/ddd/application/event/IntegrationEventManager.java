@@ -1,7 +1,7 @@
 package org.netcorepal.cap4j.ddd.application.event;
 
 /**
- * todo: 类描述
+ * 集成事件管理器
  *
  * @author binking338
  * @date 2024/9/11

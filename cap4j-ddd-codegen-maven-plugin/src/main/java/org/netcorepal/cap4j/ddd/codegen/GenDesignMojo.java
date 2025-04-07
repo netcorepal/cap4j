@@ -38,6 +38,8 @@ public class GenDesignMojo extends GenArchMojo {
             case "command":
             case "cmd":
                 return "command";
+            case "saga":
+                return "saga";
             case "queries":
             case "query":
             case "qry":
@@ -148,6 +150,15 @@ public class GenDesignMojo extends GenArchMojo {
                         for (String literalDesign : designMap.get("command")) {
                             if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
                                 renderAppLayerCommand(literalDesign, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    break;
+                case "saga":
+                    if(designMap.containsKey("saga")) {
+                        for(String literalDesign : designMap.get("saga")) {
+                            if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
+                                renderAppLayerSaga(literalDesign, parentPath, templateNode);
                             }
                         }
                     }
@@ -280,10 +291,29 @@ public class GenDesignMojo extends GenArchMojo {
             putContext(templateNode.getTag(), "Response", context.get("Command") + "Response", context);
 
             putContext(templateNode.getTag(), "Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 命令描述", context);
-            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replace(PATTERN_LINE_BREAK, " "), context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replaceAll(PATTERN_LINE_BREAK, " "), context);
             return context;
         });
         getLog().info("生成命令代码：" + path);
+    }
+
+    public void renderAppLayerSaga(String literalSagaDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
+        getLog().info("解析Saga设计：" + literalSagaDeclaration);
+        String path = internalRenderGenericDesign(literalSagaDeclaration, parentPath, templateNode, context -> {
+            String Name = context.get("Name");
+            if (!Name.endsWith("Saga")){
+                Name += "Saga";
+            }
+            putContext(templateNode.getTag(), "Name", Name, context);
+            putContext(templateNode.getTag(), "Saga", context.get("Name"), context);
+            putContext(templateNode.getTag(), "Request", context.get("Saga") + "Request", context);
+            putContext(templateNode.getTag(), "Response", context.get("Saga") + "Response", context);
+
+            putContext(templateNode.getTag(), "Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: Saga描述", context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replaceAll(PATTERN_LINE_BREAK, " "), context);
+            return context;
+        });
+        getLog().info("生成Saga代码：" + path);
     }
 
     /**
@@ -303,7 +333,7 @@ public class GenDesignMojo extends GenArchMojo {
             putContext(templateNode.getTag(), "Response", context.get("Query") + "Response", context);
 
             putContext(templateNode.getTag(), "Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 查询描述", context);
-            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replace(PATTERN_LINE_BREAK, " "), context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replaceAll(PATTERN_LINE_BREAK, " "), context);
             return context;
         });
         getLog().info("生成查询代码：" + path);
@@ -326,7 +356,7 @@ public class GenDesignMojo extends GenArchMojo {
             putContext(templateNode.getTag(), "Response", context.get("Name") + "Response", context);
 
             putContext(templateNode.getTag(), "Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 防腐端描述", context);
-            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replace(PATTERN_LINE_BREAK, " "), context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replaceAll(PATTERN_LINE_BREAK, " "), context);
             return context;
         });
         getLog().info("生成防腐端代码：" + path);
@@ -370,7 +400,7 @@ public class GenDesignMojo extends GenArchMojo {
                 }
                 putContext(templateNode.getTag(), "Comment", context.containsKey("Val3") ? context.get("Val3") : "todo: 集成事件描述", context);
             }
-            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replace(PATTERN_LINE_BREAK, " "), context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replaceAll(PATTERN_LINE_BREAK, " "), context);
             return context;
         });
         getLog().info("生成集成事件代码：" + path);
@@ -416,7 +446,7 @@ public class GenDesignMojo extends GenArchMojo {
             } else {
                 putContext(templateNode.getTag(), "Comment", context.containsKey("Val2") ? context.get("Val2") : "todo: 领域事件描述", context);
             }
-            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replace(PATTERN_LINE_BREAK, " "), context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replaceAll(PATTERN_LINE_BREAK, " "), context);
             return context;
         });
         getLog().info("生成领域事件代码：" + path);
@@ -439,7 +469,7 @@ public class GenDesignMojo extends GenArchMojo {
             putContext(templateNode.getTag(), "AggregateRoot", context.get("Entity"), context);
 
             putContext(templateNode.getTag(), "Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 聚合工厂描述", context);
-            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replace(PATTERN_LINE_BREAK, " "), context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replaceAll(PATTERN_LINE_BREAK, " "), context);
             return context;
         });
         getLog().info("生成聚合工厂代码：" + path);
@@ -462,7 +492,7 @@ public class GenDesignMojo extends GenArchMojo {
             putContext(templateNode.getTag(), "AggregateRoot", context.get("Entity"), context);
 
             putContext(templateNode.getTag(), "Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 实体规约描述", context);
-            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replace(PATTERN_LINE_BREAK, " "), context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replaceAll(PATTERN_LINE_BREAK, " "), context);
             return context;
         });
         getLog().info("生成实体规约代码：" + path);
@@ -482,7 +512,7 @@ public class GenDesignMojo extends GenArchMojo {
             putContext(templateNode.getTag(), "DomainService", context.get("Name"), context);
 
             putContext(templateNode.getTag(), "Comment", context.containsKey("Val1") ? context.get("Val1") : "todo: 领域服务描述", context);
-            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replace(PATTERN_LINE_BREAK, " "), context);
+            putContext(templateNode.getTag(), "CommentEscaped", context.get("Comment").replaceAll(PATTERN_LINE_BREAK, " "), context);
             return context;
         });
         getLog().info("生成领域服务代码：" + path);

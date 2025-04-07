@@ -4,7 +4,7 @@
 
     <groupId>io.github.netcorepal</groupId>
     <artifactId>cap4j</artifactId>
-    <version>1.0.0-alpha-3</version>
+    <version>1.0.0-alpha-4</version>
     <packaging>pom</packaging>
     <url>https://github.com/netcorepal/cap4j</url>
     <description>cap4j，更方便地实现领域驱动设计</description>
@@ -28,11 +28,13 @@
 
     <modules>
         <module>ddd-core</module>
-        <module>ddd-domain-event-rocketmq</module>
-        <module>ddd-domain-event-jpa</module>
         <module>ddd-domain-repo-jpa</module>
+        <module>ddd-domain-repo-jpa-querydsl</module>
+        <module>ddd-domain-event-jpa</module>
+        <module>ddd-integration-event-rocketmq</module>
+        <module>ddd-integration-event-rabbitmq</module>
         <module>ddd-distributed-locker-jdbc</module>
-        <module>ddd-distributed-idgenerator-snowflake</module>
+        <module>ddd-distributed-snowflake</module>
         <module>ddd-distributed-saga-jpa</module>
         <module>cap4j-ddd-starter</module>
         <module>cap4j-ddd-codegen-maven-plugin</module>

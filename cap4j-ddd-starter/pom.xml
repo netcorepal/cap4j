@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.netcorepal</groupId>
         <artifactId>cap4j</artifactId>
-        <version>1.0.0-alpha-3</version>
+        <version>1.0.0-alpha-4</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -20,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.netcorepal</groupId>
-            <artifactId>ddd-distributed-idgenerator-snowflake</artifactId>
+            <artifactId>ddd-distributed-snowflake</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
@@ -40,8 +40,25 @@
         </dependency>
         <dependency>
             <groupId>io.github.netcorepal</groupId>
-            <artifactId>ddd-domain-event-rocketmq</artifactId>
+            <artifactId>ddd-domain-repo-jpa-querydsl</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.netcorepal</groupId>
+            <artifactId>ddd-integration-event-rocketmq</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.netcorepal</groupId>
+            <artifactId>ddd-integration-event-rabbitmq</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.github.netcorepal</groupId>

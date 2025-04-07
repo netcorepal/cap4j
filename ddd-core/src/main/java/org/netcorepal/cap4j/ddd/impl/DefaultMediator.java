@@ -8,7 +8,10 @@ import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
-import org.netcorepal.cap4j.ddd.domain.repo.*;
+import org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate;
+import org.netcorepal.cap4j.ddd.domain.repo.AggregateSupervisor;
+import org.netcorepal.cap4j.ddd.domain.repo.Predicate;
+import org.netcorepal.cap4j.ddd.domain.repo.RepositorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.service.DomainServiceSupervisor;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
@@ -16,6 +19,7 @@ import org.netcorepal.cap4j.ddd.share.PageParam;
 import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,38 +37,38 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
-    public <ENTITY> Repository<ENTITY> repo(Class<ENTITY> entityClass) {
-        return RepositorySupervisor.getInstance().repo(entityClass);
+    public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, Collection<OrderInfo> orders, boolean persist) {
+        return RepositorySupervisor.getInstance().find(predicate, orders, persist);
     }
 
     @Override
-    public <ENTITY> List<ENTITY> findWithoutPersist(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
-        return RepositorySupervisor.getInstance().findWithoutPersist(predicate, orders);
+    public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, PageParam pageParam, boolean persist) {
+        return RepositorySupervisor.getInstance().find(predicate, pageParam, persist);
     }
 
     @Override
-    public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, List<OrderInfo> orders) {
-        return RepositorySupervisor.getInstance().find(predicate, orders);
+    public <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate, boolean persist) {
+        return RepositorySupervisor.getInstance().findOne(predicate, persist);
     }
 
     @Override
-    public <ENTITY> Optional<ENTITY> findOneWithoutPersist(Predicate<ENTITY> predicate) {
-        return RepositorySupervisor.getInstance().findOneWithoutPersist(predicate);
+    public <ENTITY> Optional<ENTITY> findFirst(Predicate<ENTITY> predicate, Collection<OrderInfo> orders, boolean persist) {
+        return RepositorySupervisor.getInstance().findFirst(predicate, orders, persist);
     }
 
     @Override
-    public <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate) {
-        return RepositorySupervisor.getInstance().findOne(predicate);
+    public <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam, boolean persist) {
+        return RepositorySupervisor.getInstance().findPage(predicate, pageParam, persist);
     }
 
     @Override
-    public <ENTITY> PageData<ENTITY> findPageWithoutPersist(Predicate<ENTITY> predicate, PageParam pageParam) {
-        return RepositorySupervisor.getInstance().findPageWithoutPersist(predicate, pageParam);
+    public <ENTITY> List<ENTITY> remove(Predicate<ENTITY> predicate) {
+        return RepositorySupervisor.getInstance().remove(predicate);
     }
 
     @Override
-    public <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam) {
-        return RepositorySupervisor.getInstance().findPage(predicate, pageParam);
+    public <ENTITY> List<ENTITY> remove(Predicate<ENTITY> predicate, int limit) {
+        return RepositorySupervisor.getInstance().remove(predicate, limit);
     }
 
     @Override
@@ -80,11 +84,6 @@ public class DefaultMediator implements Mediator {
     @Override
     public <DOMAIN_SERVICE> DOMAIN_SERVICE getService(Class<DOMAIN_SERVICE> domainServiceClass) {
         return DomainServiceSupervisor.getInstance().getService(domainServiceClass);
-    }
-
-    @Override
-    public <ENTITY> List<ENTITY> remove(Predicate<ENTITY> predicate, int limit) {
-        return RepositorySupervisor.getInstance().remove(predicate, limit);
     }
 
     @Override
@@ -128,18 +127,43 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, List<OrderInfo> orders) {
-        return AggregateSupervisor.getInstance().find(predicate, orders);
+    public <EVENT> void publish(EVENT eventPayload, LocalDateTime schedule) {
+        IntegrationEventSupervisor.getInstance().publish(eventPayload, schedule);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate) {
-        return AggregateSupervisor.getInstance().findOne(predicate);
+    public <AGGREGATE extends Aggregate<ENTITY>, ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> AGGREGATE create(Class<AGGREGATE> clazz, ENTITY_PAYLOAD payload) {
+        return AggregateSupervisor.getInstance().create(clazz, payload);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam) {
-        return AggregateSupervisor.getInstance().findPage(predicate, pageParam);
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders, boolean persist) {
+        return AggregateSupervisor.getInstance().find(predicate, orders, persist);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist) {
+        return AggregateSupervisor.getInstance().find(predicate, pageParam, persist);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate, boolean persist) {
+        return AggregateSupervisor.getInstance().findOne(predicate, persist);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders, boolean persist) {
+        return AggregateSupervisor.getInstance().findFirst(predicate, orders, persist);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist) {
+        return AggregateSupervisor.getInstance().findPage(predicate, pageParam, persist);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE> predicate) {
+        return AggregateSupervisor.getInstance().remove(predicate);
     }
 
     @Override

@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
- * 集成事件管理器
+ * 集成事件控制器
  *
  * @author binking338
  * @date 2024/8/25
@@ -53,4 +53,31 @@ public interface IntegrationEventSupervisor {
      * @param eventPayload 事件消息体
      */
     <EVENT> void detach(EVENT eventPayload);
+
+
+    /**
+     * 发布指定集成事件
+     * @param eventPayload 集成事件负载
+     */
+    default  <EVENT> void publish(EVENT eventPayload){
+        publish(eventPayload, LocalDateTime.now());
+    }
+
+
+    /**
+     * 发布指定集成事件
+     * @param eventPayload 集成事件负载
+     * @param delay        延迟发送
+     */
+    default <EVENT> void publish(EVENT eventPayload, Duration delay){
+        publish(eventPayload, LocalDateTime.now().plus(delay));
+    }
+
+
+    /**
+     * 发布指定集成事件
+     * @param eventPayload 集成事件负载
+     * @param schedule     指定时间发送
+     */
+    <EVENT> void publish(EVENT eventPayload, LocalDateTime schedule);
 }

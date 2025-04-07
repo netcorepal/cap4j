@@ -26,7 +26,7 @@ CREATE TABLE `__event` (
                            KEY `idx_create_at` (`create_at`),
                            KEY `idx_db_created_at` (`db_created_at`),
                            KEY `idx_db_updated_at` (`db_updated_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='集成事件\n@I;'
+) COMMENT='集成事件\n@I;'
 -- partition by range(to_days(db_created_at))
 -- (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)
 ;
@@ -59,7 +59,7 @@ CREATE TABLE `__archived_event` (
                            KEY `idx_create_at` (`create_at`),
                            KEY `idx_db_created_at` (`db_created_at`),
                            KEY `idx_db_updated_at` (`db_updated_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='集成事件\n@I;'
+) COMMENT='集成事件\n@I;'
 -- partition by range(to_days(db_created_at))
 -- (partition p202201 values less than (to_days('2022-02-01')) ENGINE=InnoDB)
 ;

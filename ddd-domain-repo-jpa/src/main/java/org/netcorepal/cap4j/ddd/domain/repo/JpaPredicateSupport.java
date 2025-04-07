@@ -17,18 +17,22 @@ public class JpaPredicateSupport {
      *
      * @param predicate
      * @param <ENTITY>
+     * @param <ID>
      * @return
      */
-    public static <ENTITY> Object resumeId(Predicate<ENTITY> predicate) {
+    public static <ENTITY, ID> ID resumeId(Predicate<ENTITY> predicate) {
+        if (!(predicate instanceof JpaPredicate)) {
+            return null;
+        }
         Iterable<Object> ids = ((JpaPredicate<ENTITY>) predicate).ids;
         if (ids == null) {
             return null;
         }
         Iterator<Object> iterator = ids.iterator();
-        if (!iterator.hasNext()){
+        if (!iterator.hasNext()) {
             return null;
         }
-        return iterator.next();
+        return (ID) iterator.next();
     }
 
     /**
@@ -38,8 +42,11 @@ public class JpaPredicateSupport {
      * @param <ENTITY>
      * @return
      */
-    public static <ENTITY> Iterable<Object> resumeIds(Predicate<ENTITY> predicate) {
-        return ((JpaPredicate<ENTITY>) predicate).ids;
+    public static <ENTITY, ID> Iterable<ID> resumeIds(Predicate<ENTITY> predicate) {
+        if (!(predicate instanceof JpaPredicate)) {
+            return null;
+        }
+        return (Iterable<ID>) ((JpaPredicate<ENTITY>) predicate).ids;
     }
 
     /**
@@ -50,6 +57,9 @@ public class JpaPredicateSupport {
      * @return
      */
     public static <ENTITY> Specification<ENTITY> resumeSpecification(Predicate<ENTITY> predicate) {
+        if (!(predicate instanceof JpaPredicate)) {
+            return null;
+        }
         return ((JpaPredicate<ENTITY>) predicate).spec;
     }
 
@@ -61,6 +71,9 @@ public class JpaPredicateSupport {
      * @return
      */
     public static <ENTITY> Class<ENTITY> reflectEntityClass(Predicate<ENTITY> predicate) {
+        if (!(predicate instanceof JpaPredicate)) {
+            return null;
+        }
         return ((JpaPredicate<ENTITY>) predicate).entityClass;
     }
 }

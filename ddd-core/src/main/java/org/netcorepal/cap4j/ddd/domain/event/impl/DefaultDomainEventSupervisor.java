@@ -3,15 +3,15 @@ package org.netcorepal.cap4j.ddd.domain.event.impl;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
-import org.netcorepal.cap4j.ddd.domain.event.EventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.netcorepal.cap4j.ddd.domain.event.annotation.DomainEvent;
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionCommittingEvent;
-import org.netcorepal.cap4j.ddd.domain.event.DomainEventAttachedTransactionCommittedEvent;
 import org.netcorepal.cap4j.ddd.share.DomainException;
+import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -42,7 +42,7 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
      */
     private static final int DEFAULT_EVENT_RETRY_TIMES = 16;
 
-    private Object unwrapEntity(Object entity){
+    private Object unwrapEntity(Object entity) {
         return entity instanceof Aggregate
                 ? ((Aggregate) entity)._unwrap()
                 : entity;
@@ -93,9 +93,33 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
     @Override
     public void release(Set<Object> entities) {
         Set<Object> eventPayloads = new HashSet<>();
-        if(null != entities && !entities.isEmpty()) {
+        if (null != entities && !entities.isEmpty()) {
             for (Object entity : entities) {
                 eventPayloads.addAll(this.popEvents(entity));
+                if (entity instanceof AbstractAggregateRoot) {
+                    Method domainEventsMethod = ClassUtils.findMethod(AbstractAggregateRoot.class, "domainEvents", m -> m.getParameterCount() == 0);
+                    if (domainEventsMethod == null) {
+                        continue;
+                    }
+                    domainEventsMethod.setAccessible(true);
+                    try {
+                        Object domainEvents = domainEventsMethod.invoke(entity);
+                        if (domainEvents != null && Collection.class.isAssignableFrom(domainEvents.getClass())) {
+                            eventPayloads.addAll((Collection<Object>) domainEvents);
+                        }
+                    } catch (Throwable throwable) {
+                        /* don't care */
+                        continue;
+                    }
+
+                    Method clearDomainEventsMethod = ClassUtils.findMethod(AbstractAggregateRoot.class, "clearDomainEvents", m -> m.getParameterCount() == 0);
+                    try {
+                        clearDomainEventsMethod.invoke(entity);
+                    } catch (Throwable throwable) {
+                        /* don't care */
+                        continue;
+                    }
+                }
             }
         }
         List<EventRecord> persistedEvents = new ArrayList<>(eventPayloads.size());
@@ -128,6 +152,7 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
      * 判断事件是否需要持久化
      * - 延迟或定时领域事件视情况进行持久化
      * - 显式指定persist=true的领域事件必须持久化
+     *
      * @param payload
      * @return
      */
@@ -168,12 +193,13 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
 
     /**
      * 弹出实体绑定的事件列表
+     *
      * @param entity 关联实体
      * @return 事件列表
      */
     protected Set<Object> popEvents(Object entity) {
         Map<Object, Set<Object>> entityEventPayloads = TL_ENTITY_EVENT_PAYLOADS.get();
-        if(entityEventPayloads == null || !entityEventPayloads.containsKey(entity)){
+        if (entityEventPayloads == null || !entityEventPayloads.containsKey(entity)) {
             return EMPTY_EVENT_PAYLOADS;
         }
         Set<Object> eventPayloads = entityEventPayloads.remove(entity);
@@ -182,6 +208,7 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
 
     /**
      * 记录事件发送时间
+     *
      * @param eventPayload
      * @param schedule
      */

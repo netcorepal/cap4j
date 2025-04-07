@@ -4,7 +4,7 @@ import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.springframework.data.domain.Sort;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
@@ -20,7 +20,10 @@ public class JpaSortUtils {
      * @param orders OrderInfo列表
      * @return Sort对象
      */
-    public static Sort toSpringData(List<OrderInfo> orders) {
+    public static Sort toSpringData(Collection<OrderInfo> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return Sort.unsorted();
+        }
         return Sort.by(orders.stream()
                 .map(orderInfo -> new Sort.Order(
                         orderInfo.getDesc()

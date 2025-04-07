@@ -41,7 +41,7 @@ public class JpaRepositoryAutoConfiguration {
 
     @Bean
     public DefaultRepositorySupervisor defaultRepositorySupervisor(
-            List<AbstractJpaRepository<?, ?>> repositories,
+            List<Repository<?>> repositories,
             JpaUnitOfWork unitOfWork
     ) {
         DefaultRepositorySupervisor repositorySupervisor = new DefaultRepositorySupervisor(repositories, unitOfWork);
@@ -124,7 +124,7 @@ public class JpaRepositoryAutoConfiguration {
     }
 
     @Bean
-    public SpecificationUnitOfWorkInterceptor specificationUnitOfWorkInterceptor(SpecificationManager specificationManager){
+    public SpecificationUnitOfWorkInterceptor specificationUnitOfWorkInterceptor(SpecificationManager specificationManager) {
         SpecificationUnitOfWorkInterceptor specificationUnitOfWorkInterceptor = new SpecificationUnitOfWorkInterceptor(specificationManager);
         return specificationUnitOfWorkInterceptor;
     }
