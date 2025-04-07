@@ -91,6 +91,20 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
         applicationEventPublisher.publishEvent(integrationEventAttachedTransactionCommittedEvent);
     }
 
+    @Override
+    public <EVENT> void publish(EVENT eventPayload, LocalDateTime schedule){
+        List<EventRecord> persistedEvents = new ArrayList<>(1);
+        EventRecord event = eventRecordRepository.create();
+        event.init(eventPayload, this.svcName, schedule, Duration.ofMinutes(DEFAULT_EVENT_EXPIRE_MINUTES), DEFAULT_EVENT_RETRY_TIMES);
+        event.markPersist(true);
+        integrationEventInterceptorManager.getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.prePersist(event));
+        eventRecordRepository.save(event);
+        integrationEventInterceptorManager.getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.postPersist(event));
+        persistedEvents.add(event);
+        IntegrationEventAttachedTransactionCommittedEvent integrationEventAttachedTransactionCommittedEvent = new IntegrationEventAttachedTransactionCommittedEvent(this, persistedEvents);
+        applicationEventPublisher.publishEvent(integrationEventAttachedTransactionCommittedEvent);
+    }
+
     @TransactionalEventListener(fallbackExecution = true, classes = IntegrationEventAttachedTransactionCommittedEvent.class)
     public void onTransactionCommitted(IntegrationEventAttachedTransactionCommittedEvent integrationEventAttachedTransactionCommittedEvent) {
         List<EventRecord> events = integrationEventAttachedTransactionCommittedEvent.getEvents();
