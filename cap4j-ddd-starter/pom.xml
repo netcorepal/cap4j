@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.netcorepal</groupId>
         <artifactId>cap4j</artifactId>
-        <version>1.0.0-alpha-4</version>
+        <version>1.0.0-alpha-5</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
