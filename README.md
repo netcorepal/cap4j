@@ -52,9 +52,6 @@ Mediator中介者模式、
                     <basePackage>org.netcorepal.cap4j.ddd.example</basePackage>
                     <archTemplate>https://raw.githubusercontent.com/netcorepal/cap4j/3.1.0-alpha-3/cap4j-ddd-codegen-template-nested.json</archTemplate>
                     <multiModule>false</multiModule>
-                    <moduleNameSuffix4Adapter>-adapter</moduleNameSuffix4Adapter>
-                    <moduleNameSuffix4Domain>-domain</moduleNameSuffix4Domain>
-                    <moduleNameSuffix4Application>-application</moduleNameSuffix4Application>
                     <connectionString>
                         <![CDATA[jdbc:mysql://127.0.0.1:3306/test?serverTimezone=Asia%2FShanghai&useSSL=false&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull]]>
                     </connectionString>
@@ -67,24 +64,16 @@ Mediator中介者模式、
                     <versionField>version</versionField>
                     <deletedField>db_deleted</deletedField>
                     <readonlyFields>db_created_at,db_updated_at</readonlyFields>
-                    <entityBaseClass></entityBaseClass>
-                    <entityClassExtraImports>static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events</entityClassExtraImports>
-                    <entitySchemaOutputMode>ref</entitySchemaOutputMode>
-                    <entitySchemaOutputPackage>domain._share.meta</entitySchemaOutputPackage>
                     <fetchType>EAGER</fetchType>
                     <idGenerator>org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator</idGenerator>
                     <enumValueField>code</enumValueField>
                     <enumNameField>name</enumNameField>
-                    <enumUnmatchedThrowException>true</enumUnmatchedThrowException>
-                    <datePackage4Java>java.time</datePackage4Java>
-                    <typeRemapping></typeRemapping>
                     <generateDefault>false</generateDefault>
                     <generateDbType>true</generateDbType>
                     <generateSchema>true</generateSchema>
                     <generateParent>false</generateParent>
                     <generateAggregate>true</generateAggregate>
                     <repositorySupportQuerydsl>true</repositorySupportQuerydsl>
-                    <aggregateRootAnnotation></aggregateRootAnnotation>
                 </configuration>
             </plugin>
         </plugins>
