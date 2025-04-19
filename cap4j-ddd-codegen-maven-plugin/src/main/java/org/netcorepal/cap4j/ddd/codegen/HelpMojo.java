@@ -73,7 +73,7 @@ public class HelpMojo extends AbstractMojo {
                 "                    <!-- [gen-entity]根实体基类 -->\n" +
                 "                    <rootEntityBaseClass></rootEntityBaseClass>\n" +
                 "                    <!-- [gen-entity]实体辅助类输出模式，绝对路径或相对路径，abs | ref -->\n" +
-                "                    <entitySchemaOutputMode>abs</entitySchemaOutputMode>\n" +
+                "                    <entitySchemaOutputMode>ref</entitySchemaOutputMode>\n" +
                 "                    <!-- [gen-entity]实体辅助类输出包 -->\n" +
                 "                    <entitySchemaOutputPackage>domain._share.meta</entitySchemaOutputPackage>\n" +
                 "                    <!-- [gen-entity]实体辅助类名称模板 -->\n" +

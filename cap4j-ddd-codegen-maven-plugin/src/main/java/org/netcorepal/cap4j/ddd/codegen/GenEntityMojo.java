@@ -1711,6 +1711,8 @@ public class GenEntityMojo extends GenArchMojo {
                         putContext(joinTag, "joinEntityVars", Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))), joinContext);
                         if (!("abs".equalsIgnoreCase(entitySchemaOutputMode))) {
                             putContext(joinTag, "joinEntitySchemaPackage", concatPackage(tablePackageMap.get(entry.getKey()), DEFAULT_SCHEMA_PACKAGE) + ".", joinContext);
+                        } else{
+                            putContext(joinTag, "joinEntitySchemaPackage", "", joinContext);
                         }
                         joinItems += (
                                 (templateNodeMap.containsKey(joinTag) && templateNodeMap.get(joinTag).size() > 0)

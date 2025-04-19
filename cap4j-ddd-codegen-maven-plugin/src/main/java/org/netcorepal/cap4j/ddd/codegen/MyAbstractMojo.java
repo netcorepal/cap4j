@@ -232,6 +232,8 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         List<String> imports = new ArrayList<>(importList);
         imports.addAll(Arrays.stream(entityClassExtraImports.split(";"))
                 .map(i -> i.trim().replaceAll(PATTERN_LINE_BREAK, ""))
+                .map(i -> i.startsWith("import ") ? i.substring(6).trim() : i)
+                .filter(i -> !StringUtils.isBlank(i))
                 .collect(Collectors.toList()));
         return imports.stream().distinct().collect(Collectors.toList());
     }
@@ -241,12 +243,12 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      *
      * @parameter expression="${entitySchemaOutputMode}"
      */
-    @Parameter(property = "entitySchemaOutputMode", defaultValue = "")
-    public String entitySchemaOutputMode = "abs";
+    @Parameter(property = "entitySchemaOutputMode", defaultValue = "ref")
+    public String entitySchemaOutputMode = "ref";
 
     public String getEntitySchemaOutputMode() {
         if (StringUtils.isBlank(entitySchemaOutputMode)) {
-            entitySchemaOutputMode = "abs";
+            entitySchemaOutputMode = "ref";
         }
         return entitySchemaOutputMode;
     }
@@ -332,8 +334,8 @@ public abstract class MyAbstractMojo extends AbstractMojo {
      *
      * @parameter expression="${datePackage}"
      */
-    @Parameter(property = "datePackage4Java", defaultValue = "java.util")
-    public String datePackage4Java = "java.util";
+    @Parameter(property = "datePackage4Java", defaultValue = "java.time")
+    public String datePackage4Java = "java.time";
     /**
      * 自定义数据库字段【类型】到【代码类型】映射
      *
@@ -643,6 +645,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
             case "client_handler.Comment":
             case "query_handler.Comment":
             case "command_handler.Comment":
+            case "saga.Comment":
                 aliases = Arrays.asList(
                         var,
                         "comment",
@@ -664,6 +667,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
             case "client_handler.CommentEscaped":
             case "query_handler.CommentEscaped":
             case "command_handler.CommentEscaped":
+            case "saga.CommentEscaped":
                 aliases = Arrays.asList(
                         var,
                         "commentEscaped",
@@ -1212,10 +1216,10 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.isBlank(entityClassExtraImports)
                         ? ""
                         : "                    <entityClassExtraImports>" + entityClassExtraImports + "</entityClassExtraImports>\n") +
-                (StringUtils.equalsIgnoreCase("abs", entitySchemaOutputMode)
+                (StringUtils.equalsIgnoreCase("ref", entitySchemaOutputMode)
                         ? ""
                         : "                    <entitySchemaOutputMode>" + entitySchemaOutputMode + "</entitySchemaOutputMode>\n") +
-                (StringUtils.isBlank(entitySchemaOutputPackage)
+                (StringUtils.equalsIgnoreCase("domain._share.meta", entitySchemaOutputPackage)
                         ? ""
                         : "                    <entitySchemaOutputPackage>" + entitySchemaOutputPackage + "</entitySchemaOutputPackage>\n") +
                 (StringUtils.isBlank(entitySchemaNameTemplate)
@@ -1242,7 +1246,7 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (enumUnmatchedThrowException
                         ? ""
                         : "                    <enumUnmatchedThrowException>" + enumUnmatchedThrowException + "</enumUnmatchedThrowException>\n") +
-                (StringUtils.equalsIgnoreCase("java.util", datePackage4Java)
+                (StringUtils.equalsIgnoreCase("java.time", datePackage4Java)
                         ? ""
                         : "                    <datePackage4Java>" + datePackage4Java + "</datePackage4Java>\n") +
                 (typeRemapping.isEmpty()
