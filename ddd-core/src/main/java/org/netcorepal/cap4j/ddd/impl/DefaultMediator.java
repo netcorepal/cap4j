@@ -8,6 +8,7 @@ import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
+import org.netcorepal.cap4j.ddd.domain.aggregate.Id;
 import org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate;
 import org.netcorepal.cap4j.ddd.domain.repo.AggregateSupervisor;
 import org.netcorepal.cap4j.ddd.domain.repo.Predicate;
@@ -137,6 +138,11 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
+    public <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> getByIds(Iterable<Id<AGGREGATE, ?>> ids, boolean persist) {
+        return AggregateSupervisor.getInstance().getByIds(ids, persist);
+    }
+
+    @Override
     public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders, boolean persist) {
         return AggregateSupervisor.getInstance().find(predicate, orders, persist);
     }
@@ -159,6 +165,11 @@ public class DefaultMediator implements Mediator {
     @Override
     public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist) {
         return AggregateSupervisor.getInstance().findPage(predicate, pageParam, persist);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> removeByIds(Iterable<Id<AGGREGATE, ?>> ids) {
+        return AggregateSupervisor.getInstance().removeByIds(ids);
     }
 
     @Override

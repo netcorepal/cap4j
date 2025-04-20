@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.domain.repo;
 
 import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
+import org.netcorepal.cap4j.ddd.domain.aggregate.Id;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
@@ -20,6 +21,65 @@ public interface AggregateSupervisor {
     }
 
     <AGGREGATE extends Aggregate<ENTITY>, ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> AGGREGATE create(Class<AGGREGATE> clazz, ENTITY_PAYLOAD payload);
+
+    /**
+     * 根据id获取聚合
+     *
+     * @param id
+     * @return
+     * @param <AGGREGATE>
+     * @param <ENTITY>
+     */
+    default <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AGGREGATE getById(Id<AGGREGATE, ?> id) {
+        return getByIds(Collections.singletonList(id), true).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * 根据id获取聚合
+     *
+     * @param id
+     * @param persist
+     * @param <AGGREGATE>
+     * @param <ENTITY>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AGGREGATE getById(Id<AGGREGATE, ?> id, boolean persist) {
+        return getByIds(Collections.singletonList(id), persist).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * 根据id获取聚合
+     *
+     * @param ids
+     * @param <AGGREGATE>
+     * @param <ENTITY>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> getByIds(Iterable<Id<AGGREGATE, ?>> ids) {
+        return getByIds(ids, true);
+    }
+
+    /**
+     * 根据id获取聚合
+     *
+     * @param ids
+     * @param <AGGREGATE>
+     * @param <ENTITY>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> getByIds(Id<AGGREGATE, ?>... ids) {
+        return getByIds(Arrays.asList(ids), true);
+    }
+
+    /**
+     * 根据id获取聚合
+     *
+     * @param ids
+     * @param <AGGREGATE>
+     * @param <ENTITY>
+     * @return
+     */
+    <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> getByIds(Iterable<Id<AGGREGATE, ?>> ids, boolean persist);
 
     /**
      * 根据条件获取聚合列表
@@ -52,7 +112,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders){
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders) {
         return find(predicate, orders, true);
     }
 
@@ -64,7 +124,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders){
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders) {
         return find(predicate, Arrays.asList(orders), true);
     }
 
@@ -97,7 +157,7 @@ public interface AggregateSupervisor {
      * @param persist
      * @return
      */
-   <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist);
+    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist);
 
     /**
      * 根据条件获取单个实体
@@ -106,7 +166,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate){
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate) {
         return findOne(predicate, true);
     }
 
@@ -186,7 +246,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam){
+    default <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam) {
         return findPage(predicate, pageParam, true);
     }
 
@@ -200,6 +260,40 @@ public interface AggregateSupervisor {
      * @return
      */
     <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist);
+
+    /**
+     * 根据id删除聚合
+     *
+     * @param id
+     * @return
+     * @param <AGGREGATE>
+     * @param <ENTITY>
+     */
+    default <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AGGREGATE removeById(Id<AGGREGATE, ?> id) {
+        return removeByIds(Collections.singletonList(id)).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * 根据id删除聚合
+     *
+     * @param ids
+     * @param <AGGREGATE>
+     * @param <ENTITY>
+     * @return
+     */
+    default <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> removeByIds(Id<AGGREGATE, ?>... ids) {
+        return removeByIds(Arrays.asList(ids));
+    }
+
+    /**
+     * 根据id删除聚合
+     *
+     * @param ids
+     * @param <AGGREGATE>
+     * @param <ENTITY>
+     * @return
+     */
+    <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> removeByIds(Iterable<Id<AGGREGATE, ?>> ids);
 
     /**
      * 根据条件删除实体

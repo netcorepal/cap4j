@@ -4,15 +4,19 @@ import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
+import org.netcorepal.cap4j.ddd.domain.aggregate.Id;
 import org.netcorepal.cap4j.ddd.domain.repo.*;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
+import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * 默认聚合管理器
@@ -38,6 +42,19 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
     public <AGGREGATE extends Aggregate<ENTITY>, ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> AGGREGATE create(Class<AGGREGATE> clazz, ENTITY_PAYLOAD payload) {
         ENTITY entity = AggregateFactorySupervisor.getInstance().create(payload);
         return newInstance(clazz, entity);
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> getByIds(Iterable<Id<AGGREGATE, ?>> ids, boolean persist) {
+        if(!ids.iterator().hasNext()){
+            return Collections.emptyList();
+        }
+        Class<AGGREGATE> aggregateClass = (Class<AGGREGATE>) ClassUtils.resolveGenericTypeClass(ids.iterator().next(), 0, Id.class, Id.Default.class);
+        AggregatePredicate<AGGREGATE> aggregatePredicate = JpaAggregatePredicate.byIds(
+                aggregateClass,
+                StreamSupport.stream(ids.spliterator(), false).map(Id::getValue).collect(Collectors.toList())
+        );
+        return find(aggregatePredicate, persist);
     }
 
     @Override
@@ -78,6 +95,19 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
         Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
         PageData<?> entities = repositorySupervisor.findPage(predicate, pageParam, persist);
         return entities.transform(e -> newInstance(clazz, e));
+    }
+
+    @Override
+    public <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> removeByIds(Iterable<Id<AGGREGATE, ?>> ids) {
+        if(!ids.iterator().hasNext()){
+            return Collections.emptyList();
+        }
+        Class<AGGREGATE> aggregateClass = (Class<AGGREGATE>) ClassUtils.resolveGenericTypeClass(ids.iterator().next(), 0, Id.class, Id.Default.class);
+        AggregatePredicate<AGGREGATE> aggregatePredicate = JpaAggregatePredicate.byIds(
+                aggregateClass,
+                StreamSupport.stream(ids.spliterator(), false).map(Id::getValue).collect(Collectors.toList())
+        );
+        return remove(aggregatePredicate);
     }
 
     @Override
