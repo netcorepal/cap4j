@@ -1034,7 +1034,7 @@ public class GenEntityMojo extends GenArchMojo {
         }
         if (isAggregateRoot(table)) {
             if (generateAggregate) {
-                writeAggregateSourceFile(table, tablePackageMap, baseDir);
+                writeAggregateSourceFile(table, columns, tablePackageMap, baseDir);
             }
             if (hasFactory(table) || generateAggregate) {
                 writeFactorySourceFile(table, tablePackageMap, baseDir);
@@ -1356,7 +1356,7 @@ public class GenEntityMojo extends GenArchMojo {
         }
     }
 
-    public void writeAggregateSourceFile(Map<String, Object> table, Map<String, String> tablePackageMap, String baseDir) throws IOException {
+    public void writeAggregateSourceFile(Map<String, Object> table, List<Map<String, Object>> columns, Map<String, String> tablePackageMap, String baseDir) throws IOException {
         String tag = "aggregate";
         String tableName = getTableName(table);
         String aggregate = getAggregateWithModule(tableName);
@@ -1364,6 +1364,12 @@ public class GenEntityMojo extends GenArchMojo {
         String entityFullPackage = tablePackageMap.get(tableName);
         String entityType = getEntityJavaType(tableName);
         String entityVar = toLowerCamelCase(entityType);
+
+        List<Map<String, Object>> ids = getIdColumns(columns);
+        if (ids.size() == 0) {
+            throw new RuntimeException("实体缺失【主键】：" + tableName);
+        }
+        String identityType = (ids.size() != 1 ? "Long" : getColumnJavaType(ids.get(0)));
 
         Map<String, String> context = getEscapeContext();
         putContext(tag, "Name", entityType, context);
@@ -1377,6 +1383,7 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "CommentEscaped", "", context);
         putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
         putContext(tag, "EntityVar", entityVar, context);
+        putContext(tag, "IdentityType", identityType, context);
 
         List<TemplateNode> aggregateTemplateNodes = templateNodeMap.containsKey(tag)
                 ? templateNodeMap.get(tag)
@@ -1848,15 +1855,12 @@ public class GenEntityMojo extends GenArchMojo {
     public TemplateNode getDefaultAggregateTemplateNode() {
         String template = "package ${basePackage}${templatePackage}${package};\n" +
                 "\n" +
-                "import lombok.NoArgsConstructor;\n" +
-                "import org.netcorepal.cap4j.ddd.Mediator;\n" +
                 "import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;\n" +
-                "import static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events;\n" +
                 "import ${basePackage}${templatePackage}${package}." + DEFAULT_FAC_PACKAGE + ".${Entity}Payload;\n" +
                 "\n" +
                 "/**\n" +
                 " * ${Entity}聚合封装\n" +
-                " * ${Comment}\n" +
+                " * ${CommentEscaped}\n" +
                 " *\n" +
                 " * @author cap4j-ddd-codegen\n" +
                 " * @date ${date}\n" +
@@ -1864,26 +1868,29 @@ public class GenEntityMojo extends GenArchMojo {
                 "@NoArgsConstructor\n" +
                 "public class " + aggregateNameTemplate + " extends Aggregate.Default<${Entity}> {\n" +
                 "\n" +
+                "    public " + aggregateNameTemplate + "(){\n" +
+                "        super(null);\n" +
+                "    }\n" +
+                "\n" +
                 "    public " + aggregateNameTemplate + "(${Entity}Payload payload){\n" +
-                "        ${Entity} root = Mediator.factories().create(payload);\n" +
-                "        _wrap(root);\n" +
+                "        super(payload);\n" +
+                "    }\n" +
+                "\n" +
+                "    public static class Id extends org.netcorepal.cap4j.ddd.domain.aggregate.Id.Default<Agg${Entity}, ${IdentityType}> {\n" +
+                "        public Id(${IdentityType} key) {\n" +
+                "            super(key);\n" +
+                "        }\n" +
                 "    }\n" +
                 "\n" +
                 "    /**\n" +
-                "     * 注册领域事件到持久化上下文\n" +
-                "     * @param event\n" +
+                "     * 获取聚合ID\n" +
+                "     * @return\n" +
                 "     */\n" +
-                "    protected void registerDomainEvent(Object event){\n" +
-                "        events().attach(event, this);\n" +
+                "    public Id getId() {\n" +
+                "        return new Id(root.getId());\n" +
                 "    }\n" +
                 "\n" +
-                "    /**\n" +
-                "     * 从当前持久化上下文中取消领域事件\n" +
-                "     * @param event\n" +
-                "     */\n" +
-                "    protected void cancelDomainEvent(Object event){\n" +
-                "        events().detach(event, this);\n" +
-                "    }\n" +
+                "\n" +
                 "\n" +
                 "}\n";
         TemplateNode templateNode = new TemplateNode();

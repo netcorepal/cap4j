@@ -33,6 +33,14 @@ public class ClassUtils {
         return resolveGenericTypeClass(clazz, typeArgumentIndex, superClasses);
     }
 
+    /**
+     * 获取指定类或接口泛型参数类型
+     *
+     * @param clazz
+     * @param typeArgumentIndex
+     * @param superClasses
+     * @return
+     */
     public static Class<?> resolveGenericTypeClass(Class<?> clazz, int typeArgumentIndex, Class<?>... superClasses) {
         ParameterizedType parameterizedType = null;
         if (Arrays.stream(superClasses).anyMatch(
