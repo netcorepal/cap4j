@@ -14,12 +14,11 @@ public class JpaAggregatePredicateSupport {
      * 获取实体仓储检索断言
      *
      * @param predicate
+     * @param <AGGREGATE>
      * @return
-     * @param <XENTITY>
-     * @param <ENTITY>
      */
-    public static <XENTITY extends Aggregate<ENTITY>, ENTITY> Predicate<ENTITY> getPredicate(AggregatePredicate<XENTITY> predicate) {
-        return ((JpaAggregatePredicate<XENTITY, ENTITY>) predicate).predicate;
+    public static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> Predicate<ENTITY> getPredicate(AggregatePredicate<AGGREGATE, ENTITY> predicate) {
+        return ((JpaAggregatePredicate<AGGREGATE, ENTITY>) predicate).predicate;
     }
 
 
@@ -27,10 +26,10 @@ public class JpaAggregatePredicateSupport {
      * 获取断言聚合类型
      *
      * @param predicate
+     * @param <AGGREGATE>
      * @return
-     * @param <XENTITY>
      */
-    public static <XENTITY extends Aggregate<?>> Class<XENTITY> reflectXEntityClass(AggregatePredicate<XENTITY> predicate) {
-        return ((JpaAggregatePredicate<XENTITY, ?>) predicate).aggregateClass;
+    public static <AGGREGATE extends Aggregate<?>> Class<AGGREGATE> reflectAggregateClass(AggregatePredicate<AGGREGATE, ?> predicate) {
+        return ((JpaAggregatePredicate<AGGREGATE, ?>) predicate).aggregateClass;
     }
 }

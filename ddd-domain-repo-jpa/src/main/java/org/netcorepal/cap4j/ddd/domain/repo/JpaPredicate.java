@@ -20,7 +20,7 @@ public class JpaPredicate<ENTITY> implements Predicate<ENTITY> {
     final Iterable<Object> ids;
     final ValueObject valueObject;
 
-    public <AGGREGATE extends Aggregate<ENTITY>> AggregatePredicate<AGGREGATE> toAggregatePredicate(Class<AGGREGATE> aggregateClass) {
+    public <AGGREGATE extends Aggregate<ENTITY>> AggregatePredicate<AGGREGATE, ENTITY> toAggregatePredicate(Class<AGGREGATE> aggregateClass) {
         return JpaAggregatePredicate.byPredicate(aggregateClass, this);
     }
 

@@ -1718,7 +1718,7 @@ public class GenEntityMojo extends GenArchMojo {
                         putContext(joinTag, "joinEntityVars", Inflector.getInstance().pluralize(toLowerCamelCase(getEntityJavaType(entry.getKey()))), joinContext);
                         if (!("abs".equalsIgnoreCase(entitySchemaOutputMode))) {
                             putContext(joinTag, "joinEntitySchemaPackage", concatPackage(tablePackageMap.get(entry.getKey()), DEFAULT_SCHEMA_PACKAGE) + ".", joinContext);
-                        } else{
+                        } else {
                             putContext(joinTag, "joinEntitySchemaPackage", "", joinContext);
                         }
                         joinItems += (
@@ -1808,7 +1808,7 @@ public class GenEntityMojo extends GenArchMojo {
 
         List<TemplateNode> schemaTemplateNodes = templateNodeMap.containsKey(tag)
                 ? templateNodeMap.get(tag)
-                : Arrays.asList(getDefaultSchemaTemplateNode());
+                : Arrays.asList(getDefaultSchemaTemplateNode(isAggregateRoot(table)));
         try {
             for (TemplateNode templateNode : schemaTemplateNodes) {
                 PathNode pathNode = templateNode.clone().resolve(context);
@@ -2227,18 +2227,18 @@ public class GenEntityMojo extends GenArchMojo {
         return templateNode;
     }
 
-    public TemplateNode getDefaultSchemaTemplateNode() {
+    public TemplateNode getDefaultSchemaTemplateNode(boolean isAggregateRoot) {
         String template = "package ${basePackage}${templatePackage}${package}." + DEFAULT_SCHEMA_PACKAGE + ";\n" +
                 "\n" +
                 (!repositorySupportQuerydsl ? "" : "import com.querydsl.core.types.OrderSpecifier;\n") +
                 "import lombok.RequiredArgsConstructor;\n" +
                 "import ${basePackage}${schemaBasePackage}.${SchemaBase};\n" +
                 "import ${basePackage}${entityPackage}.${Entity};\n" +
+                (!isAggregateRoot || !repositorySupportQuerydsl ? "" : "import ${basePackage}${entityPackage}." + aggregateNameTemplate + ";\n") +
                 (!repositorySupportQuerydsl ? "" : "import ${basePackage}${entityPackage}.Q${Entity};\n") +
                 "import org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate;\n" +
+                (!repositorySupportQuerydsl ? "" : "import org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate;\n") +
                 (!repositorySupportQuerydsl ? "" : "import org.netcorepal.cap4j.ddd.domain.repo.querydsl.QuerydslPredicate;\n") +
-//                "import org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate;\n" +
-//                "import org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate;\n" +
                 "import org.springframework.data.jpa.domain.Specification;\n" +
                 "\n" +
                 "import javax.persistence.criteria.*;\n" +
@@ -2443,254 +2443,287 @@ public class GenEntityMojo extends GenArchMojo {
     }
 
     public TemplateNode getDefaultRootSchemaExtraExtensionTemplateNode(boolean generateAggregate) {
-        String template =
-                "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param id 主键\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicateById(Object id) {\n" +
-                        "        return JpaPredicate.byId(${Entity}.class, id);\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param ids 主键\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicateByIds(Iterable<?> ids) {\n" +
-                        "        return JpaPredicate.byIds(${Entity}.class, (Iterable<Object>)ids);\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param ids 主键\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicateByIds(Object... ids) {\n" +
-                        "        return JpaPredicate.byIds(${Entity}.class, Arrays.asList(ids));\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param builder 查询条件构造器\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder) {\n" +
-                        "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder));\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param builder  查询条件构造器\n" +
-                        "     * @param distinct 是否去重\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct) {\n" +
-                        "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct));\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param builder       查询条件构造器\n" +
-                        "     * @param orderBuilders 排序构造器\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, List<${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">> orderBuilders) {\n" +
-                        "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, false, orderBuilders));\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param builder       查询条件构造器\n" +
-                        "     * @param orderBuilders 排序构造器\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, ${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">... orderBuilders) {\n" +
-                        "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, false, orderBuilders));\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param builder       查询条件构造器\n" +
-                        "     * @param distinct      是否去重\n" +
-                        "     * @param orderBuilders 排序构造器\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct, List<${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">> orderBuilders) {\n" +
-                        "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct, orderBuilders));\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param builder       查询条件构造器\n" +
-                        "     * @param distinct      是否去重\n" +
-                        "     * @param orderBuilders 排序构造器\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct, ${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">... orderBuilders) {\n" +
-                        "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct, orderBuilders));\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    /**\n" +
-                        "     * 构建查询条件\n" +
-                        "     *\n" +
-                        "     * @param specifier 查询条件构造器\n" +
-                        "     * @return\n" +
-                        "     */\n" +
-                        "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.Specification<${Entity}, " + entitySchemaNameTemplate + "> specifier) {\n" +
-                        "        return JpaPredicate.bySpecification(${Entity}.class, specify(specifier));\n" +
-                        "    }";
-        if (repositorySupportQuerydsl) {
-            template += "\n" +
+        String template = "";
+        if (generateAggregate) {
+            template =
                     "\n" +
-                    "    /**\n" +
-                    "     * 构建querydsl查询条件\n" +
-                    "     *\n" +
-                    "     * @param filterBuilder          查询条件构造器\n" +
-                    "     * @param orderSpecifierBuilders 排序构造器\n" +
-                    "     * @return\n" +
-                    "     */\n" +
-                    "    public static QuerydslPredicate<${Entity}> querydsl(java.util.function.Function<Q${Entity}, com.querydsl.core.types.Predicate> filterBuilder, java.util.function.Function<Q${Entity}, OrderSpecifier<?>>... orderSpecifierBuilders) {\n" +
-                    "        return QuerydslPredicate.of(${Entity}.class)\n" +
-                    "                .where(filterBuilder.apply(Q${Entity}.${EntityVar}))\n" +
-                    "                .orderBy(Arrays.stream(orderSpecifierBuilders).map(b -> b.apply(Q${Entity}.${EntityVar})).toArray(val -> new OrderSpecifier<?>[val]));\n" +
-                    "    }\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param id 主键\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicateById(Object id) {\n" +
+                            "        return JpaPredicate.byId(${Entity}.class, id).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param ids 主键\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicateByIds(Iterable<?> ids) {\n" +
+                            "        return JpaPredicate.byIds(${Entity}.class, (Iterable<Object>)ids).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param ids 主键\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicateByIds(Object... ids) {\n" +
+                            "        return JpaPredicate.byIds(${Entity}.class, Arrays.asList(ids)).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder 查询条件构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder)).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder  查询条件构造器\n" +
+                            "     * @param distinct 是否去重\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct)).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder       查询条件构造器\n" +
+                            "     * @param orderBuilders 排序构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, List<${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">> orderBuilders) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, false, orderBuilders)).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder       查询条件构造器\n" +
+                            "     * @param orderBuilders 排序构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, ${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">... orderBuilders) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, false, orderBuilders)).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder       查询条件构造器\n" +
+                            "     * @param distinct      是否去重\n" +
+                            "     * @param orderBuilders 排序构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct, List<${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">> orderBuilders) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct, orderBuilders)).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder       查询条件构造器\n" +
+                            "     * @param distinct      是否去重\n" +
+                            "     * @param orderBuilders 排序构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct, ${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">... orderBuilders) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct, orderBuilders)).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param specifier 查询条件构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> predicate(${SchemaBase}.Specification<${Entity}, " + entitySchemaNameTemplate + "> specifier) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(specifier)).toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                            "    }";
+        } else {
+            template =
                     "\n" +
-                    "    /**\n" +
-                    "     * 构建querydsl查询条件\n" +
-                    "     *\n" +
-                    "     * @param filter          查询条件构造器\n" +
-                    "     * @param orderSpecifiers 排序构造器\n" +
-                    "     * @return\n" +
-                    "     */\n" +
-                    "    public static QuerydslPredicate<${Entity}> querydsl(com.querydsl.core.types.Predicate filter, OrderSpecifier<?>... orderSpecifiers) {\n" +
-                    "        return QuerydslPredicate.of(${Entity}.class)\n" +
-                    "                .where(filter)\n" +
-                    "                .orderBy(orderSpecifiers);\n" +
-                    "    }";
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param id 主键\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicateById(Object id) {\n" +
+                            "        return JpaPredicate.byId(${Entity}.class, id);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param ids 主键\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicateByIds(Iterable<?> ids) {\n" +
+                            "        return JpaPredicate.byIds(${Entity}.class, (Iterable<Object>)ids);\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param ids 主键\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicateByIds(Object... ids) {\n" +
+                            "        return JpaPredicate.byIds(${Entity}.class, Arrays.asList(ids));\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder 查询条件构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder));\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder  查询条件构造器\n" +
+                            "     * @param distinct 是否去重\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct));\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder       查询条件构造器\n" +
+                            "     * @param orderBuilders 排序构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, List<${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">> orderBuilders) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, false, orderBuilders));\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder       查询条件构造器\n" +
+                            "     * @param orderBuilders 排序构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, ${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">... orderBuilders) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, false, orderBuilders));\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder       查询条件构造器\n" +
+                            "     * @param distinct      是否去重\n" +
+                            "     * @param orderBuilders 排序构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct, List<${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">> orderBuilders) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct, orderBuilders));\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param builder       查询条件构造器\n" +
+                            "     * @param distinct      是否去重\n" +
+                            "     * @param orderBuilders 排序构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct, ${SchemaBase}.OrderBuilder<" + entitySchemaNameTemplate + ">... orderBuilders) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(builder, distinct, orderBuilders));\n" +
+                            "    }\n" +
+                            "\n" +
+                            "    /**\n" +
+                            "     * 构建查询条件\n" +
+                            "     *\n" +
+                            "     * @param specifier 查询条件构造器\n" +
+                            "     * @return\n" +
+                            "     */\n" +
+                            "    public static JpaPredicate<${Entity}> predicate(${SchemaBase}.Specification<${Entity}, " + entitySchemaNameTemplate + "> specifier) {\n" +
+                            "        return JpaPredicate.bySpecification(${Entity}.class, specify(specifier));\n" +
+                            "    }";
         }
-//        if (generateAggregate) {
-//            template += "\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param id 主键\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregateById(Object id) {\n" +
-//                    "        return JpaAggregatePredicate.byId(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, id);\n" +
-//                    "    }\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param ids 主键\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregateByIds(Iterable<?> ids) {\n" +
-//                    "        return JpaAggregatePredicate.byIds(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, (Iterable<Object>)ids);\n" +
-//                    "    }\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param ids 主键\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregateByIds(Object... ids) {\n" +
-//                    "        return JpaAggregatePredicate.byIds(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, Arrays.asList(ids));\n" +
-//                    "    }\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param builder 查询条件构造器\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregate(Schema.PredicateBuilder<" + entitySchemaNameTemplate + "> builder) {\n" +
-//                    "        return JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, specify(builder));\n" +
-//                    "    }\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param builder  查询条件构造器\n" +
-//                    "     * @param distinct 是否去重\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregate(Schema.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct) {\n" +
-//                    "        return JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, specify(builder, distinct));\n" +
-//                    "    }\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param builder       查询条件构造器\n" +
-//                    "     * @param orderBuilders 排序构造器\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregate(Schema.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, List<Schema.OrderBuilder<" + entitySchemaNameTemplate + ">> orderBuilders) {\n" +
-//                    "        return JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, specify(builder, false, orderBuilders));\n" +
-//                    "    }\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param builder       查询条件构造器\n" +
-//                    "     * @param orderBuilders 排序构造器\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregate(Schema.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, Schema.OrderBuilder<" + entitySchemaNameTemplate + ">... orderBuilders) {\n" +
-//                    "        return JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, specify(builder, false, orderBuilders));\n" +
-//                    "    }\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param builder       查询条件构造器\n" +
-//                    "     * @param distinct      是否去重\n" +
-//                    "     * @param orderBuilders 排序构造器\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregate(Schema.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct, List<Schema.OrderBuilder<" + entitySchemaNameTemplate + ">> orderBuilders) {\n" +
-//                    "        return JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, specify(builder, distinct, orderBuilders));\n" +
-//                    "    }\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param builder       查询条件构造器\n" +
-//                    "     * @param distinct      是否去重\n" +
-//                    "     * @param orderBuilders 排序构造器\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregate(Schema.PredicateBuilder<" + entitySchemaNameTemplate + "> builder, boolean distinct, Schema.OrderBuilder<" + entitySchemaNameTemplate + ">... orderBuilders) {\n" +
-//                    "        return JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, specify(builder, distinct, orderBuilders));\n" +
-//                    "    }\n" +
-//                    "\n" +
-//                    "    /**\n" +
-//                    "     * 构建查询条件\n" +
-//                    "     *\n" +
-//                    "     * @param specifier 查询条件构造器\n" +
-//                    "     * @return\n" +
-//                    "     */\n" +
-//                    "    public static AggregatePredicate<${basePackage}${entityPackage}." + aggregateNameTemplate + "> aggregate(Schema.Specification<${Entity}, " + entitySchemaNameTemplate + "> specifier) {\n" +
-//                    "        return JpaAggregatePredicate.bySpecification(${basePackage}${entityPackage}." + aggregateNameTemplate + ".class, specify(specifier));\n" +
-//                    "    }";
-//        }
-
+        if (repositorySupportQuerydsl) {
+            if (generateAggregate) {
+                template += "\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建querydsl查询条件\n" +
+                        "     *\n" +
+                        "     * @param filterBuilder          查询条件构造器\n" +
+                        "     * @param orderSpecifierBuilders 排序构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> querydsl(java.util.function.Function<Q${Entity}, com.querydsl.core.types.Predicate> filterBuilder, java.util.function.Function<Q${Entity}, OrderSpecifier<?>>... orderSpecifierBuilders) {\n" +
+                        "        return QuerydslPredicate.of(${Entity}.class)\n" +
+                        "                .where(filterBuilder.apply(Q${Entity}.${EntityVar}))\n" +
+                        "                .orderBy(Arrays.stream(orderSpecifierBuilders).map(b -> b.apply(Q${Entity}.${EntityVar})).toArray(val -> new OrderSpecifier<?>[val]))\n" +
+                        "                .toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建querydsl查询条件\n" +
+                        "     *\n" +
+                        "     * @param filter          查询条件构造器\n" +
+                        "     * @param orderSpecifiers 排序构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static AggregatePredicate<" + aggregateNameTemplate + ",${Entity}> querydsl(com.querydsl.core.types.Predicate filter, OrderSpecifier<?>... orderSpecifiers) {\n" +
+                        "        return QuerydslPredicate.of(${Entity}.class)\n" +
+                        "                .where(filter)\n" +
+                        "                .orderBy(orderSpecifiers)\n" +
+                        "                .toAggregatePredicate(" + aggregateNameTemplate + ".class);\n" +
+                        "    }";
+            } else {
+                template += "\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建querydsl查询条件\n" +
+                        "     *\n" +
+                        "     * @param filterBuilder          查询条件构造器\n" +
+                        "     * @param orderSpecifierBuilders 排序构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static QuerydslPredicate<${Entity}> querydsl(java.util.function.Function<Q${Entity}, com.querydsl.core.types.Predicate> filterBuilder, java.util.function.Function<Q${Entity}, OrderSpecifier<?>>... orderSpecifierBuilders) {\n" +
+                        "        return QuerydslPredicate.of(${Entity}.class)\n" +
+                        "                .where(filterBuilder.apply(Q${Entity}.${EntityVar}))\n" +
+                        "                .orderBy(Arrays.stream(orderSpecifierBuilders).map(b -> b.apply(Q${Entity}.${EntityVar})).toArray(val -> new OrderSpecifier<?>[val]));\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * 构建querydsl查询条件\n" +
+                        "     *\n" +
+                        "     * @param filter          查询条件构造器\n" +
+                        "     * @param orderSpecifiers 排序构造器\n" +
+                        "     * @return\n" +
+                        "     */\n" +
+                        "    public static QuerydslPredicate<${Entity}> querydsl(com.querydsl.core.types.Predicate filter, OrderSpecifier<?>... orderSpecifiers) {\n" +
+                        "        return QuerydslPredicate.of(${Entity}.class)\n" +
+                        "                .where(filter)\n" +
+                        "                .orderBy(orderSpecifiers);\n" +
+                        "    }";
+            }
+        }
         TemplateNode templateNode = new TemplateNode();
         templateNode.setType("segment");
         templateNode.setTag("root_schema_extra_extension");

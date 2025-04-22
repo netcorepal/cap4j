@@ -46,11 +46,11 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
 
     @Override
     public <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> getByIds(Iterable<Id<AGGREGATE, ?>> ids, boolean persist) {
-        if(!ids.iterator().hasNext()){
+        if (!ids.iterator().hasNext()) {
             return Collections.emptyList();
         }
         Class<AGGREGATE> aggregateClass = (Class<AGGREGATE>) ClassUtils.resolveGenericTypeClass(ids.iterator().next(), 0, Id.class, Id.Default.class);
-        AggregatePredicate<AGGREGATE> aggregatePredicate = JpaAggregatePredicate.byIds(
+        AggregatePredicate<AGGREGATE, ?> aggregatePredicate = JpaAggregatePredicate.byIds(
                 aggregateClass,
                 StreamSupport.stream(ids.spliterator(), false).map(Id::getValue).collect(Collectors.toList())
         );
@@ -58,52 +58,52 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> aggregatePredicate, Collection<OrderInfo> orders, boolean persist) {
-        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
-        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> aggregatePredicate, Collection<OrderInfo> orders, boolean persist) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectAggregateClass(aggregatePredicate);
+        Predicate<?> predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate<?, ?>) aggregatePredicate);
         List<?> entities = repositorySupervisor.find(predicate, orders, persist);
         return entities.stream().map(e -> newInstance(clazz, e)).collect(Collectors.toList());
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> aggregatePredicate, PageParam pageParam, boolean persist) {
-        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
-        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> aggregatePredicate, PageParam pageParam, boolean persist) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectAggregateClass(aggregatePredicate);
+        Predicate<?> predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate<?, ?>) aggregatePredicate);
         List<?> entities = repositorySupervisor.find(predicate, pageParam, persist);
         return entities.stream().map(e -> newInstance(clazz, e)).collect(Collectors.toList());
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> aggregatePredicate, boolean persist) {
-        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
-        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE, ?> aggregatePredicate, boolean persist) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectAggregateClass(aggregatePredicate);
+        Predicate<?> predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate<?, ?>) aggregatePredicate);
         Optional<?> entity = repositorySupervisor.findOne(predicate, persist);
         return entity.map(e -> newInstance(clazz, e));
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> aggregatePredicate, Collection<OrderInfo> orders, boolean persist) {
-        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
-        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE, ?> aggregatePredicate, Collection<OrderInfo> orders, boolean persist) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectAggregateClass(aggregatePredicate);
+        Predicate<?> predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate<?, ?>) aggregatePredicate);
         Optional<?> entity = repositorySupervisor.findFirst(predicate, orders, persist);
         return entity.map(e -> newInstance(clazz, e));
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> aggregatePredicate, PageParam pageParam, boolean persist) {
-        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
-        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+    public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE, ?> aggregatePredicate, PageParam pageParam, boolean persist) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectAggregateClass(aggregatePredicate);
+        Predicate<?> predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate<?, ?>) aggregatePredicate);
         PageData<?> entities = repositorySupervisor.findPage(predicate, pageParam, persist);
         return entities.transform(e -> newInstance(clazz, e));
     }
 
     @Override
     public <AGGREGATE extends Aggregate<ENTITY>, ENTITY> List<AGGREGATE> removeByIds(Iterable<Id<AGGREGATE, ?>> ids) {
-        if(!ids.iterator().hasNext()){
+        if (!ids.iterator().hasNext()) {
             return Collections.emptyList();
         }
         Class<AGGREGATE> aggregateClass = (Class<AGGREGATE>) ClassUtils.resolveGenericTypeClass(ids.iterator().next(), 0, Id.class, Id.Default.class);
-        AggregatePredicate<AGGREGATE> aggregatePredicate = JpaAggregatePredicate.byIds(
+        AggregatePredicate<AGGREGATE, ?> aggregatePredicate = JpaAggregatePredicate.byIds(
                 aggregateClass,
                 StreamSupport.stream(ids.spliterator(), false).map(Id::getValue).collect(Collectors.toList())
         );
@@ -111,32 +111,30 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE> aggregatePredicate) {
-        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
-        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE, ?> aggregatePredicate) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectAggregateClass(aggregatePredicate);
+        Predicate<?> predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate<?, ?>) aggregatePredicate);
         List<?> entities = repositorySupervisor.remove(predicate);
         return entities.stream().map(e -> newInstance(clazz, e)).collect(Collectors.toList());
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE> aggregatePredicate, int limit) {
-        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectXEntityClass(aggregatePredicate);
-        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE, ?> aggregatePredicate, int limit) {
+        Class<AGGREGATE> clazz = JpaAggregatePredicateSupport.reflectAggregateClass(aggregatePredicate);
+        Predicate<?> predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate<?, ?>) aggregatePredicate);
         List<?> entities = repositorySupervisor.remove(predicate, limit);
         return entities.stream().map(e -> newInstance(clazz, e)).collect(Collectors.toList());
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> long count(AggregatePredicate<AGGREGATE> aggregatePredicate) {
-        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
-        long count = repositorySupervisor.count(predicate);
-        return count;
+    public <AGGREGATE extends Aggregate<?>> long count(AggregatePredicate<AGGREGATE, ?> aggregatePredicate) {
+        Predicate<?> predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate<?, ?>) aggregatePredicate);
+        return repositorySupervisor.count(predicate);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> boolean exists(AggregatePredicate<AGGREGATE> aggregatePredicate) {
-        Predicate predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate) aggregatePredicate);
-        boolean exists = repositorySupervisor.exists(predicate);
-        return exists;
+    public <AGGREGATE extends Aggregate<?>> boolean exists(AggregatePredicate<AGGREGATE, ?> aggregatePredicate) {
+        Predicate<?> predicate = JpaAggregatePredicateSupport.getPredicate((AggregatePredicate<?, ?>) aggregatePredicate);
+        return repositorySupervisor.exists(predicate);
     }
 }

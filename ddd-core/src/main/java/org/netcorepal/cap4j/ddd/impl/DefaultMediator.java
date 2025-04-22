@@ -143,27 +143,27 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders, boolean persist) {
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> predicate, Collection<OrderInfo> orders, boolean persist) {
         return AggregateSupervisor.getInstance().find(predicate, orders, persist);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist) {
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> predicate, PageParam pageParam, boolean persist) {
         return AggregateSupervisor.getInstance().find(predicate, pageParam, persist);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate, boolean persist) {
+    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE, ?> predicate, boolean persist) {
         return AggregateSupervisor.getInstance().findOne(predicate, persist);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders, boolean persist) {
+    public <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE, ?> predicate, Collection<OrderInfo> orders, boolean persist) {
         return AggregateSupervisor.getInstance().findFirst(predicate, orders, persist);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist) {
+    public <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE, ?> predicate, PageParam pageParam, boolean persist) {
         return AggregateSupervisor.getInstance().findPage(predicate, pageParam, persist);
     }
 
@@ -173,22 +173,22 @@ public class DefaultMediator implements Mediator {
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE> predicate) {
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE, ?> predicate) {
         return AggregateSupervisor.getInstance().remove(predicate);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE> predicate, int limit) {
+    public <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE, ?> predicate, int limit) {
         return AggregateSupervisor.getInstance().remove(predicate, limit);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> long count(AggregatePredicate<AGGREGATE> predicate) {
+    public <AGGREGATE extends Aggregate<?>> long count(AggregatePredicate<AGGREGATE, ?> predicate) {
         return AggregateSupervisor.getInstance().count(predicate);
     }
 
     @Override
-    public <AGGREGATE extends Aggregate<?>> boolean exists(AggregatePredicate<AGGREGATE> predicate) {
+    public <AGGREGATE extends Aggregate<?>> boolean exists(AggregatePredicate<AGGREGATE, ?> predicate) {
         return AggregateSupervisor.getInstance().exists(predicate);
     }
 }
