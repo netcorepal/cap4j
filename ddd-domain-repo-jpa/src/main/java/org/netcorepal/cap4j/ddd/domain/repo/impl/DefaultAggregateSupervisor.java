@@ -50,7 +50,7 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
             return Collections.emptyList();
         }
         Class<AGGREGATE> aggregateClass = (Class<AGGREGATE>) ClassUtils.resolveGenericTypeClass(ids.iterator().next(), 0, Id.class, Id.Default.class);
-        AggregatePredicate<AGGREGATE, ?> aggregatePredicate = JpaAggregatePredicate.byIds(
+        AggregatePredicate<AGGREGATE, ENTITY> aggregatePredicate = JpaAggregatePredicate.byIds(
                 aggregateClass,
                 StreamSupport.stream(ids.spliterator(), false).map(Id::getValue).collect(Collectors.toList())
         );
