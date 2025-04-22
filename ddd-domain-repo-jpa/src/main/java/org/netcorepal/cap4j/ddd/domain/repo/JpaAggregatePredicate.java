@@ -26,11 +26,11 @@ public class JpaAggregatePredicate<AGGREGATE extends Aggregate<ENTITY>, ENTITY> 
         return entityClass;
     }
 
-    public static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<AGGREGATE, ?> byId(Class<AGGREGATE> aggregateClass, Object id) {
+    public static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<AGGREGATE, ENTITY> byId(Class<AGGREGATE> aggregateClass, Object id) {
         return new JpaAggregatePredicate<>(aggregateClass, new JpaPredicate<>(getEntityClass(aggregateClass), null, Collections.singletonList(id), null));
     }
 
-    public static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<AGGREGATE, ?> byIds(Class<AGGREGATE> aggregateClass, Iterable<Object> ids) {
+    public static <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AggregatePredicate<AGGREGATE, ENTITY> byIds(Class<AGGREGATE> aggregateClass, Iterable<Object> ids) {
         return new JpaAggregatePredicate<>(aggregateClass, new JpaPredicate<>(getEntityClass(aggregateClass), null, ids, null));
     }
 
