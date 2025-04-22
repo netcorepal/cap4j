@@ -1880,6 +1880,10 @@ public class GenEntityMojo extends GenArchMojo {
                 "        public Id(${IdentityType} key) {\n" +
                 "            super(key);\n" +
                 "        }\n" +
+                "        \n" +
+                "        public static Id of(${IdentityType} key) {\n" +
+                "            return new Id(key);\n" +
+                "        }\n" +
                 "    }\n" +
                 "\n" +
                 "    /**\n" +
