@@ -2,9 +2,7 @@ package org.netcorepal.cap4j.ddd.domain.repo.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
-import org.netcorepal.cap4j.ddd.domain.repo.Predicate;
-import org.netcorepal.cap4j.ddd.domain.repo.Repository;
-import org.netcorepal.cap4j.ddd.domain.repo.RepositorySupervisor;
+import org.netcorepal.cap4j.ddd.domain.repo.*;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
@@ -73,27 +71,31 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
         if (repos == null || repos.isEmpty()) {
             throw new DomainException("仓储不存在：" + entityClass.getTypeName());
         }
-        if (!repos.containsKey(predicate.getClass())) {
-            new DomainException("仓储不兼容断言条件：" + predicate.getClass().getName());
+        Class<?> predicateClass = predicate instanceof JpaAggregatePredicate
+                ? JpaAggregatePredicateSupport.getPredicate((JpaAggregatePredicate<?, ?>) predicate).getClass()
+                : predicate.getClass();
+        if (!repos.containsKey(predicateClass)) {
+            throw new DomainException("仓储不兼容断言条件：" + predicateClass.getName());
         }
-        return (Repository<ENTITY>) repos.get(predicate.getClass());
+        return (Repository<ENTITY>) repos.get(predicateClass);
+    }
+
+    protected <ENTITY> Class<ENTITY> reflectEntityClass(Predicate<?> predicate) {
+        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
+            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
+        }
+        return (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
     }
 
     @Override
     public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, Collection<OrderInfo> orders, boolean persist) {
-        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
-            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
-        }
-        Class<ENTITY> entityClass = (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
+        Class<ENTITY> entityClass = reflectEntityClass(predicate);
         return repo(entityClass, predicate).find(predicate, orders, persist);
     }
 
     @Override
     public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, PageParam pageParam, boolean persist) {
-        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
-            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
-        }
-        Class<ENTITY> entityClass = (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
+        Class<ENTITY> entityClass = reflectEntityClass(predicate);
         List<ENTITY> list = repo(entityClass, predicate).find(predicate, pageParam, persist);
         if (persist && list != null) {
             list.forEach(unitOfWork::persist);
@@ -103,10 +105,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> Optional<ENTITY> findOne(Predicate<ENTITY> predicate, boolean persist) {
-        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
-            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
-        }
-        Class<ENTITY> entityClass = (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
+        Class<ENTITY> entityClass = reflectEntityClass(predicate);
         Optional<ENTITY> entity = repo(entityClass, predicate).findOne(predicate, persist);
         if (persist) {
             entity.ifPresent(unitOfWork::persist);
@@ -116,10 +115,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> Optional<ENTITY> findFirst(Predicate<ENTITY> predicate, Collection<OrderInfo> orders, boolean persist) {
-        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
-            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
-        }
-        Class<ENTITY> entityClass = (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
+        Class<ENTITY> entityClass = reflectEntityClass(predicate);
         Optional<ENTITY> entity = repo(entityClass, predicate).findFirst(predicate, orders, persist);
         if (persist) {
             entity.ifPresent(unitOfWork::persist);
@@ -129,10 +125,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> PageData<ENTITY> findPage(Predicate<ENTITY> predicate, PageParam pageParam, boolean persist) {
-        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
-            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
-        }
-        Class<ENTITY> entityClass = (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
+        Class<ENTITY> entityClass = reflectEntityClass(predicate);
         PageData<ENTITY> pageData = repo(entityClass, predicate).findPage(predicate, pageParam, persist);
         if (persist && pageData != null && pageData.getList() != null) {
             pageData.getList().forEach(unitOfWork::persist);
@@ -142,10 +135,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> List<ENTITY> remove(Predicate<ENTITY> predicate) {
-        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
-            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
-        }
-        Class<ENTITY> entityClass = (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
+        Class<ENTITY> entityClass = reflectEntityClass(predicate);
 
         List<ENTITY> entities = repo(entityClass, predicate).find(predicate);
         if (entities != null) {
@@ -156,10 +146,7 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> List<ENTITY> remove(Predicate<ENTITY> predicate, int limit) {
-        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
-            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
-        }
-        Class<ENTITY> entityClass = (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
+        Class<ENTITY> entityClass = reflectEntityClass(predicate);
         PageParam page = PageParam.limit(limit);
         PageData<ENTITY> entities = repo(entityClass, predicate).findPage(predicate, page);
         if (entities.getList() != null) {
@@ -170,19 +157,13 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
 
     @Override
     public <ENTITY> long count(Predicate<ENTITY> predicate) {
-        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
-            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
-        }
-        Class<ENTITY> entityClass = (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
+        Class<ENTITY> entityClass = reflectEntityClass(predicate);
         return repo(entityClass, predicate).count(predicate);
     }
 
     @Override
     public <ENTITY> boolean exists(Predicate<ENTITY> predicate) {
-        if (!predicateClass2EntityClassReflector.containsKey(predicate.getClass())) {
-            throw new DomainException("实体断言类型不支持：" + predicate.getClass().getName());
-        }
-        Class<ENTITY> entityClass = (Class<ENTITY>) predicateClass2EntityClassReflector.get(predicate.getClass()).apply(predicate);
+        Class<ENTITY> entityClass = reflectEntityClass(predicate);
         return repo(entityClass, predicate).exists(predicate);
     }
 }

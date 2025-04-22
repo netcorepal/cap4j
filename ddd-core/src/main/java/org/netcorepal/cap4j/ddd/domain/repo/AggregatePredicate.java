@@ -8,5 +8,5 @@ import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
  * @author binking338
  * @date 2025/1/12
  */
-public interface AggregatePredicate<AGGREGATE extends Aggregate<?>> {
+public interface AggregatePredicate<AGGREGATE extends Aggregate<ENTITY>, ENTITY> extends Predicate<ENTITY> {
 }

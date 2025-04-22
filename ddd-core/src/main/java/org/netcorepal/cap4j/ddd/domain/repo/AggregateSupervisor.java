@@ -26,9 +26,9 @@ public interface AggregateSupervisor {
      * 根据id获取聚合
      *
      * @param id
-     * @return
      * @param <AGGREGATE>
      * @param <ENTITY>
+     * @return
      */
     default <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AGGREGATE getById(Id<AGGREGATE, ?> id) {
         return getByIds(Collections.singletonList(id), true).stream().findFirst().orElse(null);
@@ -88,7 +88,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate) {
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> predicate) {
         return find(predicate, (List<OrderInfo>) null, true);
     }
 
@@ -100,7 +100,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, boolean persist) {
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> predicate, boolean persist) {
         return find(predicate, (List<OrderInfo>) null, persist);
     }
 
@@ -112,7 +112,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders) {
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> predicate, Collection<OrderInfo> orders) {
         return find(predicate, orders, true);
     }
 
@@ -124,7 +124,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders) {
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> predicate, OrderInfo... orders) {
         return find(predicate, Arrays.asList(orders), true);
     }
 
@@ -136,16 +136,17 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders, boolean persist);
+    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> predicate, Collection<OrderInfo> orders, boolean persist);
 
     /**
      * 根据条件获取聚合列表
      *
      * @param predicate
      * @param pageParam
+     * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam) {
+    default <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> predicate, PageParam pageParam) {
         return find(predicate, pageParam, true);
     }
 
@@ -157,7 +158,7 @@ public interface AggregateSupervisor {
      * @param persist
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist);
+    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> find(AggregatePredicate<AGGREGATE, ?> predicate, PageParam pageParam, boolean persist);
 
     /**
      * 根据条件获取单个实体
@@ -166,7 +167,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate) {
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE, ?> predicate) {
         return findOne(predicate, true);
     }
 
@@ -178,7 +179,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE> predicate, boolean persist);
+    <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findOne(AggregatePredicate<AGGREGATE, ?> predicate, boolean persist);
 
     /**
      * 根据条件获取实体
@@ -189,7 +190,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders, boolean persist);
+    <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE, ?> predicate, Collection<OrderInfo> orders, boolean persist);
 
     /**
      * 根据条件获取实体
@@ -199,7 +200,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, Collection<OrderInfo> orders) {
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE, ?> predicate, Collection<OrderInfo> orders) {
         return findFirst(predicate, orders, true);
     }
 
@@ -211,7 +212,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, OrderInfo... orders) {
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE, ?> predicate, OrderInfo... orders) {
         return findFirst(predicate, Arrays.asList(orders), true);
     }
 
@@ -223,7 +224,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate, boolean persist) {
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE, ?> predicate, boolean persist) {
         return findFirst(predicate, Collections.emptyList(), persist);
     }
 
@@ -231,9 +232,10 @@ public interface AggregateSupervisor {
      * 根据条件获取实体
      *
      * @param predicate
+     * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE> predicate) {
+    default <AGGREGATE extends Aggregate<?>> Optional<AGGREGATE> findFirst(AggregatePredicate<AGGREGATE, ?> predicate) {
         return findFirst(predicate, true);
     }
 
@@ -246,7 +248,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    default <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam) {
+    default <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE, ?> predicate, PageParam pageParam) {
         return findPage(predicate, pageParam, true);
     }
 
@@ -259,15 +261,15 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE> predicate, PageParam pageParam, boolean persist);
+    <AGGREGATE extends Aggregate<?>> PageData<AGGREGATE> findPage(AggregatePredicate<AGGREGATE, ?> predicate, PageParam pageParam, boolean persist);
 
     /**
      * 根据id删除聚合
      *
      * @param id
-     * @return
      * @param <AGGREGATE>
      * @param <ENTITY>
+     * @return
      */
     default <AGGREGATE extends Aggregate<ENTITY>, ENTITY> AGGREGATE removeById(Id<AGGREGATE, ?> id) {
         return removeByIds(Collections.singletonList(id)).stream().findFirst().orElse(null);
@@ -302,7 +304,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE> predicate);
+    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE, ?> predicate);
 
     /**
      * 根据条件删除实体
@@ -312,7 +314,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE> predicate, int limit);
+    <AGGREGATE extends Aggregate<?>> List<AGGREGATE> remove(AggregatePredicate<AGGREGATE, ?> predicate, int limit);
 
     /**
      * 根据条件获取实体计数
@@ -321,7 +323,7 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> long count(AggregatePredicate<AGGREGATE> predicate);
+    <AGGREGATE extends Aggregate<?>> long count(AggregatePredicate<AGGREGATE, ?> predicate);
 
     /**
      * 根据条件判断实体是否存在
@@ -330,5 +332,5 @@ public interface AggregateSupervisor {
      * @param <AGGREGATE>
      * @return
      */
-    <AGGREGATE extends Aggregate<?>> boolean exists(AggregatePredicate<AGGREGATE> predicate);
+    <AGGREGATE extends Aggregate<?>> boolean exists(AggregatePredicate<AGGREGATE, ?> predicate);
 }

@@ -24,7 +24,7 @@ public class QuerydslPredicate<ENTITY> implements org.netcorepal.cap4j.ddd.domai
     final BooleanBuilder predicate;
     final List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
 
-    public <AGGREGATE extends Aggregate<ENTITY>> AggregatePredicate<AGGREGATE> toAggregatePredicate(Class<AGGREGATE> aggregateClass) {
+    public <AGGREGATE extends Aggregate<ENTITY>> AggregatePredicate<AGGREGATE, ENTITY> toAggregatePredicate(Class<AGGREGATE> aggregateClass) {
         return JpaAggregatePredicate.byPredicate(aggregateClass, this);
     }
 
