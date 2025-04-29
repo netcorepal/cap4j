@@ -81,6 +81,7 @@ public class SnowflakeAutoConfiguration {
                 properties.getFieldDispatchAt(),
                 properties.getFieldExpireAt(),
                 properties.getExpireMinutes(),
+                properties.getLocalHostIdentify(),
                 showSql
         );
         dispatcher.init();

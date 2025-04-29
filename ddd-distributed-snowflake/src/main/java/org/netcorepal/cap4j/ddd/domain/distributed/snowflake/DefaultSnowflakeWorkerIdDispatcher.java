@@ -26,6 +26,7 @@ public class DefaultSnowflakeWorkerIdDispatcher implements SnowflakeWorkerIdDisp
     private final String fieldDispatchAt;
     private final String fieldExpireAt;
     private final int expireMinutes;
+    private final String localHostIdentify;
 
     private final Boolean showSql;
 
@@ -53,6 +54,9 @@ public class DefaultSnowflakeWorkerIdDispatcher implements SnowflakeWorkerIdDisp
 
     @SneakyThrows
     private String getHostIdentify() {
+        if (localHostIdentify != null && !localHostIdentify.matches("^\\s*$")) {
+            return localHostIdentify;
+        }
         return InetAddress.getLocalHost().getHostAddress();
     }
 

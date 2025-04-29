@@ -27,6 +27,10 @@ public class SnowflakeProperties {
     Long datacenterId = null;
     int expireMinutes = 10;
     /**
+     * 本地主机标识
+     */
+    String localHostIdentify;
+    /**
      * 最大连续错误次数
      */
     int maxPongContinuousErrorCount = 5;
