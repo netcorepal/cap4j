@@ -44,7 +44,7 @@ public class SnowflakeAutoConfiguration {
     @Scheduled(cron = "0 */1 * * * ?")
     public void pong() {
         if (snowflakeWorkerIdDispatcher.pong()) {
-            log.info("SnowflakeWorkerIdDispatcher 心跳上报成功");
+            log.debug("SnowflakeWorkerIdDispatcher 心跳上报成功");
             pongContinuousErrorCount = 0;
         } else {
             log.error("SnowflakeWorkerIdDispatcher 心跳上报失败");
