@@ -585,16 +585,19 @@ public abstract class MyAbstractMojo extends AbstractMojo {
         }
 
         String content = pathNode.getData();
+        String encoding = StringUtils.isBlank(pathNode.getEncoding())
+                ? outputEncoding
+                : pathNode.getEncoding();
         if (FileUtils.fileExists(path)) {
             switch (pathNode.getConflict()) {
                 case "warn":
                     getLog().warn("文件存在：" + path);
                     break;
                 case "overwrite":
-                    if (!FileUtils.fileRead(path, outputEncoding).contains(FLAG_DO_NOT_OVERWRITE)) {
+                    if (!FileUtils.fileRead(path, encoding).contains(FLAG_DO_NOT_OVERWRITE)) {
                         getLog().info("文件覆盖：" + path);
                         FileUtils.fileDelete(path);
-                        FileUtils.fileWrite(path, outputEncoding, content);
+                        FileUtils.fileWrite(path, encoding, content);
                     } else {
                         getLog().info("跳过覆盖，文件内容包含 " + FLAG_DO_NOT_OVERWRITE + "：" + path);
                     }
@@ -605,9 +608,10 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                     break;
             }
         } else {
-            getLog().info("文件创建：" + path);
+            getLog().info("文件创建(" + encoding + ")：" + path);
+            getLog().debug("文件内容：" + content);
             FileUtils.mkdir(FileUtils.getPath(path));
-            FileUtils.fileWrite(path, outputEncoding, content);
+            FileUtils.fileWrite(path, encoding, content);
         }
         return path;
     }
@@ -1172,7 +1176,9 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 "                    <archTemplateEncoding>" + archTemplateEncoding + "</archTemplateEncoding>\n" +
                 "                    <outputEncoding>" + outputEncoding + "</outputEncoding>\n" +
                 "                    <designFile>" + designFile + "</designFile>\n" +
-                "                    <multiModule>" + multiModule + "</multiModule>\n" +
+                (!multiModule
+                        ? ""
+                        : "                    <multiModule>" + multiModule + "</multiModule>\n") +
                 (StringUtils.equalsIgnoreCase("-adapter", moduleNameSuffix4Adapter)
                         ? ""
                         : "                    <moduleNameSuffix4Adapter>" + moduleNameSuffix4Adapter + "</moduleNameSuffix4Adapter>\n"
@@ -1222,9 +1228,6 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.equalsIgnoreCase("domain._share.meta", entitySchemaOutputPackage)
                         ? ""
                         : "                    <entitySchemaOutputPackage>" + entitySchemaOutputPackage + "</entitySchemaOutputPackage>\n") +
-                (StringUtils.isBlank(entitySchemaNameTemplate)
-                        ? ""
-                        : "                    <entitySchemaNameTemplate>" + entitySchemaNameTemplate + "</entitySchemaNameTemplate>\n") +
                 (StringUtils.isBlank(idGenerator)
                         ? ""
                         : "                    <idGenerator>" + idGenerator + "</idGenerator>\n") +
@@ -1267,16 +1270,21 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (!generateParent
                         ? ""
                         : "                    <generateParent>" + generateParent + "</generateParent>\n") +
-                (StringUtils.isBlank(repositoryNameTemplate)
+                (!repositorySupportQuerydsl
                         ? ""
-                        : "                    <repositoryNameTemplate>" + repositoryNameTemplate + "</repositoryNameTemplate>\n") +
-                "                    <repositorySupportQuerydsl>" + repositorySupportQuerydsl + "</repositorySupportQuerydsl>\n" +
+                        : "                    <repositorySupportQuerydsl>" + repositorySupportQuerydsl + "</repositorySupportQuerydsl>\n") +
                 (StringUtils.isBlank(aggregateRootAnnotation)
                         ? ""
                         : "                    <aggregateRootAnnotation>" + aggregateRootAnnotation + "</aggregateRootAnnotation>\n") +
+                (StringUtils.isBlank(entitySchemaNameTemplate)
+                        ? ""
+                        : "                    <entitySchemaNameTemplate>" + entitySchemaNameTemplate + "</entitySchemaNameTemplate>\n") +
                 (StringUtils.isBlank(aggregateNameTemplate)
                         ? ""
                         : "                    <aggregateNameTemplate>" + aggregateNameTemplate + "</aggregateNameTemplate>\n") +
+                (StringUtils.isBlank(repositoryNameTemplate)
+                        ? ""
+                        : "                    <repositoryNameTemplate>" + repositoryNameTemplate + "</repositoryNameTemplate>\n") +
                 "                </configuration>";
     }
 

@@ -34,6 +34,10 @@ public class PathNode {
      */
     String format = "raw";
     /**
+     * 输出编码
+     */
+    String encoding = null;
+    /**
      * 模板数据数据
      */
     String data;
