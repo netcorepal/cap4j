@@ -24,7 +24,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class DefaultPersistListenerManager implements PersistListenerManager {
     protected final List<PersistListener<?>> persistListeners;
-    protected final String scanPath;
+    protected final String eventClassScanPath;
 
     Map<Class<?>, List<PersistListener<?>>> persistListenersMap;
 
@@ -38,30 +38,30 @@ public class DefaultPersistListenerManager implements PersistListenerManager {
             }
             persistListenersMap = new HashMap<>();
             persistListeners.sort(Comparator.comparingInt(a -> OrderUtils.getOrder(a.getClass(), Ordered.LOWEST_PRECEDENCE)));
-            for (PersistListener persistListener : persistListeners) {
+            for (PersistListener<?> persistListener : persistListeners) {
                 Class<?> entityClass = ClassUtils.resolveGenericTypeClass(
-                    persistListener, 0,
-                    AbstractPersistListener.class, PersistListener.class
+                        persistListener, 0,
+                        AbstractPersistListener.class, PersistListener.class
                 );
                 subscribe(entityClass, persistListener);
             }
 
-            ScanUtils.findDomainEventClasses(scanPath).stream()
+            ScanUtils.findDomainEventClasses(eventClassScanPath).stream()
                     .filter(domainEventClass ->
                             null != domainEventClass.getAnnotation(AutoAttach.class))
                     .forEach(domainEventClass -> {
                         AutoAttach autoAttach = domainEventClass.getAnnotation(AutoAttach.class);
                         Class<?> converterClass = null;
-                        if(Converter.class.isAssignableFrom(domainEventClass)){
+                        if (Converter.class.isAssignableFrom(domainEventClass)) {
                             converterClass = domainEventClass;
                         }
-                        if(Converter.class.isAssignableFrom(autoAttach.converterClass())){
+                        if (Converter.class.isAssignableFrom(autoAttach.converterClass())) {
                             converterClass = autoAttach.converterClass();
                         }
-                        Converter<Object,Object> converter = ClassUtils.newConverterInstance(autoAttach.sourceEntityClass(), domainEventClass, converterClass);
+                        Converter<Object, Object> converter = ClassUtils.newConverterInstance(autoAttach.sourceEntityClass(), domainEventClass, converterClass);
                         subscribe(autoAttach.sourceEntityClass(), (e, t) -> {
                             for (PersistType listenPersistType : autoAttach.persistType()) {
-                                if(listenPersistType == t){
+                                if (listenPersistType == t) {
                                     DomainEventSupervisor.getInstance().attach(converter.convert(e), e, Duration.ofSeconds(autoAttach.delayInSeconds()));
                                     DomainEventSupervisor.getManager().release(Collections.singleton(e));
                                     break;
@@ -74,14 +74,15 @@ public class DefaultPersistListenerManager implements PersistListenerManager {
 
     /**
      * 订阅持久化事件监听器
+     *
      * @param entityClass
      * @param persistListener
      */
-    private void subscribe(Class<?> entityClass, PersistListener<?> persistListener){
+    private void subscribe(Class<?> entityClass, PersistListener<?> persistListener) {
         if (persistListenersMap == null) {
             persistListenersMap = new HashMap<>();
         }
-        if(!persistListenersMap.containsKey(entityClass)){
+        if (!persistListenersMap.containsKey(entityClass)) {
             persistListenersMap.put(entityClass, new java.util.ArrayList<>());
         }
         persistListenersMap.get(entityClass).add(persistListener);
@@ -89,6 +90,7 @@ public class DefaultPersistListenerManager implements PersistListenerManager {
 
     /**
      * onCreate & onUpdate & onDelete
+     *
      * @param aggregate
      * @param type
      * @param <Entity>
@@ -100,22 +102,26 @@ public class DefaultPersistListenerManager implements PersistListenerManager {
         if (listeners != null) {
             for (PersistListener<?> listener :
                     listeners) {
+                PersistListener<Entity> entityPersistListener = (PersistListener<Entity>) listener;
+                if (entityPersistListener == null) continue;
                 try {
-                    ((PersistListener<Entity>)listener).onChange(aggregate, type);
-                } catch (Exception ex){
-                    throw ex;
+                    entityPersistListener.onChange(aggregate, type);
+                } catch (Exception ex) {
+                    entityPersistListener.onExcepton(aggregate, type, ex);
                 }
             }
         }
-        if(!Object.class.equals(aggregate.getClass())){
+        if (!Object.class.equals(aggregate.getClass())) {
             listeners = persistListenersMap.get(Object.class);
             if (listeners != null) {
                 for (PersistListener<?> listener :
                         listeners) {
+                    PersistListener<Object> genericPersistListener = (PersistListener<Object>) listener;
+                    if (genericPersistListener == null) continue;
                     try {
-                        ((PersistListener<Object>)listener).onChange(aggregate, type);
-                    } catch (Exception ex){
-                        throw ex;
+                        genericPersistListener.onChange(aggregate, type);
+                    } catch (Exception ex) {
+                        genericPersistListener.onExcepton(aggregate, type, ex);
                     }
                 }
             }
