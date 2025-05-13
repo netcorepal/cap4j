@@ -15,4 +15,13 @@ public interface PersistListener<Entity> {
      */
     void onChange(Entity aggregate, PersistType type);
 
+    /**
+     * 异常
+     * @param aggregate
+     * @param type
+     * @param e
+     */
+    default void onExcepton(Entity aggregate, PersistType type, Exception e){
+
+    }
 }
