@@ -2,6 +2,7 @@
 
 [![Maven Central Version](https://img.shields.io/maven-central/v/io.github.netcorepal/cap4j)](https://central.sonatype.com/artifact/io.github.netcorepal/cap4j)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/netcorepal/cap4j/blob/main/LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/netcorepal/cap4j)
 
 本项目是 [CAP](https://github.com/dotnetcore/CAP) 项目的 Java 实现超集，基于
 [整洁架构](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)、
