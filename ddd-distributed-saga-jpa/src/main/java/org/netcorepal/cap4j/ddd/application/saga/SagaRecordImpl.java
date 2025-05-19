@@ -19,7 +19,6 @@ public class SagaRecordImpl implements SagaRecord {
     private Saga saga;
 
     public SagaRecordImpl() {
-//        this.saga = Saga.builder().build();
     }
 
     public void resume(Saga saga) {
@@ -51,8 +50,8 @@ public class SagaRecordImpl implements SagaRecord {
     }
 
     @Override
-    public Object getResult() {
-        return this.saga.getSagaResult();
+    public <R> R getResult() {
+        return (R) this.saga.getSagaResult();
     }
 
     @Override
@@ -80,17 +79,17 @@ public class SagaRecordImpl implements SagaRecord {
     }
 
     @Override
-    public Object getSagaProcessResult(String processCode) {
+    public <R> R getSagaProcessResult(String processCode) {
         SagaProcess sagaProcess = this.saga.getSagaProcess(processCode);
         if (sagaProcess == null) {
             return null;
         }
-        return sagaProcess.getSagaProcessResult();
+        return (R) sagaProcess.getSagaProcessResult();
     }
 
     @Override
     public LocalDateTime getScheduleTime() {
-        return this.saga.getCreateAt();
+        return this.saga.getLastTryTime();
     }
 
     @Override
@@ -106,6 +105,11 @@ public class SagaRecordImpl implements SagaRecord {
     @Override
     public boolean isInvalid() {
         return this.saga.isInvalid();
+    }
+
+    @Override
+    public boolean isExecuting() {
+        return this.saga.isExecuting();
     }
 
     @Override

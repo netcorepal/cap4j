@@ -137,13 +137,13 @@ public class ArchivedSaga {
     /**
      * datetime
      */
-    @Column(name = "`expire_at`", insertable = false, updatable = true)
+    @Column(name = "`expire_at`")
     LocalDateTime expireAt;
 
     /**
      * datetime
      */
-    @Column(name = "`create_at`", insertable = false, updatable = true)
+    @Column(name = "`create_at`")
     LocalDateTime createAt;
 
     /**
@@ -156,7 +156,7 @@ public class ArchivedSaga {
     /**
      * datetime
      */
-    @Column(name = "`last_try_time`", insertable = false, updatable = true)
+    @Column(name = "`last_try_time`")
     LocalDateTime lastTryTime;
 
     /**

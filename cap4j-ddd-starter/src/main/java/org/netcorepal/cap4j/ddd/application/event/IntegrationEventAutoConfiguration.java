@@ -16,6 +16,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -72,8 +73,10 @@ public class IntegrationEventAutoConfiguration {
 
     @Configuration
     @ConditionalOnClass(name = "org.netcorepal.cap4j.ddd.application.event.RocketMqIntegrationEventSubscriberAdapter")
+    @ImportAutoConfiguration(org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration.class)
     @Slf4j
     public static class RocketMqAdapterLauncher {
+
         @Bean
         @ConditionalOnProperty(name = "rocketmq.name-server")
         @ConditionalOnMissingBean(IntegrationEventPublisher.class)
@@ -138,6 +141,7 @@ public class IntegrationEventAutoConfiguration {
                     connectionFactory,
                     environment,
                     rabbitMqIntegrationEventAdapterProperties.getPublishThreadPoolSize(),
+                    rabbitMqIntegrationEventAdapterProperties.getPublishThreadFactoryClassName(),
                     rabbitMqIntegrationEventAdapterProperties.isAutoDeclareExchange(),
                     rabbitMqIntegrationEventAdapterProperties.getDefaultExchangeType());
             publisher.init();

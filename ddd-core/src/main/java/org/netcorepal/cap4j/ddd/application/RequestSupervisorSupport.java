@@ -8,6 +8,7 @@ package org.netcorepal.cap4j.ddd.application;
  */
 public class RequestSupervisorSupport {
     static RequestSupervisor instance = null;
+    static RequestManager requestManager = null;
 
     /**
      * 配置请求管理器
@@ -16,5 +17,14 @@ public class RequestSupervisorSupport {
      */
     public static void configure(RequestSupervisor requestSupervisor) {
         instance = requestSupervisor;
+    }
+
+    /**
+     * 配置请求管理器
+     *
+     * @param requestManager {@link RequestManager}
+     */
+    public static void configure(RequestManager requestManager) {
+        RequestSupervisorSupport.requestManager = requestManager;
     }
 }

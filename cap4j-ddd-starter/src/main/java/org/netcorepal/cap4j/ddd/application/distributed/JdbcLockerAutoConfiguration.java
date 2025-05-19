@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.application.distributed;
 
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.distributed.configure.JdbcLockerProperties;
+import org.netcorepal.cap4j.ddd.application.distributed.impl.ReentrantAspect;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -38,5 +39,11 @@ public class JdbcLockerAutoConfiguration {
                 showSql
         );
         return jdbcLocker;
+    }
+
+    @Bean
+    public ReentrantAspect reentrantAspect(Locker locker) {
+        ReentrantAspect reentrantAspect = new ReentrantAspect(locker);
+        return reentrantAspect;
     }
 }

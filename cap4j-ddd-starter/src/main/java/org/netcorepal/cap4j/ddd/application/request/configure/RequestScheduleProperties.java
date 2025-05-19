@@ -1,19 +1,19 @@
-package org.netcorepal.cap4j.ddd.application.saga.configure;
+package org.netcorepal.cap4j.ddd.application.request.configure;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * saga调度配置
+ * 请求调度配置
  *
  * @author binking338
  * @date 2024/10/15
  */
 @Data
 @Configuration
-@ConfigurationProperties("cap4j.ddd.application.saga.schedule")
-public class SagaScheduleProperties {
+@ConfigurationProperties("cap4j.ddd.application.request.schedule")
+public class RequestScheduleProperties {
     /**
      * 补偿发送-批量查询事件数量
      */

@@ -66,8 +66,8 @@ Mediator中介者模式、
                     <readonlyFields>db_created_at,db_updated_at</readonlyFields>
                     <fetchType>EAGER</fetchType>
                     <idGenerator>org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeIdentifierGenerator</idGenerator>
-                    <enumValueField>code</enumValueField>
                     <enumNameField>name</enumNameField>
+                    <enumValueField>code</enumValueField>
                     <generateDefault>false</generateDefault>
                     <generateDbType>true</generateDbType>
                     <generateSchema>true</generateSchema>

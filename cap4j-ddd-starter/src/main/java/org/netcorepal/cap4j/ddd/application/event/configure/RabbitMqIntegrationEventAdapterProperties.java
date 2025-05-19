@@ -19,6 +19,10 @@ public class RabbitMqIntegrationEventAdapterProperties {
      */
     int publishThreadPoolSize = 4;
     /**
+     * 异步发送线程工厂类名
+     */
+    String publishThreadFactoryClassName = null;
+    /**
      * 是否自动声明交换机
      */
     boolean autoDeclareExchange = true;

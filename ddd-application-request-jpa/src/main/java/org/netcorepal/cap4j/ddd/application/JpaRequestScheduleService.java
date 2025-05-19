@@ -1,4 +1,4 @@
-package org.netcorepal.cap4j.ddd.application.saga;
+package org.netcorepal.cap4j.ddd.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,16 +12,16 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Saga调度服务
+ * 请求调度服务
  * 失败定时重试
  *
  * @author binking338
- * @date 2024/10/14
+ * @date 2025/5/17
  */
 @Slf4j
 @RequiredArgsConstructor
-public class JpaSagaScheduleService {
-    private final SagaManager sagaManager;
+public class JpaRequestScheduleService {
+    private final RequestManager requestManager;
     private final Locker locker;
     private final String compensationLockerKey;
     private final String archiveLockerKey;
@@ -36,7 +36,7 @@ public class JpaSagaScheduleService {
 
     public void compense(int batchSize, int maxConcurrency, Duration interval, Duration maxLockDuration) {
         if (compensationRunning) {
-            log.info("Saga执行补偿:上次Saga执行补偿仍未结束，跳过");
+            log.info("Request执行补偿:上次Request执行补偿仍未结束，跳过");
             return;
         }
         compensationRunning = true;
@@ -44,24 +44,24 @@ public class JpaSagaScheduleService {
         String pwd = TextUtils.randomString(8, true, true);
         String lockerKey = compensationLockerKey;
         try {
-            boolean noneSaga = false;
+            boolean noneRequest = false;
             LocalDateTime now = LocalDateTime.now();
-            while (!noneSaga) {
+            while (!noneRequest) {
                 try {
                     if (!locker.acquire(lockerKey, pwd, maxLockDuration)) {
                         return;
                     }
-                    List<SagaRecord> sagaRecords = sagaManager.getByNextTryTime(now.plus(interval), batchSize);
-                    if (sagaRecords == null || sagaRecords.isEmpty()) {
-                        noneSaga = true;
+                    List<RequestRecord> requestRecords = requestManager.getByNextTryTime(now.plus(interval), batchSize);
+                    if (requestRecords == null || requestRecords.isEmpty()) {
+                        noneRequest = true;
                         continue;
                     }
-                    for (SagaRecord sagaRecord : sagaRecords) {
-                        log.info("Saga执行补偿: {}", sagaRecord);
-                        sagaManager.resume(sagaRecord);
+                    for (RequestRecord requestRecord : requestRecords) {
+                        log.info("Request执行补偿: {}", requestRecord);
+                        requestManager.resume(requestRecord);
                     }
                 } catch (Exception ex) {
-                    log.error("Saga执行补偿:异常失败", ex);
+                    log.error("Request执行补偿:异常失败", ex);
                 } finally {
                     locker.release(lockerKey, pwd);
                 }
@@ -73,7 +73,7 @@ public class JpaSagaScheduleService {
 
 
     /**
-     * Saga归档
+     * Request归档
      */
     public void archive(int expireDays, int batchSize, Duration maxLockDuration) {
         String pwd = TextUtils.randomString(8, true, true);
@@ -82,21 +82,21 @@ public class JpaSagaScheduleService {
         if (!locker.acquire(lockerKey, pwd, maxLockDuration)) {
             return;
         }
-        log.info("Saga归档");
+        log.info("Request归档");
 
         LocalDateTime now = LocalDateTime.now();
         int failCount = 0;
         while (true) {
             try {
-                int archivedCount = sagaManager.archiveByExpireAt(now.plusDays(expireDays), batchSize);
+                int archivedCount = requestManager.archiveByExpireAt(now.plusDays(expireDays), batchSize);
                 if (archivedCount == 0) {
                     break;
                 }
             } catch (Exception ex) {
                 failCount++;
-                log.error("Saga归档:失败", ex);
+                log.error("Request归档:失败", ex);
                 if (failCount >= 3) {
-                    log.info("Saga归档:累计3次异常退出任务");
+                    log.info("Request归档:累计3次异常退出任务");
                     break;
                 }
             }
@@ -109,8 +109,8 @@ public class JpaSagaScheduleService {
             return;
         }
         LocalDateTime now = LocalDateTime.now();
-        addPartition("__saga", now.plusMonths(1));
-        addPartition("__archived_saga", now.plusMonths(1));
+        addPartition("__request", now.plusMonths(1));
+        addPartition("__archived_request", now.plusMonths(1));
     }
 
     /**
