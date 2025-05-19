@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.impl;
 
 import org.netcorepal.cap4j.ddd.Mediator;
 import org.netcorepal.cap4j.ddd.application.RequestParam;
+import org.netcorepal.cap4j.ddd.application.RequestRecord;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
@@ -115,6 +116,16 @@ public class DefaultMediator implements Mediator {
     @Override
     public <REQUEST extends RequestParam<RESPONSE>, RESPONSE> RESPONSE send(REQUEST request) {
         return RequestSupervisor.getInstance().send(request);
+    }
+
+    @Override
+    public <REQUEST extends RequestParam<RESPONSE>, RESPONSE> String schedule(REQUEST request, LocalDateTime schedule) {
+        return RequestSupervisor.getInstance().schedule(request, schedule);
+    }
+
+    @Override
+    public <R> R result(String requestId) {
+        return RequestSupervisor.getInstance().result(requestId);
     }
 
     @Override

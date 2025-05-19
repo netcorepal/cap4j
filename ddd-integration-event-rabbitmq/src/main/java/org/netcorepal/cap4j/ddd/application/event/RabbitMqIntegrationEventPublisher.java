@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.netcorepal.cap4j.ddd.domain.event.EventRecord;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
@@ -14,9 +15,11 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.core.env.Environment;
+import org.springframework.objenesis.instantiator.util.ClassUtils;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 
 /**
@@ -32,13 +35,24 @@ public class RabbitMqIntegrationEventPublisher implements IntegrationEventPublis
     private final ConnectionFactory connectionFactory;
     private final Environment environment;
     private final int threadPoolSize;
+    private final String threadFactoryClassName;
     private final boolean autoDeclareExchange;
     private final String defaultExchangeType;
 
     private ExecutorService executorService = null;
 
     public void init() {
-        executorService = Executors.newFixedThreadPool(threadPoolSize);
+        if (StringUtils.isBlank(threadFactoryClassName)) {
+            executorService = Executors.newFixedThreadPool(threadPoolSize);
+        } else {
+            Class<?> threadFactoryClass = ClassUtils.getExistingClass(this.getClass().getClassLoader(), threadFactoryClassName);
+            ThreadFactory threadFactory =  (ThreadFactory) ClassUtils.newInstance(threadFactoryClass);
+            if (threadFactory != null) {
+                executorService = Executors.newFixedThreadPool(threadPoolSize, threadFactory);
+            } else {
+                executorService = Executors.newFixedThreadPool(threadPoolSize);
+            }
+        }
     }
 
     @Override

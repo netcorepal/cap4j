@@ -1,5 +1,8 @@
 package org.netcorepal.cap4j.ddd.application.saga;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 /**
  * Saga控制器
  *
@@ -30,23 +33,61 @@ public interface SagaSupervisor {
      *
      * @param request
      * @param <REQUEST>
+     * @param <RESPONSE> 响应参数类型
      * @return Saga ID
      */
-    <REQUEST extends SagaParam<?>> SagaRecord sendAsync(REQUEST request);
+    default <REQUEST extends SagaParam<RESPONSE>, RESPONSE> String async(REQUEST request) {
+        return schedule(request, LocalDateTime.now());
+    }
 
     /**
-     * 根据ID获取Saga记录
+     * 延迟执行请求
      *
-     * @param id
-     * @return
+     * @param request    请求参数
+     * @param schedule   计划时间
+     * @param <REQUEST>  请求参数类型
+     * @param <RESPONSE> 响应参数类型
+     * @return 请求ID
      */
-    SagaRecord getById(String id);
+    <REQUEST extends SagaParam<RESPONSE>, RESPONSE> String schedule(REQUEST request, LocalDateTime schedule);
 
     /**
-     * 重新执行Saga流程
+     * 延迟执行请求
      *
-     * @param saga
-     * @return
+     * @param request    请求参数
+     * @param delay      延迟时间
+     * @param <REQUEST>  请求参数类型
+     * @param <RESPONSE> 响应参数类型
+     * @return 请求ID
      */
-    Object resume(SagaRecord saga);
+    default <REQUEST extends SagaParam<RESPONSE>, RESPONSE> String delay(REQUEST request, Duration delay) {
+        return schedule(request, LocalDateTime.now().plus(delay));
+    }
+
+    /**
+     * 获取Saga结果
+     *
+     * @param id  Saga ID
+     * @param <R>
+     * @return 请求结果
+     */
+    <R> R result(String id);
+
+    /**
+     * 获取Saga结果
+     *
+     * @param requestId    请求ID
+     * @param requestClass 请求参数类型
+     * @param <REQUEST>    请求参数类型
+     * @param <RESPONSE>   响应参数类型
+     * @return 请求结果
+     */
+    default <REQUEST extends SagaParam<RESPONSE>, RESPONSE> RESPONSE result(String requestId, Class<REQUEST> requestClass) {
+        Object r = result(requestId);
+        RESPONSE response = (RESPONSE) r;
+        if (r != null && response == null) {
+            throw new IllegalArgumentException("request response type mismatch");
+        }
+        return response;
+    }
 }

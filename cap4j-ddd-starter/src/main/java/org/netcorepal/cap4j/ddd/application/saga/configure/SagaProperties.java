@@ -19,4 +19,9 @@ public class SagaProperties {
      * 用于实现Saga异步执行
      */
     int asyncThreadPoolSize = 4;
+    /**
+     * Saga异步线程池工厂类名
+     * 用于实现Saga异步执行
+     */
+    String asyncThreadFactoryClassName = null;
 }

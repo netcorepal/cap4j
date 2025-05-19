@@ -9,6 +9,7 @@ package org.netcorepal.cap4j.ddd.application.saga;
 public class SagaSupervisorSupport {
     static SagaSupervisor instance;
     static SagaProcessSupervisor sagaProcessSupervisor;
+    static SagaManager sagaManager;
 
     /**
      * 配置 Saga 管理器
@@ -27,5 +28,14 @@ public class SagaSupervisorSupport {
      */
     public static void configure(SagaProcessSupervisor sagaProcessSupervisor) {
         SagaSupervisorSupport.sagaProcessSupervisor = sagaProcessSupervisor;
+    }
+
+    /**
+     * 配置 Saga 管理器
+     *
+     * @param sagaManager
+     */
+    public static void configure(SagaManager sagaManager) {
+        SagaSupervisorSupport.sagaManager = sagaManager;
     }
 }

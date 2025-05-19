@@ -1,4 +1,3 @@
-org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
 org.netcorepal.cap4j.ddd.domain.distributed.configure.SnowflakeProperties
 org.netcorepal.cap4j.ddd.application.distributed.configure.JdbcLockerProperties
 org.netcorepal.cap4j.ddd.application.saga.configure.SagaProperties
@@ -7,6 +6,8 @@ org.netcorepal.cap4j.ddd.application.event.configure.RabbitMqIntegrationEventAda
 org.netcorepal.cap4j.ddd.application.distributed.JdbcLockerAutoConfiguration
 org.netcorepal.cap4j.ddd.application.event.IntegrationEventAutoConfiguration
 org.netcorepal.cap4j.ddd.application.saga.SagaAutoConfiguration
+org.netcorepal.cap4j.ddd.application.request.configure.RequestProperties
+org.netcorepal.cap4j.ddd.application.request.configure.RequestScheduleProperties
 org.netcorepal.cap4j.ddd.MediatorAutoConfiguration
 org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeAutoConfiguration
 org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties

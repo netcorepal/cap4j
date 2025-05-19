@@ -1,5 +1,6 @@
 package org.netcorepal.cap4j.ddd.application.saga;
 
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.RequestHandler;
 import org.netcorepal.cap4j.ddd.application.RequestInterceptor;
@@ -10,7 +11,6 @@ import org.netcorepal.cap4j.ddd.application.saga.impl.DefaultSagaSupervisor;
 import org.netcorepal.cap4j.ddd.application.saga.persistence.ArchivedSagaJpaRepository;
 import org.netcorepal.cap4j.ddd.application.saga.persistence.SagaJpaRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +21,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import jakarta.validation.Validator;
 import java.time.Duration;
 import java.util.List;
 
@@ -61,10 +60,12 @@ public class SagaAutoConfiguration {
                 validator,
                 sagaRecordRepository,
                 svcName,
-                sagaProperties.getAsyncThreadPoolSize()
+                sagaProperties.getAsyncThreadPoolSize(),
+                sagaProperties.getAsyncThreadFactoryClassName()
         );
         SagaSupervisorSupport.configure((SagaSupervisor) defaultSagaSupervisor);
         SagaSupervisorSupport.configure((SagaProcessSupervisor) defaultSagaSupervisor);
+        SagaSupervisorSupport.configure((SagaManager) defaultSagaSupervisor);
         defaultSagaSupervisor.init();
         return defaultSagaSupervisor;
     }
@@ -83,12 +84,9 @@ public class SagaAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(JpaSagaRecordRepository.class)
     public JpaSagaScheduleService jpaSagaScheduleService(
-            SagaRecordRepository sagaRecordRepository,
+            SagaManager sagaManager,
             Locker locker,
-            @Value(CONFIG_KEY_4_SVC_NAME)
-            String svcName,
             @Value(CONFIG_KEY_4_SAGA_COMPENSE_LOCKER_KEY)
             String compensationLockerKey,
             @Value(CONFIG_KEY_4_SAGA_ARCHIVE_LOCKER_KEY)
@@ -97,9 +95,8 @@ public class SagaAutoConfiguration {
             JdbcTemplate jdbcTemplate
     ) {
         JpaSagaScheduleService jpaSagaScheduleService = new JpaSagaScheduleService(
-                sagaRecordRepository,
+                sagaManager,
                 locker,
-                svcName,
                 compensationLockerKey,
                 archiveLockerKey,
                 sagaScheduleProperties.isAddPartitionEnable(),
@@ -115,10 +112,9 @@ public class SagaAutoConfiguration {
     @RequiredArgsConstructor
     @Service
     @EnableScheduling
-    @ConditionalOnBean(JpaSagaScheduleService.class)
     private static class __SagaScheduleLoader {
 
-        private static final String CONFIG_KEY_4_COMPENSE_CRON = "${cap4j.ddd.application.saga.schedule.compenseCron:${cap4j.ddd.application.saga.schedule.compense-cron:0 */1 * * * ?}}";
+        private static final String CONFIG_KEY_4_COMPENSE_CRON = "${cap4j.ddd.application.saga.schedule.compenseCron:${cap4j.ddd.application.saga.schedule.compense-cron:0 * * * * ?}}";
         private static final String CONFIG_KEY_4_ARCHIVE_CRON = "${cap4j.ddd.application.saga.schedule.archiveCron:${cap4j.ddd.application.saga.schedule.archive-cron:0 0 2 * * ?}}";
         private static final String CONFIG_KEY_4_ADD_PARTITION_CRON = "${cap4j.ddd.application.saga.schedule.addPartitionCron:${cap4j.ddd.application.saga.schedule.add-partition-cron:0 0 0 * * ?}}";
 

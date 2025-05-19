@@ -127,7 +127,7 @@ public class DomainEventAutoConfiguration {
     @EnableScheduling
     private static class __DomainEventScheduleLoader {
 
-        private static final String CONFIG_KEY_4_COMPENSE_CRON = "${cap4j.ddd.domain.event.schedule.compenseCron:${cap4j.ddd.domain.event.schedule.compense-cron:0 */1 * * * ?}}";
+        private static final String CONFIG_KEY_4_COMPENSE_CRON = "${cap4j.ddd.domain.event.schedule.compenseCron:${cap4j.ddd.domain.event.schedule.compense-cron:0 * * * * ?}}";
         private static final String CONFIG_KEY_4_ARCHIVE_CRON = "${cap4j.ddd.domain.event.schedule.archiveCron:${cap4j.ddd.domain.event.schedule.archive-cron:0 0 2 * * ?}}";
         private static final String CONFIG_KEY_4_ADD_PARTITION_CRON = "${cap4j.ddd.domain.event.schedule.addPartitionCron:${cap4j.ddd.domain.event.schedule.add-partition-cron:0 0 0 * * ?}}";
 

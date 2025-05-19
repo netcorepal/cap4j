@@ -39,7 +39,7 @@ public interface SagaRecord {
      * 获取Saga流程执行结果
      * @return
      */
-    Object getResult();
+    <R> R getResult();
 
     /**
      * Saga流程子环节开始执行
@@ -82,7 +82,7 @@ public interface SagaRecord {
      * @param processCode
      * @return
      */
-    Object getSagaProcessResult(String processCode);
+    <R> R getSagaProcessResult(String processCode);
 
     /**
      * 获取计划执行时间
@@ -107,6 +107,12 @@ public interface SagaRecord {
      * @return
      */
     boolean isInvalid();
+
+    /**
+     * Saga流程是否正在执行
+     * @return
+     */
+    boolean isExecuting();
     /**
      * Saga流程是否已完成
      * @return

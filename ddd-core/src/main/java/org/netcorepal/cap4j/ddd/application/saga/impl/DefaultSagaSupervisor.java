@@ -1,5 +1,8 @@
 package org.netcorepal.cap4j.ddd.application.saga.impl;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.RequestHandler;
 import org.netcorepal.cap4j.ddd.application.RequestInterceptor;
@@ -14,14 +17,13 @@ import org.netcorepal.cap4j.ddd.application.query.Query;
 import org.netcorepal.cap4j.ddd.application.saga.*;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.Validator;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 默认SagaSupervisor实现
@@ -30,30 +32,35 @@ import java.util.concurrent.ScheduledExecutorService;
  * @date 2024/10/12
  */
 @RequiredArgsConstructor
-public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervisor {
+public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervisor, SagaManager {
     private final List<RequestHandler<?, ?>> requestHandlers;
     private final List<RequestInterceptor<?, ?>> requestInterceptors;
     private final Validator validator;
     private final SagaRecordRepository sagaRecordRepository;
     private final String svcName;
     private final int threadPoolSize;
+    private final String threadFactoryClassName;
 
     /**
      * 默认Saga过期时间（分钟）
      * 一天 60*24 = 1440
      */
-    private static final int DEFAULT_EVENT_EXPIRE_MINUTES = 1440;
+    private static final int DEFAULT_SAGA_EXPIRE_MINUTES = 1440;
     /**
      * 默认Saga重试次数
      */
-    private static final int DEFAULT_EVENT_RETRY_TIMES = 200;
+    private static final int DEFAULT_SAGA_RETRY_TIMES = 200;
+    /**
+     * 本地调度时间阈值
+     */
+    private static final int LOCAL_SCHEDULE_ON_INIT_TIME_THRESHOLDS_MINUTES = 2;
 
     private static final ThreadLocal<SagaRecord> SAGA_RECORD_THREAD_LOCAL = new ThreadLocal<>();
 
     private Map<Class<?>, RequestHandler<?, ?>> requestHandlerMap = null;
     private Map<Class<?>, List<RequestInterceptor<?, ?>>> requestInterceptorMap = null;
 
-    private ScheduledExecutorService executor = null;
+    private ScheduledExecutorService executorService = null;
 
     public void init() {
         if (null != requestHandlerMap) {
@@ -83,66 +90,101 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
             interceptors.add(requestInterceptor);
         }
 
-        if (null != this.executor) {
+        if (null != this.executorService) {
             return;
         }
         synchronized (this) {
-            if (null != this.executor) {
+            if (null != this.executorService) {
                 return;
             }
-            this.executor = Executors.newScheduledThreadPool(threadPoolSize);
+            if (threadFactoryClassName == null || threadFactoryClassName.isEmpty()) {
+                executorService = Executors.newScheduledThreadPool(threadPoolSize);
+            } else {
+                Class<?> threadFactoryClass = org.springframework.objenesis.instantiator.util.ClassUtils.getExistingClass(this.getClass().getClassLoader(), threadFactoryClassName);
+                ThreadFactory threadFactory = (ThreadFactory) org.springframework.objenesis.instantiator.util.ClassUtils.newInstance(threadFactoryClass);
+                if (threadFactory != null) {
+                    executorService = Executors.newScheduledThreadPool(threadPoolSize, threadFactory);
+                } else {
+                    executorService = Executors.newScheduledThreadPool(threadPoolSize);
+                }
+            }
         }
     }
 
     @Override
     public <REQUEST extends SagaParam<RESPONSE>, RESPONSE> RESPONSE send(REQUEST request) {
-        if(validator != null){
+        if (validator != null) {
             Set<ConstraintViolation<REQUEST>> constraintViolations = validator.validate(request);
-            if(!constraintViolations.isEmpty()){
+            if (!constraintViolations.isEmpty()) {
                 throw new ConstraintViolationException(constraintViolations);
             }
         }
         init();
-        SagaRecord sagaRecord = createSagaRecord(request.getClass().getName(), request);
+        SagaRecord sagaRecord = createSagaRecord(request.getClass().getName(), request, LocalDateTime.now());
         return internalSend(request, sagaRecord);
     }
 
     @Override
-    public <REQUEST extends SagaParam<?>> SagaRecord sendAsync(REQUEST request) {
-        if(validator != null){
+    public <REQUEST extends SagaParam<RESPONSE>, RESPONSE> String schedule(REQUEST request, LocalDateTime schedule) {
+        if (validator != null) {
             Set<ConstraintViolation<REQUEST>> constraintViolations = validator.validate(request);
-            if(!constraintViolations.isEmpty()){
+            if (!constraintViolations.isEmpty()) {
                 throw new ConstraintViolationException(constraintViolations);
             }
         }
         init();
-        SagaRecord sagaRecord = createSagaRecord(request.getClass().getName(), request);
-        executor.submit(() ->
-                internalSend((SagaParam) request, sagaRecord)
-        );
+        SagaRecord sagaRecord = createSagaRecord(request.getClass().getName(), request, schedule);
+        if (sagaRecord.isExecuting()) {
+            LocalDateTime now = LocalDateTime.now();
+            Duration duration = now.isBefore(sagaRecord.getScheduleTime())
+                    ? Duration.between(LocalDateTime.now(), sagaRecord.getScheduleTime())
+                    : Duration.ZERO;
+            executorService.schedule(() ->
+                            internalSend((SagaParam) request, sagaRecord)
+                    , duration.toMillis(), TimeUnit.MILLISECONDS);
+        }
 
-        return sagaRecord;
+        return sagaRecord.getId();
     }
 
     @Override
-    public SagaRecord getById(String id) {
-        return sagaRecordRepository.getById(id);
+    public <R> R result(String id) {
+        SagaRecord sagaRecord = sagaRecordRepository.getById(id);
+        return sagaRecord == null ? null : sagaRecord.getResult();
     }
 
     @Override
-    public Object resume(SagaRecord saga) {
+    public void resume(SagaRecord saga) {
         if (!saga.beginSaga(LocalDateTime.now())) {
             sagaRecordRepository.save(saga);
-            return saga.getResult();
+            return;
         }
-        SagaParam param = saga.getParam();
-        if(validator != null){
-            Set<ConstraintViolation<SagaParam>> constraintViolations = validator.validate(param);
-            if(!constraintViolations.isEmpty()){
+        SagaParam<?> param = saga.getParam();
+        if (validator != null) {
+            Set<ConstraintViolation<SagaParam<?>>> constraintViolations = validator.validate(param);
+            if (!constraintViolations.isEmpty()) {
                 throw new ConstraintViolationException(constraintViolations);
             }
         }
-        return internalSend(param, saga);
+        if (saga.isExecuting()) {
+            LocalDateTime now = LocalDateTime.now();
+            Duration duration = now.isBefore(saga.getScheduleTime())
+                    ? Duration.between(LocalDateTime.now(), saga.getScheduleTime())
+                    : Duration.ZERO;
+            executorService.schedule(() ->
+                            internalSend((SagaParam) param, saga)
+                    , duration.toMillis(), TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @Override
+    public List<SagaRecord> getByNextTryTime(LocalDateTime maxNextTryTime, int limit) {
+        return sagaRecordRepository.getByNextTryTime(svcName, maxNextTryTime, limit);
+    }
+
+    @Override
+    public int archiveByExpireAt(LocalDateTime maxExpireAt, int limit) {
+        return sagaRecordRepository.archiveByExpireAt(svcName, maxExpireAt, limit);
     }
 
     @Override
@@ -152,7 +194,7 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
             throw new IllegalStateException("No SagaRecord found in thread local");
         }
         if (sagaRecord.isSagaProcessExecuted(processCode)) {
-            RESPONSE subResult = (RESPONSE) sagaRecord.getSagaProcessResult(processCode);
+            RESPONSE subResult = sagaRecord.getSagaProcessResult(processCode);
             return subResult;
         }
 
@@ -178,11 +220,12 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
      * @param request
      * @return
      */
-    protected SagaRecord createSagaRecord(String sagaType, SagaParam<?> request) {
-        LocalDateTime now = LocalDateTime.now();
+    protected SagaRecord createSagaRecord(String sagaType, SagaParam<?> request, LocalDateTime scheduleAt) {
         SagaRecord sagaRecord = sagaRecordRepository.create();
-        sagaRecord.init(request, svcName, sagaType, now, Duration.ofMinutes(DEFAULT_EVENT_EXPIRE_MINUTES), DEFAULT_EVENT_RETRY_TIMES);
-        sagaRecord.beginSaga(now);
+        sagaRecord.init(request, svcName, sagaType, scheduleAt, Duration.ofMinutes(DEFAULT_SAGA_EXPIRE_MINUTES), DEFAULT_SAGA_RETRY_TIMES);
+        if (scheduleAt.isBefore(LocalDateTime.now()) || Duration.between(LocalDateTime.now(), scheduleAt).toMinutes() < LOCAL_SCHEDULE_ON_INIT_TIME_THRESHOLDS_MINUTES) {
+            sagaRecord.beginSaga(scheduleAt);
+        }
         sagaRecordRepository.save(sagaRecord);
         return sagaRecord;
     }

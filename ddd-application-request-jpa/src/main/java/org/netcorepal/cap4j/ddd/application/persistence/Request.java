@@ -1,4 +1,4 @@
-package org.netcorepal.cap4j.ddd.application.saga.persistence;
+package org.netcorepal.cap4j.ddd.application.persistence;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.annotation.JSONField;
@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.netcorepal.cap4j.ddd.application.RequestParam;
-import org.netcorepal.cap4j.ddd.application.saga.SagaParam;
 import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.annotation.Retry;
@@ -22,7 +21,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -30,7 +28,7 @@ import static com.alibaba.fastjson.serializer.SerializerFeature.IgnoreNonFieldGe
 import static com.alibaba.fastjson.serializer.SerializerFeature.SkipTransientField;
 
 /**
- * SAGA事务
+ * 请求记录
  * <p>
  * 本文件由[cap4j-ddd-codegen-maven-plugin]生成
  * 警告：请勿手工修改该文件的字段声明，重新生成会覆盖字段声明
@@ -38,9 +36,9 @@ import static com.alibaba.fastjson.serializer.SerializerFeature.SkipTransientFie
  * @author cap4j-ddd-codegen
  * @date 2024/10/14
  */
-@Aggregate(aggregate = "saga", name = "Saga", root = true, type = Aggregate.TYPE_ENTITY, description = "SAGA事务")
+@Aggregate(aggregate = "request", name = "Request", root = true, type = Aggregate.TYPE_ENTITY, description = "请求记录")
 @Entity
-@Table(name = "`__saga`")
+@Table(name = "`__request`")
 @DynamicInsert
 @DynamicUpdate
 
@@ -49,11 +47,11 @@ import static com.alibaba.fastjson.serializer.SerializerFeature.SkipTransientFie
 @Builder
 @Getter
 @Slf4j
-public class Saga {
+public class Request {
 
-    public static final String F_SAGA_UUID = "sagaUuid";
+    public static final String F_REQUEST_UUID = "requestUuid";
     public static final String F_SVC_NAME = "svcName";
-    public static final String F_SAGA_TYPE = "sagaType";
+    public static final String F_REQUEST_TYPE = "requestType";
     public static final String F_PARAM = "param";
     public static final String F_PARAM_TYPE = "paramType";
     public static final String F_RESULT = "result";
@@ -61,7 +59,7 @@ public class Saga {
     public static final String F_EXCEPTION = "exception";
     public static final String F_CREATE_AT = "createAt";
     public static final String F_EXPIRE_AT = "expireAt";
-    public static final String F_SAGA_STATE = "sagaState";
+    public static final String F_REQUEST_STATE = "requestState";
     public static final String F_TRY_TIMES = "tryTimes";
     public static final String F_TRIED_TIMES = "triedTimes";
     public static final String F_LAST_TRY_TIME = "lastTryTime";
@@ -69,58 +67,57 @@ public class Saga {
 
     // 【行为方法开始】
 
-    public void init(SagaParam<?> sagaParam, String svcName, String sagaType, LocalDateTime scheduleAt, Duration expireAfter, int retryTimes) {
-        this.sagaUuid = UUID.randomUUID().toString();
+    public void init(RequestParam<?> requestParam, String svcName, String requestType, LocalDateTime scheduleAt, Duration expireAfter, int retryTimes) {
+        this.requestUuid = UUID.randomUUID().toString();
         this.svcName = svcName;
-        this.sagaType = sagaType;
+        this.requestType = requestType;
         this.createAt = scheduleAt;
         this.expireAt = scheduleAt.plusSeconds((int) expireAfter.getSeconds());
-        this.sagaState = SagaState.INIT;
+        this.requestState = RequestState.INIT;
         this.tryTimes = retryTimes;
         this.triedTimes = 0;
         this.lastTryTime = scheduleAt;
         this.nextTryTime = calculateNextTryTime(scheduleAt);
-        this.loadSagaParam(sagaParam);
+        this.loadRequestParam(requestParam);
         this.result = "";
         this.resultType = "";
-        this.sagaProcesses = new ArrayList<>();
     }
 
     @Transient
     @JSONField(serialize = false)
-    private SagaParam<?> sagaParam = null;
+    private RequestParam<?> requestParam = null;
     @Transient
     @JSONField(serialize = false)
-    private Object sagaResult = null;
+    private Object requestResult = null;
 
-    void loadSagaParam(SagaParam<?> sagaParam) {
-        if (sagaParam == null) {
-            throw new DomainException("Saga参数不能为null");
+    void loadRequestParam(RequestParam<?> requestParam) {
+        if (requestParam == null) {
+            throw new DomainException("Request参数不能为null");
         }
-        this.sagaParam = sagaParam;
-        this.param = JSON.toJSONString(sagaParam, IgnoreNonFieldGetter, SkipTransientField);
-        this.paramType = sagaParam.getClass().getName();
-        Retry retry = sagaParam == null
+        this.requestParam = requestParam;
+        this.param = JSON.toJSONString(requestParam, IgnoreNonFieldGetter, SkipTransientField);
+        this.paramType = requestParam.getClass().getName();
+        Retry retry = requestParam == null
                 ? null
-                : sagaParam.getClass().getAnnotation(Retry.class);
+                : requestParam.getClass().getAnnotation(Retry.class);
         if (retry != null) {
             this.tryTimes = retry.retryTimes();
             this.expireAt = this.createAt.plusMinutes(retry.expireAfter());
         }
     }
 
-    void loadSagaResult(Object result) {
+    void loadRequestResult(Object result) {
         if (result == null) {
-            throw new DomainException("Saga返回不能为null");
+            throw new DomainException("Request返回不能为null");
         }
-        this.sagaResult = result;
+        this.requestResult = result;
         this.result = JSON.toJSONString(result, IgnoreNonFieldGetter, SkipTransientField);
         this.resultType = result.getClass().getName();
     }
 
-    public SagaParam<?> getSagaParam() {
-        if (this.sagaParam != null) {
-            return this.sagaParam;
+    public RequestParam<?> getRequestParam() {
+        if (this.requestParam != null) {
+            return this.requestParam;
         }
         if (TextUtils.isNotBlank(paramType)) {
             Class<?> dataClass = null;
@@ -129,14 +126,14 @@ public class Saga {
             } catch (ClassNotFoundException e) {
                 log.error("参数类型解析错误", e);
             }
-            this.sagaParam = (SagaParam<?>) JSON.parseObject(param, dataClass, Feature.SupportNonPublicField);
+            this.requestParam = (RequestParam<?>) JSON.parseObject(param, dataClass, Feature.SupportNonPublicField);
         }
-        return this.sagaParam;
+        return this.requestParam;
     }
 
-    public Object getSagaResult() {
-        if (this.sagaResult != null) {
-            return this.sagaResult;
+    public Object getRequestResult() {
+        if (this.requestResult != null) {
+            return this.requestResult;
         }
 
         if (TextUtils.isNotBlank(resultType)) {
@@ -146,72 +143,40 @@ public class Saga {
             } catch (ClassNotFoundException e) {
                 log.error("返回类型解析错误", e);
             }
-            this.sagaResult = JSON.parseObject(result, dataClass, Feature.SupportNonPublicField);
+            this.requestResult = JSON.parseObject(result, dataClass, Feature.SupportNonPublicField);
         }
-        return this.sagaResult;
-    }
-
-    public SagaProcess getSagaProcess(String processCode) {
-        if (this.sagaProcesses == null) {
-            return null;
-        }
-        return this.sagaProcesses.stream().filter(p -> Objects.equals(p.processCode, processCode)).findFirst().orElse(null);
-    }
-
-    public void beginSagaProcess(LocalDateTime now, String processCode, RequestParam<?> param) {
-        SagaProcess sagaProcess = getSagaProcess(processCode);
-        if (sagaProcess == null) {
-            sagaProcess = SagaProcess.builder()
-                    .processCode(processCode)
-                    .processState(SagaProcess.SagaProcessState.INIT)
-                    .createAt(now)
-                    .triedTimes(0)
-                    .build();
-            if (this.sagaProcesses == null) {
-                this.sagaProcesses = new ArrayList<>();
-            }
-            this.sagaProcesses.add(sagaProcess);
-        }
-        sagaProcess.beginProcess(now, param);
-    }
-
-    public void endSagaProcess(LocalDateTime now, String processCode, Object result) {
-        SagaProcess sagaProcess = getSagaProcess(processCode);
-        if (sagaProcess == null) {
-            return;
-        }
-        sagaProcess.endProcess(now, result);
+        return this.requestResult;
     }
 
     public boolean isValid() {
-        return SagaState.INIT.equals(this.sagaState)
-                || SagaState.EXECUTING.equals(this.sagaState)
-                || SagaState.EXCEPTION.equals(this.sagaState);
+        return RequestState.INIT.equals(this.requestState)
+                || RequestState.EXECUTING.equals(this.requestState)
+                || RequestState.EXCEPTION.equals(this.requestState);
     }
 
     public boolean isInvalid() {
-        return SagaState.CANCEL.equals(this.sagaState)
-                || SagaState.EXPIRED.equals(this.sagaState)
-                || SagaState.EXHAUSTED.equals(this.sagaState);
+        return RequestState.CANCEL.equals(this.requestState)
+                || RequestState.EXPIRED.equals(this.requestState)
+                || RequestState.EXHAUSTED.equals(this.requestState);
     }
 
     public boolean isExecuting() {
-        return SagaState.EXECUTING.equals(this.sagaState);
+        return RequestState.EXECUTING.equals(this.requestState);
     }
 
     public boolean isExecuted() {
-        return SagaState.EXECUTED.equals(this.sagaState);
+        return RequestState.EXECUTED.equals(this.requestState);
     }
 
-    public boolean beginSaga(LocalDateTime now) {
+    public boolean beginRequest(LocalDateTime now) {
         // 超过重试次数
         if (this.triedTimes >= this.tryTimes) {
-            this.sagaState = SagaState.EXHAUSTED;
+            this.requestState = RequestState.EXHAUSTED;
             return false;
         }
         // 事件过期
         if (now.isAfter(this.expireAt)) {
-            this.sagaState = SagaState.EXPIRED;
+            this.requestState = RequestState.EXPIRED;
             return false;
         }
         // 初始状态或者确认中或者异常
@@ -222,23 +187,23 @@ public class Saga {
         if ((this.lastTryTime == null || !this.lastTryTime.isEqual(now)) && this.nextTryTime != null && this.nextTryTime.isAfter(now)) {
             return false;
         }
-        this.sagaState = SagaState.EXECUTING;
+        this.requestState = RequestState.EXECUTING;
         this.lastTryTime = now;
         this.triedTimes++;
         this.nextTryTime = calculateNextTryTime(now);
         return true;
     }
 
-    public void endSaga(LocalDateTime now, Object result) {
-        this.sagaState = SagaState.EXECUTED;
-        loadSagaResult(result);
+    public void endRequest(LocalDateTime now, Object result) {
+        this.requestState = RequestState.EXECUTED;
+        loadRequestResult(result);
     }
 
-    public boolean cancelSaga(LocalDateTime now) {
+    public boolean cancelRequest(LocalDateTime now) {
         if (isExecuted() || isInvalid()) {
             return false;
         }
-        this.sagaState = SagaState.CANCEL;
+        this.requestState = RequestState.CANCEL;
         return true;
     }
 
@@ -246,16 +211,16 @@ public class Saga {
         if (isExecuted()) {
             return;
         }
-        this.sagaState = SagaState.EXCEPTION;
+        this.requestState = RequestState.EXCEPTION;
         StringWriter sw = new StringWriter();
         ex.printStackTrace(new PrintWriter(sw, true));
         this.exception = sw.toString();
     }
 
     private LocalDateTime calculateNextTryTime(LocalDateTime now) {
-        Retry retry = getSagaParam() == null
+        Retry retry = getRequestParam() == null
                 ? null
-                : getSagaParam().getClass().getAnnotation(Retry.class);
+                : getRequestParam().getClass().getAnnotation(Retry.class);
         if (Objects.isNull(retry) || retry.retryIntervals().length == 0) {
             if (this.triedTimes <= 10) {
                 return now.plusMinutes(1);
@@ -282,7 +247,7 @@ public class Saga {
     // 【行为方法结束】
 
     @AllArgsConstructor
-    public static enum SagaState {
+    public static enum RequestState {
         /**
          * 初始状态
          */
@@ -316,8 +281,8 @@ public class Saga {
         @Getter
         private final String name;
 
-        public static SagaState valueOf(Integer value) {
-            for (SagaState val : SagaState.values()) {
+        public static RequestState valueOf(Integer value) {
+            for (RequestState val : RequestState.values()) {
                 if (Objects.equals(val.value, value)) {
                     return val;
                 }
@@ -325,25 +290,20 @@ public class Saga {
             return null;
         }
 
-        public static class Converter implements AttributeConverter<SagaState, Integer> {
-
+        public static class Converter implements AttributeConverter<RequestState, Integer> {
             @Override
-            public Integer convertToDatabaseColumn(SagaState attribute) {
-                return attribute.value;
+            public Integer convertToDatabaseColumn(RequestState attribute) {
+                return attribute.getValue();
             }
 
             @Override
-            public SagaState convertToEntityAttribute(Integer dbData) {
-                return SagaState.valueOf(dbData);
+            public RequestState convertToEntityAttribute(Integer dbData) {
+                return RequestState.valueOf(dbData);
             }
         }
     }
 
     // 【字段映射开始】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
-
-    @OneToMany(cascade = {CascadeType.ALL}, fetch = FetchType.EAGER, orphanRemoval = true)
-    @JoinColumn(name = "`saga_id`", nullable = false)
-    private java.util.List<SagaProcess> sagaProcesses;
 
     /**
      * bigint
@@ -356,8 +316,8 @@ public class Saga {
     /**
      * varchar(64)
      */
-    @Column(name = "`saga_uuid`")
-    String sagaUuid;
+    @Column(name = "`request_uuid`")
+    String requestUuid;
 
     /**
      * varchar(255)
@@ -368,8 +328,8 @@ public class Saga {
     /**
      * varchar(255)
      */
-    @Column(name = "`saga_type`")
-    String sagaType;
+    @Column(name = "`request_type`")
+    String requestType;
 
     /**
      * text
@@ -416,9 +376,9 @@ public class Saga {
     /**
      * int
      */
-    @Column(name = "`saga_state`")
-    @Convert(converter = SagaState.Converter.class)
-    SagaState sagaState;
+    @Column(name = "`request_state`")
+    @Convert(converter = RequestState.Converter.class)
+    RequestState requestState;
 
     /**
      * datetime
@@ -454,5 +414,3 @@ public class Saga {
 
     // 【字段映射结束】本段落由[cap4j-ddd-codegen-maven-plugin]维护，请不要手工改动
 }
-
-
