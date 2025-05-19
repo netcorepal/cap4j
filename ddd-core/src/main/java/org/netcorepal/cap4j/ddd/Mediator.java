@@ -67,15 +67,6 @@ public interface Mediator extends AggregateFactorySupervisor, RepositorySupervis
     }
 
     /**
-     * 获取单元工作单元
-     *
-     * @return
-     */
-    static UnitOfWork uow() {
-        return UnitOfWork.getInstance();
-    }
-
-    /**
      * 获取集成事件管理器
      *
      * @return
@@ -119,6 +110,79 @@ public interface Mediator extends AggregateFactorySupervisor, RepositorySupervis
      * @return
      */
     static RequestSupervisor queries() {
+        return RequestSupervisor.getInstance();
+    }
+
+
+    /**
+     * 获取聚合工厂管理器(shortcut for factories)
+     *
+     * @return
+     */
+    static AggregateFactorySupervisor fac() {
+        return AggregateFactorySupervisor.getInstance();
+    }
+
+    /**
+     * 获取聚合仓储管理器(shortcut for repositories)
+     *
+     * @return
+     */
+    static RepositorySupervisor repo() {
+        return RepositorySupervisor.getInstance();
+    }
+
+    /**
+     * 获取聚合管理器(shortcut for aggregates)
+     *
+     * @return
+     */
+    static AggregateSupervisor agg() {
+        return AggregateSupervisor.getInstance();
+    }
+
+    /**
+     * 获取领域服务管理器(shortcut for services)
+     *
+     * @return
+     */
+    static DomainServiceSupervisor svc() {
+        return DomainServiceSupervisor.getInstance();
+    }
+
+    /**
+     * 获取单元工作单元
+     *
+     * @return
+     */
+    static UnitOfWork uow() {
+        return UnitOfWork.getInstance();
+    }
+
+    /**
+     * 获取请求管理器(shortcut for requests)
+     *
+     * @return
+     */
+    static RequestSupervisor req() {
+        return RequestSupervisor.getInstance();
+    }
+
+    /**
+     * 获取命令管理器(shortcut for commands)
+     *
+     * @return
+     */
+    static RequestSupervisor cmd() {
+        return RequestSupervisor.getInstance();
+    }
+
+    /**
+     * 获取查询管理器(shortcut for queries)
+     *
+     * @return
+     */
+    static RequestSupervisor qry() {
         return RequestSupervisor.getInstance();
     }
 
