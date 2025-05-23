@@ -1,13 +1,18 @@
 package org.netcorepal.cap4j.ddd.archinfo;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import lombok.extern.slf4j.Slf4j;
 import org.netcorepal.cap4j.ddd.archinfo.configure.ArchInfoProperties;
-import org.netcorepal.cap4j.ddd.archinfo.web.ArchInfoRequestHandler;
+import org.netcorepal.cap4j.ddd.archinfo.model.ArchInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.HttpRequestHandler;
+
+import java.nio.charset.StandardCharsets;
 
 import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
 import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_VERSION;
@@ -33,17 +38,24 @@ public class ArchInfoAutoConfiguration {
         return new ArchInfoManager(name, version, archInfoProperties.getBasePackage());
     }
 
-
-    @Value("${server.port:80}")
-    private String serverPort;
-    @Value("${server.servlet.context-path:/}")
-    private String serverServletContentPath;
-
     @ConditionalOnWebApplication
     @ConditionalOnProperty(name = "cap4j.ddd.archinfo.enabled", havingValue = "true")
     @Bean(name = "/cap4j/archinfo")
-    public ArchInfoRequestHandler archInfoRequestHandler(ArchInfoManager archInfoManager) {
-        log.info("archinfo URL: http://localhost:" + serverPort + serverServletContentPath + "/cap4j/archinfo");
-        return new ArchInfoRequestHandler(archInfoManager);
+    public HttpRequestHandler archInfoRequestHandler(
+            ArchInfoManager archInfoManager,
+            @Value("${server.port:80}")
+            String serverPort,
+            @Value("${server.servlet.context-path:}")
+            String serverServletContentPath
+    ) {
+        log.info("ArchInfo URL: http://localhost:" + serverPort + serverServletContentPath + "/cap4j/archinfo");
+        return (req, res) -> {
+            ArchInfo archInfo = archInfoManager.getArchInfo();
+            res.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            res.setContentType("application/json; charset=utf-8");
+            res.getWriter().println(JSON.toJSONString(archInfo, SerializerFeature.SortField));
+            res.getWriter().flush();
+            res.getWriter().close();
+        };
     }
 }

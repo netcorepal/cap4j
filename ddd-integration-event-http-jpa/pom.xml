@@ -9,20 +9,30 @@
         <version>3.1.0-alpha-3</version>
     </parent>
 
-    <artifactId>ddd-application-request-jpa</artifactId>
+    <artifactId>ddd-integration-event-http-jpa</artifactId>
     <packaging>jar</packaging>
 
-    <name>ddd-application-request-jpa</name>
+    <name>ddd-integration-event-http-jpa</name>
 
     <dependencies>
         <dependency>
-            <groupId>io.github.netcorepal</groupId>
-            <artifactId>ddd-core</artifactId>
-            <version>${project.parent.version}</version>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.netcorepal</groupId>
+            <artifactId>ddd-integration-event-http</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
         <!-- JPA -->
         <dependency>
@@ -30,11 +40,11 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 </project>

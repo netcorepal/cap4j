@@ -34,6 +34,8 @@
         <module>ddd-application-request-jpa</module>
         <module>ddd-integration-event-rocketmq</module>
         <module>ddd-integration-event-rabbitmq</module>
+        <module>ddd-integration-event-http</module>
+        <module>ddd-integration-event-http-jpa</module>
         <module>ddd-distributed-locker-jdbc</module>
         <module>ddd-distributed-snowflake</module>
         <module>ddd-distributed-saga-jpa</module>

@@ -2,6 +2,7 @@ org.netcorepal.cap4j.ddd.domain.distributed.configure.SnowflakeProperties
 org.netcorepal.cap4j.ddd.application.distributed.configure.JdbcLockerProperties
 org.netcorepal.cap4j.ddd.application.saga.configure.SagaProperties
 org.netcorepal.cap4j.ddd.application.saga.configure.SagaScheduleProperties
+org.netcorepal.cap4j.ddd.application.event.configure.HttpIntegrationEventAdapterProperties
 org.netcorepal.cap4j.ddd.application.event.configure.RabbitMqIntegrationEventAdapterProperties
 org.netcorepal.cap4j.ddd.application.distributed.JdbcLockerAutoConfiguration
 org.netcorepal.cap4j.ddd.application.event.IntegrationEventAutoConfiguration

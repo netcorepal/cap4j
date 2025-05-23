@@ -15,7 +15,7 @@ import static com.alibaba.fastjson.serializer.SerializerFeature.IgnoreNonFieldGe
 import static com.alibaba.fastjson.serializer.SerializerFeature.SkipTransientField;
 
 /**
- * 基于RocketMq的领域事件发布器
+ * 基于RocketMq的集成事件发布器
  * 如下配置需配置好，保障RocketMqTemplate被初始化
  * ## rocketmq
  * #rocketmq.name-server = myrocket.nameserver:9876
