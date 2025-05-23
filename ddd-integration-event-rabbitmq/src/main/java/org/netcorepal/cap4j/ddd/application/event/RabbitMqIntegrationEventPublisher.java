@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadFactory;
 
 
 /**
- * 基于RabbitMq的领域事件发布器
+ * 基于RabbitMq的集成事件发布器
  *
  * @author fujc2dev@126.com
  * @date 2025-02-21
@@ -60,7 +60,7 @@ public class RabbitMqIntegrationEventPublisher implements IntegrationEventPublis
     @Override
     public void publish(EventRecord event, PublishCallback publishCallback) {
         try {
-            // 事件的主題，
+            // 事件的主題
             String destination = event.getEventTopic();
             destination = TextUtils.resolvePlaceholderWithCache(destination, environment);
             if (destination == null || destination.isEmpty()) {
@@ -108,7 +108,7 @@ public class RabbitMqIntegrationEventPublisher implements IntegrationEventPublis
             if (event == null) {
                 throw new DomainException("集成事件为NULL");
             }
-            log.info(String.format("集成事件发送成功, messageId=%s", event.getId()));
+            log.info(String.format("集成事件发送成功, %s", event.getId()));
             message.getMessageProperties().setMessageId(event.getId());
             try {
                 publishCallback.onSuccess(event);

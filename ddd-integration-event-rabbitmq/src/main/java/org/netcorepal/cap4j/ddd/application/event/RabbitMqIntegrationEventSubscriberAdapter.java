@@ -110,11 +110,11 @@ public class RabbitMqIntegrationEventSubscriberAdapter {
             // 不是集成事件, 或显式标明无订阅
             return null;
         }
-        String target = integrationEvent.value();
-        target = TextUtils.resolvePlaceholderWithCache(target, environment);
+        String target = TextUtils.resolvePlaceholderWithCache(integrationEvent.value(), environment);
+        String subscriber = TextUtils.resolvePlaceholderWithCache(integrationEvent.subscriber(), environment);
         String exchange = target.lastIndexOf(':') > 0 ? target.substring(0, target.lastIndexOf(':')) : target;
         String routingKey = target.lastIndexOf(':') > 0 ? target.substring(target.lastIndexOf(':') + 1) : "";
-        String queue = getExchangeConsumerQueueName(exchange, integrationEvent.subscriber());
+        String queue = getExchangeConsumerQueueName(exchange, subscriber);
         if(autoDeclareQueue){
             tryDeclareQueue(queue, exchange, routingKey);
         }

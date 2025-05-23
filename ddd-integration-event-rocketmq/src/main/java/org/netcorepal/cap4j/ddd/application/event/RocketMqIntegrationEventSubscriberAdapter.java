@@ -110,13 +110,13 @@ public class RocketMqIntegrationEventSubscriberAdapter {
             // 不是集成事件, 或显式标明无订阅
             return null;
         }
-        String target = integrationEvent.value();
-        target = TextUtils.resolvePlaceholderWithCache(target, environment);
+        String target = TextUtils.resolvePlaceholderWithCache(integrationEvent.value(), environment);
+        String subscriber = TextUtils.resolvePlaceholderWithCache(integrationEvent.subscriber(), environment);
         String topic = target.lastIndexOf(':') > 0 ? target.substring(0, target.lastIndexOf(':')) : target;
         String tag = target.lastIndexOf(':') > 0 ? target.substring(target.lastIndexOf(':') + 1) : "";
 
         DefaultMQPushConsumer mqPushConsumer = new DefaultMQPushConsumer();
-        mqPushConsumer.setConsumerGroup(getTopicConsumerGroup(topic, integrationEvent.subscriber()));
+        mqPushConsumer.setConsumerGroup(getTopicConsumerGroup(topic, subscriber));
         mqPushConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
         mqPushConsumer.setInstanceName(applicationName);
         String nameServerAddr = getTopicNamesrvAddr(topic, defaultNameSrv);
