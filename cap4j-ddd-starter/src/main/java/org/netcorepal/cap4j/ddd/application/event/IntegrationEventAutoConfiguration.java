@@ -85,7 +85,6 @@ public class IntegrationEventAutoConfiguration {
     }
 
     @Configuration
-    @ConditionalOnProperty(name = "cap4j.ddd.integration.event.http.enabled", havingValue = "true")
     @ConditionalOnClass(name = "org.netcorepal.cap4j.ddd.application.event.HttpIntegrationEventSubscriberAdapter")
     @Slf4j
     public static class HttpAdapterLauncher {
