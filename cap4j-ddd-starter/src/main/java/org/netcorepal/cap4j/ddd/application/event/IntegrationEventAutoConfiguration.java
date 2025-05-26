@@ -36,10 +36,7 @@ import org.springframework.web.HttpRequestHandler;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
@@ -89,6 +86,7 @@ public class IntegrationEventAutoConfiguration {
     @Slf4j
     public static class HttpAdapterLauncher {
         public static final String CONSUME_EVENT_PARAM = "event";
+        public static final String CONSUME_EVENT_ID_PARAM = "id";
         public static final String CONSUME_PATH = "/cap4j/integration-event/http/consume";
         public static final String SUBSCRIBE_PATH = "/cap4j/integration-event/http/subscribe";
         public static final String UNSUBSCRIBE_PATH = "/cap4j/integration-event/http/unsubscribe";
@@ -112,6 +110,13 @@ public class IntegrationEventAutoConfiguration {
         }
 
         @Bean
+        public HttpIntegrationEventPublisher.HttpIntegrationEventCallbackTriggerCommand.Handler httpIntegrationEventCallbackTriggerCommandHandler() {
+            return new HttpIntegrationEventPublisher.HttpIntegrationEventCallbackTriggerCommand.Handler(
+                    new RestTemplate()
+            );
+        }
+
+        @Bean
         @ConditionalOnMissingBean(HttpIntegrationEventSubscriberRegister.class)
         public DefaultHttpIntegrationEventSubscriberRegister httpIntegrationEventSubscriberRegister(
         ) {
@@ -128,8 +133,8 @@ public class IntegrationEventAutoConfiguration {
             HttpIntegrationEventPublisher httpIntegrationEventPublisher = new HttpIntegrationEventPublisher(
                     subscriberRegister,
                     environment,
-                    new RestTemplate(),
                     CONSUME_EVENT_PARAM,
+                    CONSUME_EVENT_ID_PARAM,
                     httpIntegrationEventAdapterProperties.getPublishThreadPoolSize(),
                     httpIntegrationEventAdapterProperties.getPublishThreadFactoryClassName());
             httpIntegrationEventPublisher.init();
@@ -142,7 +147,6 @@ public class IntegrationEventAutoConfiguration {
                 List<EventMessageInterceptor> eventMessageInterceptors,
                 HttpIntegrationEventSubscriberRegister httpIntegrationEventSubscriberRegister,
                 EventProperties eventProperties,
-                HttpIntegrationEventAdapterProperties httpIntegrationEventAdapterProperties,
                 Environment environment,
                 @Value(CONFIG_KEY_4_SVC_NAME)
                 String svcName,
@@ -252,8 +256,33 @@ public class IntegrationEventAutoConfiguration {
                 while (scanner.hasNextLine()) {
                     stringBuilder.append(scanner.nextLine());
                 }
-                Map<String, Object> headers = new HashMap<>();
+                String eventId = req.getParameter(CONSUME_EVENT_ID_PARAM);
                 String event = req.getParameter(CONSUME_EVENT_PARAM);
+                log.info("IntegrationEvent id: {} body: {}", eventId, event);
+                Map<String, Object> headers = new HashMap<>();
+                try {
+                    Enumeration<String> headerNames = req.getHeaderNames();
+                    while (headerNames.hasMoreElements()) {
+                        String headerName = headerNames.nextElement();
+                        Object headerValue = null;
+                        Enumeration<String> headerValueEnumeration = req.getHeaders(headerName);
+                        if (headerValueEnumeration.hasMoreElements()) {
+                            List<String> headerValues = new ArrayList<>();
+                            while (headerValueEnumeration.hasMoreElements()) {
+                                headerValues.add(headerValueEnumeration.nextElement());
+                            }
+                            if (headerValues.size() == 1) {
+                                headerValue = headerValues.get(0);
+                            } else {
+                                headerValue = headerValues;
+                            }
+                        }
+                        headers.put(headerName, headerValue);
+                    }
+                } catch (Throwable e) {
+                    log.error("", e);
+                    /* don't care */
+                }
                 boolean success = httpIntegrationEventSubscriberAdapter.consume(
                         event, stringBuilder.toString(), headers
                 );

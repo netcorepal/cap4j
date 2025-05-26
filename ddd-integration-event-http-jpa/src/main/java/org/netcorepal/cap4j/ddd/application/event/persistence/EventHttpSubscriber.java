@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 import org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate;
 
 import javax.persistence.*;
@@ -22,6 +24,8 @@ import javax.persistence.*;
 @Table(name = "`__event_http_subscriber`")
 @DynamicInsert
 @DynamicUpdate
+@SQLDelete(sql = "update `__event_http_subscriber` set `db_deleted` = 1 where `id` = ? and `version` = ? ")
+@Where(clause = "`db_deleted` = 0")
 
 @AllArgsConstructor
 @NoArgsConstructor

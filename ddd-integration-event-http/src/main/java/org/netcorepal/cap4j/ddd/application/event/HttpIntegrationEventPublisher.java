@@ -1,8 +1,11 @@
 package org.netcorepal.cap4j.ddd.application.event;
 
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.netcorepal.cap4j.ddd.Mediator;
+import org.netcorepal.cap4j.ddd.application.RequestParam;
+import org.netcorepal.cap4j.ddd.application.command.Command;
 import org.netcorepal.cap4j.ddd.domain.event.EventRecord;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
@@ -32,8 +35,8 @@ import java.util.concurrent.ThreadFactory;
 public class HttpIntegrationEventPublisher implements IntegrationEventPublisher {
     private final HttpIntegrationEventSubscriberRegister subscriberRegister;
     private final Environment environment;
-    private final RestTemplate restTemplate;
-    private final String eventParam;
+    private final String eventParamName;
+    private final String eventIdParamName;
     private final int threadPoolSize;
     private final String threadFactoryClassName;
 
@@ -66,37 +69,86 @@ public class HttpIntegrationEventPublisher implements IntegrationEventPublisher 
         if (callbackUrls != null && !callbackUrls.isEmpty()) {
             Map<String, Object> uriParams = new HashMap<>();
             try {
-                uriParams.put(eventParam, URLEncoder.encode(destination, StandardCharsets.UTF_8.name()));
+                uriParams.put(eventParamName, URLEncoder.encode(destination, StandardCharsets.UTF_8.name()));
+                uriParams.put(eventIdParamName, URLEncoder.encode(event.getId(), StandardCharsets.UTF_8.name()));
             } catch (UnsupportedEncodingException e) {
                 throw new RuntimeException(e);
             }
             executorService.execute(() -> {
-                for (String callbackUrl : callbackUrls) {
-                    try {
-
-                        callbackUrl = callbackUrl.contains("?")
-                                ? callbackUrl + "&" + eventParam + "={" + eventParam + "}"
-                                : callbackUrl + "?" + eventParam + "={" + eventParam + "}";
-                        ResponseEntity<HttpIntegrationEventSubscriberAdapter.OperationResponse> result
-                                = restTemplate.postForEntity(callbackUrl, event.getPayload(), HttpIntegrationEventSubscriberAdapter.OperationResponse.class, uriParams);
-                        if (result.getStatusCode().is2xxSuccessful()) {
-                            if (result.getBody().isSuccess()) {
-                                log.info(String.format("集成事件发送成功, %s", event.getId()));
-                                publishCallback.onSuccess(event);
-                            } else {
-                                log.error(String.format("集成事件发布失败, %s (Consume)", event.getId()));
-                                publishCallback.onException(event, new RuntimeException(result.getBody().getMessage()));
-                            }
-                        } else {
-                            log.error(String.format("集成事件发布失败, %s (Server)", event.getId()));
-                            publishCallback.onException(event, new RuntimeException(String.format("集成事件HTTP消费失败:%s", result.getStatusCode().toString())));
-                        }
-                    } catch (Throwable throwable) {
-                        log.error(String.format("集成事件发布失败, %s (Client)", event.getId()), throwable);
-                        publishCallback.onException(event, throwable);
+                try {
+                    for (String callbackUrl : callbackUrls) {
+                        Mediator.commands().async(HttpIntegrationEventCallbackTriggerCommand.Request.builder()
+                                        .event(event)
+                                        .url(callbackUrl)
+                                        .uriParams(uriParams)
+                                        .publishCallback(publishCallback)
+                                        .build());
                     }
+                    publishCallback.onSuccess(event);
+                } catch (Throwable throwable) {
+                    log.error(String.format("集成事件发布失败, %s", event.getId()), throwable);
+                    publishCallback.onException(event, throwable);
                 }
             });
+        }
+    }
+
+
+    /**
+     * 集成事件回调触发命令
+     */
+    public static class HttpIntegrationEventCallbackTriggerCommand {
+        @RequiredArgsConstructor
+        public static class Handler implements Command<Request, Response> {
+            private final RestTemplate restTemplate;
+
+            @Override
+            public Response exec(Request param) {
+                for (Map.Entry<String, Object> entry : param.uriParams.entrySet()) {
+                    param.url = param.url.contains("?")
+                            ? param.url + "&" + entry.getKey() + "={" + entry.getKey() + "}"
+                            : param.url + "?" + entry.getKey() + "={" + entry.getKey() + "}";
+                }
+                ResponseEntity<HttpIntegrationEventSubscriberAdapter.OperationResponse> result = null;
+                try {
+                    result = restTemplate.postForEntity(param.url, param.event.getPayload(), HttpIntegrationEventSubscriberAdapter.OperationResponse.class, param.uriParams);
+
+                } catch (Throwable throwable) {
+                    log.error(String.format("集成事件触发失败, %s (Client)", param.event.getId()), throwable);
+                    throw throwable;
+                }
+                if (result.getStatusCode().is2xxSuccessful()) {
+                    if (result.getBody().isSuccess()) {
+                        log.info(String.format("集成事件触发成功, %s", param.event.getId()));
+                        return Response.builder().success(true).build();
+                    } else {
+                        log.error(String.format("集成事件触发失败, %s (Consume) %s", param.event.getId(), result.getBody().getMessage()));
+                        throw new RuntimeException(result.getBody().getMessage());
+                    }
+                } else {
+                    log.error(String.format("集成事件触发失败, %s (Server) 集成事件HTTP消费失败:%d", param.event.getId(), result.getStatusCode().value()));
+                    throw new RuntimeException(String.format("集成事件HTTP消费失败:%d", result.getStatusCode().value()));
+                }
+            }
+        }
+
+        @Data
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class Request implements RequestParam<Response> {
+            private EventRecord event;
+            private String url;
+            private Map<String, Object> uriParams;
+            private PublishCallback publishCallback;
+        }
+
+        @Data
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class Response {
+            private boolean success;
         }
     }
 }
