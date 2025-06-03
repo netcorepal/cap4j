@@ -108,10 +108,7 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
     @TransactionalEventListener(fallbackExecution = true, classes = IntegrationEventAttachedTransactionCommittedEvent.class)
     public void onTransactionCommitted(IntegrationEventAttachedTransactionCommittedEvent integrationEventAttachedTransactionCommittedEvent) {
         List<EventRecord> events = integrationEventAttachedTransactionCommittedEvent.getEvents();
-        publish(events);
-    }
 
-    private void publish(List<EventRecord> events) {
         if (events != null && !events.isEmpty()) {
             events.forEach(event -> {
                 eventPublisher.publish(event);
@@ -151,7 +148,7 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
         eventScheduleMap.put(eventPayload, schedule);
     }
 
-    public LocalDateTime getDeliverTime(Object eventPayload) {
+    protected LocalDateTime getDeliverTime(Object eventPayload) {
         Map<Object, LocalDateTime> eventScheduleMap = TL_EVENT_SCHEDULE_MAP.get();
         if (eventScheduleMap != null && eventScheduleMap.containsKey(eventPayload)) {
             return eventScheduleMap.get(eventPayload);
