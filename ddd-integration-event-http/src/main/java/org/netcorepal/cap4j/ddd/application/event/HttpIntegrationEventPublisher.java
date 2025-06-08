@@ -58,7 +58,7 @@ public class HttpIntegrationEventPublisher implements IntegrationEventPublisher 
 
     @Override
     public void publish(EventRecord event, PublishCallback publishCallback) {
-        String destination = event.getEventTopic();
+        String destination = event.getType();
         if (destination == null || destination.isEmpty()) {
             throw new DomainException(String.format("集成事件发布失败: %s 缺失topic", event.getId()));
         }

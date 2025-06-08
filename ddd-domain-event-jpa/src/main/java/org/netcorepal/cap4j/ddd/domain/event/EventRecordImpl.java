@@ -54,7 +54,7 @@ public class EventRecordImpl implements EventRecord {
     }
 
     @Override
-    public String getEventTopic() {
+    public String getType() {
         return event.getEventType();
     }
 

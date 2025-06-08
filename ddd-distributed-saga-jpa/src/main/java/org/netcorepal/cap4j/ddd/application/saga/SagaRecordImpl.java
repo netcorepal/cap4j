@@ -45,6 +45,11 @@ public class SagaRecordImpl implements SagaRecord {
     }
 
     @Override
+    public String getType() {
+        return this.saga.getSagaType();
+    }
+
+    @Override
     public SagaParam<?> getParam() {
         return this.saga.getSagaParam();
     }

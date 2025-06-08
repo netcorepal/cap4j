@@ -59,7 +59,7 @@ public class RabbitMqIntegrationEventPublisher implements IntegrationEventPublis
     public void publish(EventRecord event, PublishCallback publishCallback) {
         try {
             // 事件的主題
-            String destination = event.getEventTopic();
+            String destination = event.getType();
             destination = TextUtils.resolvePlaceholderWithCache(destination, environment);
             if (destination == null || destination.isEmpty()) {
                 throw new DomainException(String.format("集成事件发布失败: %s 缺失topic", event.getId()));

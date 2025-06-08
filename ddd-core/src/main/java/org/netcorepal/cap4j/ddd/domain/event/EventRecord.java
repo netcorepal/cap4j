@@ -29,10 +29,10 @@ public interface EventRecord {
     String getId();
 
     /**
-     * 获取事件主题
+     * 获取事件类型
      * @return
      */
-    String getEventTopic();
+    String getType();
 
     /**
      * 获取事件消息体
