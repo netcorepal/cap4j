@@ -30,6 +30,12 @@ public interface SagaRecord {
     String getId();
 
     /**
+     * 获取Saga类型
+     * @return
+     */
+    String getType();
+
+    /**
      * 获取Saga流程执行参数
      * @return
      */

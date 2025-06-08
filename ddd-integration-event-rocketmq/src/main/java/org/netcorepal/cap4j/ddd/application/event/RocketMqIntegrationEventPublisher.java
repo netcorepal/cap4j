@@ -33,7 +33,7 @@ public class RocketMqIntegrationEventPublisher implements IntegrationEventPublis
     @Override
     public void publish(EventRecord event, PublishCallback publishCallback) {
         try {
-            String destination = event.getEventTopic();
+            String destination = event.getType();
             destination = TextUtils.resolvePlaceholderWithCache(destination, environment);
             if (destination == null || destination.isEmpty()) {
                 throw new DomainException(String.format("集成事件发布失败: %s 缺失topic", event.getId()));

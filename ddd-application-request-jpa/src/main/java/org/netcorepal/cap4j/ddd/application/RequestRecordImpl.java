@@ -43,6 +43,11 @@ public class RequestRecordImpl implements RequestRecord {
     }
 
     @Override
+    public String getType() {
+        return request.getRequestType();
+    }
+
+    @Override
     public RequestParam<?> getParam() {
         return request.getRequestParam();
     }

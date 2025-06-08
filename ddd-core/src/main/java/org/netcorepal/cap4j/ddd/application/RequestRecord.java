@@ -30,6 +30,13 @@ public interface RequestRecord {
     String getId();
 
     /**
+     * 获取Request类型
+     *
+     * @return
+     */
+    String getType();
+
+    /**
      * 获取Request流程执行参数
      *
      * @return

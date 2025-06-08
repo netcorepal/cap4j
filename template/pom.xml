@@ -87,16 +87,16 @@
             <artifactId>ddd-integration-event-http-jpa</artifactId>
             <version>${cap4j.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.github.netcorepal</groupId>-->
-<!--            <artifactId>ddd-integration-event-rocketmq</artifactId>-->
-<!--            <version>${cap4j.version}</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.github.netcorepal</groupId>-->
-<!--            <artifactId>ddd-integration-event-rabbitmq</artifactId>-->
-<!--            <version>${cap4j.version}</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.github.netcorepal</groupId>-->
+        <!--            <artifactId>ddd-integration-event-rocketmq</artifactId>-->
+        <!--            <version>${cap4j.version}</version>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.github.netcorepal</groupId>-->
+        <!--            <artifactId>ddd-integration-event-rabbitmq</artifactId>-->
+        <!--            <version>${cap4j.version}</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>io.github.netcorepal</groupId>
             <artifactId>cap4j-ddd-codegen-maven-plugin</artifactId>
