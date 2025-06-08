@@ -1,8 +1,5 @@
 package org.netcorepal.cap4j.ddd.share;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -17,8 +14,6 @@ import java.util.stream.Collectors;
  * @date
  */
 @Data
-@Schema(title = "分页数据")
-@ApiModel(description = "分页数据")
 public class PageData<T> {
 
     protected PageData() {
@@ -27,29 +22,21 @@ public class PageData<T> {
     /**
      * 页码
      */
-    @Schema(description = "页码")
-    @ApiModelProperty(value = "页码")
     private Integer pageNum;
 
     /**
      * 页大小
      */
-    @Schema(description = "页大小")
-    @ApiModelProperty(value = "页大小")
     private Integer pageSize;
 
     /**
      * 总记录数
      */
-    @Schema(description = "总记录数")
-    @ApiModelProperty(value = "总记录数")
     private Long totalCount;
 
     /**
      * 记录列表
      */
-    @Schema(description = "记录列表")
-    @ApiModelProperty(value = "记录列表")
     private List<T> list;
 
     /**
