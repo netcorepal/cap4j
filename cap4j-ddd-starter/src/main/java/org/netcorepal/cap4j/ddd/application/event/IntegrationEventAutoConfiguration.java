@@ -138,6 +138,7 @@ public class IntegrationEventAutoConfiguration {
                     httpIntegrationEventAdapterProperties.getPublishThreadPoolSize(),
                     httpIntegrationEventAdapterProperties.getPublishThreadFactoryClassName());
             httpIntegrationEventPublisher.init();
+            log.info("集成事件适配类型：HTTP");
             return httpIntegrationEventPublisher;
         }
 
