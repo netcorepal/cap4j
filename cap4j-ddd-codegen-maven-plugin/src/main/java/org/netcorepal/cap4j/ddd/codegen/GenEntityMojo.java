@@ -1865,7 +1865,6 @@ public class GenEntityMojo extends GenArchMojo {
                 " * @author cap4j-ddd-codegen\n" +
                 " * @date ${date}\n" +
                 " */\n" +
-                "@NoArgsConstructor\n" +
                 "public class " + aggregateNameTemplate + " extends Aggregate.Default<${Entity}> {\n" +
                 "\n" +
                 "    public " + aggregateNameTemplate + "(){\n" +

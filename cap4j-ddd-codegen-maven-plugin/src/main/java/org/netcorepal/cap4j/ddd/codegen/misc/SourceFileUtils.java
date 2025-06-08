@@ -5,6 +5,9 @@ import org.codehaus.plexus.util.StringUtils;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.BiFunction;
 
@@ -61,7 +64,7 @@ public class SourceFileUtils {
     }
 
     /**
-     * 加载文件内容
+     * 加载文件内容(支持FilePath&URL)
      *
      * @param location    文件路径，支持http路径
      * @param charsetName
@@ -70,7 +73,7 @@ public class SourceFileUtils {
      */
     public static String loadFileContent(String location, String charsetName) throws IOException {
         String content = "";
-        if (location.startsWith("http://") || location.startsWith("https://")) {
+        if (isHttpUri(location)) {
             try {
                 URL url = new URL(location);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), charsetName));
@@ -110,6 +113,75 @@ public class SourceFileUtils {
             stringBuilder.append("\n");
         });
         return stringBuilder.toString();
+    }
+
+    public static boolean isHttpUri(String location){
+        if(location==null){
+            return false;
+        }
+        String lowerCaseLocation = location.toLowerCase();
+        return lowerCaseLocation.startsWith("http://") || lowerCaseLocation.startsWith("https://");
+    }
+
+    /**
+     * 判断是否绝对路径(支持FilePath&URL)
+     *
+     * @param location FilePath&URL
+     * @return
+     */
+    public static boolean isAbsolutePathOrHttpUri(String location) {
+        if (isHttpUri(location)) {
+            return true;
+        }
+        if (File.separator.equals("/")) {
+            return location.startsWith("/");
+        } else {
+            return location.length() > 3 && location.charAt(1) == ':' && location.charAt(2) == '\\';
+        }
+    }
+
+    /**
+     * 拼接路径(支持FilePath&URL)
+     *
+     * @param path1 基础路径 FilePath&URL
+     * @param path2 待拼接目录
+     * @return
+     */
+    public static String concatPathOrHttpUri(String path1, String path2) {
+        if (isHttpUri(path1)) {
+            return path1 + (path1.endsWith("/") ? "" : "/") + path2;
+        } else if (File.separator.equals("\\")) {
+            return path1 + (path1.endsWith(File.separator) ? "" : File.separator) + path2.replace("/", "\\");
+        } else {
+            return path1 + (path1.endsWith(File.separator) ? "" : File.separator) + path2;
+        }
+    }
+
+    /**
+     * 解析路径(支持FilePath&URL)
+     *
+     * @param location FilePath&URL
+     * @return
+     */
+    public static String resolveDirectory(String location) {
+        if (isHttpUri(location)) {
+            if (location.endsWith("/")) {
+                return location;
+            } else {
+                return location.substring(0, location.lastIndexOf("/") + 1);
+            }
+        } else {
+            // 判断路径是否目录
+            Path path = Paths.get(location);
+            if (!Files.exists(path)) {
+                throw new RuntimeException("路径不存在：" + location);
+            }
+            if (Files.isDirectory(path)) {
+                return path.toAbsolutePath().toString() + File.separator;
+            } else {
+                return path.getParent().toAbsolutePath().toString() + File.separator;
+            }
+        }
     }
 
     /**
@@ -269,7 +341,7 @@ public class SourceFileUtils {
             if (javaFile.isPresent()) {
                 String packageName = resolvePackage(javaFile.get().getCanonicalPath());
                 String[] packages = packageName.split("\\.");
-                switch(packages.length) {
+                switch (packages.length) {
                     case 0:
                         throw new RuntimeException("解析默认basePackage失败");
                     case 1:

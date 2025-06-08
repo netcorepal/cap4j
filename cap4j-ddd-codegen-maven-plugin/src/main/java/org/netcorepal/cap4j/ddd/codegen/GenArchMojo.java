@@ -5,6 +5,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.netcorepal.cap4j.ddd.codegen.misc.SourceFileUtils;
+import org.netcorepal.cap4j.ddd.codegen.template.PathNode;
 import org.netcorepal.cap4j.ddd.codegen.template.Template;
 
 import java.io.IOException;
@@ -48,6 +49,7 @@ public class GenArchMojo extends MyAbstractMojo {
             return;
         }
 
+        PathNode.setDirectory(SourceFileUtils.resolveDirectory(archTemplate));
         template = JSON.parseObject(templateContent, Template.class);
         try {
             template.resolve(getEscapeContext());
@@ -60,5 +62,6 @@ public class GenArchMojo extends MyAbstractMojo {
         } catch (IOException e) {
             getLog().error("模板文件写入失败！", e);
         }
+//        PathNode.clearDirectory();
     }
 }

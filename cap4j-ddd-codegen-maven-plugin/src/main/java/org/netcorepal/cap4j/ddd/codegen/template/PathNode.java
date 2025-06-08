@@ -56,6 +56,16 @@ public class PathNode {
         return pathNode;
     }
 
+    private static ThreadLocal<String> directory = new ThreadLocal<>();
+
+    public static void setDirectory(String directory) {
+        PathNode.directory.set(directory);
+    }
+
+    public static void clearDirectory() {
+        PathNode.directory.remove();
+    }
+
     public PathNode resolve(Map<String, String> context) throws IOException {
         if (null != this.name) {
             this.name = this.name.replace("${basePackage}", "${basePackage__as_path}");
@@ -65,7 +75,11 @@ public class PathNode {
         switch (this.format) {
             case "url":
                 if (null != this.data) {
-                    rawData = SourceFileUtils.loadFileContent(this.data, context.get("archTemplateEncoding"));
+                    String url = this.data;
+                    if (!SourceFileUtils.isAbsolutePathOrHttpUri(url)) {
+                        url = SourceFileUtils.concatPathOrHttpUri(PathNode.directory.get(), url);
+                    }
+                    rawData = SourceFileUtils.loadFileContent(url, context.get("archTemplateEncoding"));
                 }
                 break;
             case "raw":
