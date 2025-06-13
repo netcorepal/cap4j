@@ -68,7 +68,7 @@ public class TextUtils {
         if (hasLetter && mixLetterCase) {
             capacity += 52;
         } else if (hasLetter) {
-            offset += 26;
+            capacity += 26;
         }
         StringBuilder stringBuilder = new StringBuilder();
         int count = length;
