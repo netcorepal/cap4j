@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  org.netcorepal.cap4j.ddd.console.DDDConsoleAutoConfiguration
