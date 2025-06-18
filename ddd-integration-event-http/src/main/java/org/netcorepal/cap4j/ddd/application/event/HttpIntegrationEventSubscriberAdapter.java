@@ -5,7 +5,9 @@ import com.alibaba.fastjson.parser.Feature;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.netcorepal.cap4j.ddd.Mediator;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
+import org.netcorepal.cap4j.ddd.application.event.commands.IntegrationEventHttpSubscribeCommand;
 import org.netcorepal.cap4j.ddd.domain.event.EventMessageInterceptor;
 import org.netcorepal.cap4j.ddd.domain.event.EventSubscriberManager;
 import org.netcorepal.cap4j.ddd.share.misc.ScanUtils;
@@ -13,7 +15,6 @@ import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.OrderUtils;
 import org.springframework.core.env.Environment;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.web.client.RestTemplate;
@@ -32,8 +33,6 @@ public class HttpIntegrationEventSubscriberAdapter {
     private final EventSubscriberManager eventSubscriberManager;
     private final List<EventMessageInterceptor> eventMessageInterceptors;
     private final HttpIntegrationEventSubscriberRegister httpIntegrationEventSubscriberRegister;
-    ;
-    private final RestTemplate restTemplate;
 
     private final Environment environment;
     private final String scanPath;
@@ -66,25 +65,12 @@ public class HttpIntegrationEventSubscriberAdapter {
             if (!isRemote) {
                 httpIntegrationEventSubscriberRegister.subscribe(event, subscriber, eventCallbackUrl);
             } else {
-                try {
-                    SubscribeRequest subscribeRequest = new SubscribeRequest();
-                    subscribeRequest.setEvent(event);
-                    subscribeRequest.setSubscriber(subscriber);
-                    subscribeRequest.setCallbackUrl(eventCallbackUrl);
-                    ResponseEntity<OperationResponse> response = restTemplate.postForEntity(eventSourceRegisterUrl, subscribeRequest, OperationResponse.class);
-                    if (response.getStatusCode().is2xxSuccessful()) {
-                        if (response.getBody().isSuccess()) {
-                            log.info(String.format("集成事件订阅成功, %s", integrationEvent.value()));
-                        } else {
-                            log.error(String.format("集成事件订阅失败, %s (Consume)", integrationEvent.value()));
-                        }
-                    } else {
-                        log.error(String.format("集成事件订阅失败, %s (Server)", integrationEvent.value()));
-                    }
-                } catch (Throwable throwable) {
-                    log.error(String.format("集成事件订阅失败, %s (Client)", integrationEvent.value()), throwable);
-                    throw throwable;
-                }
+                Mediator.commands().send(IntegrationEventHttpSubscribeCommand.Request.builder()
+                        .url(eventSourceRegisterUrl)
+                        .event(event)
+                        .subscriber(subscriber)
+                        .callbackUrl(eventCallbackUrl)
+                        .build());
             }
             eventPayloadClassMap.put(event, integrationEventClass);
         });
@@ -140,24 +126,5 @@ public class HttpIntegrationEventSubscriberAdapter {
     public static class OperationResponse {
         private boolean success;
         private String message;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SubscribeRequest {
-        private String event;
-        private String subscriber;
-        private String callbackUrl;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class UnsubscribeRequest {
-        private String event;
-        private String subscriber;
     }
 }

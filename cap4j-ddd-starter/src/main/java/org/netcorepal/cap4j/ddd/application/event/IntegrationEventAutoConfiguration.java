@@ -4,6 +4,9 @@ import com.alibaba.fastjson.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.netcorepal.cap4j.ddd.application.event.commands.IntegrationEventHttpCallbackTriggerCommand;
+import org.netcorepal.cap4j.ddd.application.event.commands.IntegrationEventHttpSubscribeCommand;
+import org.netcorepal.cap4j.ddd.application.event.commands.IntegrationEventHttpUnsubscribeCommand;
 import org.netcorepal.cap4j.ddd.application.event.configure.HttpIntegrationEventAdapterProperties;
 import org.netcorepal.cap4j.ddd.application.event.configure.RabbitMqIntegrationEventAdapterProperties;
 import org.netcorepal.cap4j.ddd.application.event.impl.DefaultHttpIntegrationEventSubscriberRegister;
@@ -85,8 +88,9 @@ public class IntegrationEventAutoConfiguration {
     @ConditionalOnClass(name = "org.netcorepal.cap4j.ddd.application.event.HttpIntegrationEventSubscriberAdapter")
     @Slf4j
     public static class HttpAdapterLauncher {
-        public static final String CONSUME_EVENT_PARAM = "event";
-        public static final String CONSUME_EVENT_ID_PARAM = "id";
+        public static final String EVENT_PARAM = "event";
+        public static final String EVENT_ID_PARAM = "uuid";
+        public static final String SUBSCRIBER_PARAM = "subscriber";
         public static final String CONSUME_PATH = "/cap4j/integration-event/http/consume";
         public static final String SUBSCRIBE_PATH = "/cap4j/integration-event/http/subscribe";
         public static final String UNSUBSCRIBE_PATH = "/cap4j/integration-event/http/unsubscribe";
@@ -110,9 +114,31 @@ public class IntegrationEventAutoConfiguration {
         }
 
         @Bean
-        public HttpIntegrationEventPublisher.HttpIntegrationEventCallbackTriggerCommand.Handler httpIntegrationEventCallbackTriggerCommandHandler() {
-            return new HttpIntegrationEventPublisher.HttpIntegrationEventCallbackTriggerCommand.Handler(
-                    new RestTemplate()
+        public IntegrationEventHttpCallbackTriggerCommand.Handler httpIntegrationEventCallbackTriggerCommandHandler() {
+            return new IntegrationEventHttpCallbackTriggerCommand.Handler(
+                    new RestTemplate(),
+                    EVENT_PARAM,
+                    EVENT_ID_PARAM
+            );
+        }
+
+        @Bean
+        public IntegrationEventHttpSubscribeCommand.Handler httpIntegrationEventSubscribeCommandHandler(
+        ) {
+            return new IntegrationEventHttpSubscribeCommand.Handler(
+                    new RestTemplate(),
+                    EVENT_PARAM,
+                    SUBSCRIBER_PARAM
+            );
+        }
+
+        @Bean
+        public IntegrationEventHttpUnsubscribeCommand.Handler httpIntegrationEventUnsubscribeCommandHandler(
+        ) {
+            return new IntegrationEventHttpUnsubscribeCommand.Handler(
+                    new RestTemplate(),
+                    EVENT_PARAM,
+                    SUBSCRIBER_PARAM
             );
         }
 
@@ -133,8 +159,6 @@ public class IntegrationEventAutoConfiguration {
             HttpIntegrationEventPublisher httpIntegrationEventPublisher = new HttpIntegrationEventPublisher(
                     subscriberRegister,
                     environment,
-                    CONSUME_EVENT_PARAM,
-                    CONSUME_EVENT_ID_PARAM,
                     httpIntegrationEventAdapterProperties.getPublishThreadPoolSize(),
                     httpIntegrationEventAdapterProperties.getPublishThreadFactoryClassName());
             httpIntegrationEventPublisher.init();
@@ -161,7 +185,6 @@ public class IntegrationEventAutoConfiguration {
                     eventSubscriberManager,
                     eventMessageInterceptors,
                     httpIntegrationEventSubscriberRegister,
-                    new RestTemplate(),
                     environment,
                     eventProperties.getEventScanPackage(),
                     svcName,
@@ -181,18 +204,20 @@ public class IntegrationEventAutoConfiguration {
                 @Value("${server.servlet.context-path:}")
                 String serverServletContentPath
         ) {
-            log.info("IntegrationEvent subscribe URL: http://localhost:" + serverPort + serverServletContentPath + SUBSCRIBE_PATH);
+            log.info("IntegrationEvent subscribe URL: http://localhost:" + serverPort + serverServletContentPath + SUBSCRIBE_PATH + "?" + EVENT_PARAM + "={event}&" + SUBSCRIBER_PARAM + "={subscriber}");
             return (req, res) -> {
+                String event = req.getParameter(EVENT_PARAM);
+                String subscriber = req.getParameter(SUBSCRIBER_PARAM);
                 Scanner scanner = new Scanner(req.getInputStream(), StandardCharsets.UTF_8.name());
                 StringBuilder stringBuilder = new StringBuilder();
                 while (scanner.hasNextLine()) {
                     stringBuilder.append(scanner.nextLine());
                 }
-                HttpIntegrationEventSubscriberAdapter.SubscribeRequest subscribeRequest = JSON.parseObject(stringBuilder.toString(), HttpIntegrationEventSubscriberAdapter.SubscribeRequest.class);
+                String callbackUrl = JSON.parseObject(stringBuilder.toString(), String.class);
                 boolean success = httpIntegrationEventSubscriberRegister.subscribe(
-                        subscribeRequest.getEvent(),
-                        subscribeRequest.getSubscriber(),
-                        subscribeRequest.getCallbackUrl()
+                        event,
+                        subscriber,
+                        callbackUrl
                 );
                 HttpIntegrationEventSubscriberAdapter.OperationResponse operationResponse = HttpIntegrationEventSubscriberAdapter.OperationResponse
                         .builder()
@@ -216,17 +241,13 @@ public class IntegrationEventAutoConfiguration {
                 @Value("${server.servlet.context-path:}")
                 String serverServletContentPath
         ) {
-            log.info("IntegrationEvent unsubscribe URL: http://localhost:" + serverPort + serverServletContentPath + UNSUBSCRIBE_PATH);
+            log.info("IntegrationEvent unsubscribe URL: http://localhost:" + serverPort + serverServletContentPath + UNSUBSCRIBE_PATH + "?" + EVENT_PARAM + "={event}&" + SUBSCRIBER_PARAM + "={subscriber}");
             return (req, res) -> {
-                Scanner scanner = new Scanner(req.getInputStream(), StandardCharsets.UTF_8.name());
-                StringBuilder stringBuilder = new StringBuilder();
-                while (scanner.hasNextLine()) {
-                    stringBuilder.append(scanner.nextLine());
-                }
-                HttpIntegrationEventSubscriberAdapter.UnsubscribeRequest unsubscribeRequest = JSON.parseObject(stringBuilder.toString(), HttpIntegrationEventSubscriberAdapter.UnsubscribeRequest.class);
+                String event = req.getParameter(EVENT_PARAM);
+                String subscriber = req.getParameter(SUBSCRIBER_PARAM);
                 boolean success = httpIntegrationEventSubscriberRegister.unsubscribe(
-                        unsubscribeRequest.getEvent(),
-                        unsubscribeRequest.getSubscriber()
+                        event,
+                        subscriber
                 );
                 HttpIntegrationEventSubscriberAdapter.OperationResponse operationResponse = HttpIntegrationEventSubscriberAdapter.OperationResponse
                         .builder()
@@ -250,18 +271,18 @@ public class IntegrationEventAutoConfiguration {
                 @Value("${server.servlet.context-path:}")
                 String serverServletContentPath
         ) {
-            log.info("IntegrationEvent consume URL: http://localhost:" + serverPort + serverServletContentPath + CONSUME_PATH);
+            log.info("IntegrationEvent consume URL: http://localhost:" + serverPort + serverServletContentPath + CONSUME_PATH+ "?" + EVENT_PARAM + "={event}&" + EVENT_ID_PARAM + "={uuid}");
             return (req, res) -> {
                 Scanner scanner = new Scanner(req.getInputStream(), StandardCharsets.UTF_8.name());
                 StringBuilder stringBuilder = new StringBuilder();
                 while (scanner.hasNextLine()) {
                     stringBuilder.append(scanner.nextLine());
                 }
-                String eventId = req.getParameter(CONSUME_EVENT_ID_PARAM);
-                String event = req.getParameter(CONSUME_EVENT_PARAM);
-                log.info("IntegrationEvent id={} event={}", eventId, event);
+                String eventId = req.getParameter(EVENT_ID_PARAM);
+                String event = req.getParameter(EVENT_PARAM);
+                log.info("IntegrationEvent uuid={} event={}", eventId, event);
                 Map<String, Object> headers = new HashMap<>();
-                headers.put(CONSUME_EVENT_ID_PARAM, eventId);
+                headers.put(EVENT_ID_PARAM, eventId);
                 try {
                     Enumeration<String> headerNames = req.getHeaderNames();
                     while (headerNames.hasMoreElements()) {
