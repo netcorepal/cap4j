@@ -171,6 +171,7 @@ public class DomainEventAutoConfiguration {
             EventMessageInterceptorManager eventMessageInterceptorManager,
             DomainEventInterceptorManager domainEventInterceptorManager,
             IntegrationEventInterceptorManager integrationEventInterceptorManager,
+            IntegrationEventPublisher.PublishCallback integrationEventPublishCallback,
             EventProperties eventProperties
     ) {
         DefaultEventPublisher defaultEventPublisher = new DefaultEventPublisher(
@@ -180,6 +181,7 @@ public class DomainEventAutoConfiguration {
                 eventMessageInterceptorManager,
                 domainEventInterceptorManager,
                 integrationEventInterceptorManager,
+                integrationEventPublishCallback,
                 eventProperties.getPublisherThreadPoolSize()
         );
         defaultEventPublisher.init();
@@ -207,11 +209,13 @@ public class DomainEventAutoConfiguration {
     @ConditionalOnMissingBean(DefaultEventInterceptorManager.class)
     public DefaultEventInterceptorManager defaultEventInterceptorManager(
             List<EventMessageInterceptor> eventMessageInterceptors,
-            List<EventInterceptor> interceptors
+            List<EventInterceptor> interceptors,
+            EventRecordRepository eventRecordRepository
     ) {
         DefaultEventInterceptorManager defaultEventInterceptorManager = new DefaultEventInterceptorManager(
                 eventMessageInterceptors,
-                interceptors
+                interceptors,
+                eventRecordRepository
         );
         return defaultEventInterceptorManager;
     }

@@ -10,6 +10,7 @@ import org.netcorepal.cap4j.ddd.application.saga.configure.SagaSchedulePropertie
 import org.netcorepal.cap4j.ddd.application.saga.impl.DefaultSagaSupervisor;
 import org.netcorepal.cap4j.ddd.application.saga.persistence.ArchivedSagaJpaRepository;
 import org.netcorepal.cap4j.ddd.application.saga.persistence.SagaJpaRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -48,6 +49,7 @@ public class SagaAutoConfiguration {
     public DefaultSagaSupervisor defaultSagaSupervisor(
             List<RequestHandler<?, ?>> requestHandlers,
             List<RequestInterceptor<?, ?>> requestInterceptors,
+            @Autowired(required = false)
             Validator validator,
             SagaRecordRepository sagaRecordRepository,
             @Value(CONFIG_KEY_4_SVC_NAME)

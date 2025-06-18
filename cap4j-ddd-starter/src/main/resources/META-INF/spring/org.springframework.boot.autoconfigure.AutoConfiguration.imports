@@ -9,6 +9,7 @@ org.netcorepal.cap4j.ddd.application.event.IntegrationEventAutoConfiguration
 org.netcorepal.cap4j.ddd.application.saga.SagaAutoConfiguration
 org.netcorepal.cap4j.ddd.application.request.configure.RequestProperties
 org.netcorepal.cap4j.ddd.application.request.configure.RequestScheduleProperties
+org.netcorepal.cap4j.ddd.application.request.RequestAutoConfiguration
 org.netcorepal.cap4j.ddd.MediatorAutoConfiguration
 org.netcorepal.cap4j.ddd.domain.distributed.SnowflakeAutoConfiguration
 org.netcorepal.cap4j.ddd.domain.event.configure.EventProperties
