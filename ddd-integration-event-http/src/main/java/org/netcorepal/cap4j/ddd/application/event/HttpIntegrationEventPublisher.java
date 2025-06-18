@@ -1,5 +1,6 @@
 package org.netcorepal.cap4j.ddd.application.event;
 
+import com.alibaba.fastjson.JSON;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -10,6 +11,8 @@ import org.netcorepal.cap4j.ddd.domain.event.EventRecord;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.TextUtils;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.objenesis.instantiator.util.ClassUtils;
 import org.springframework.web.client.RestTemplate;
@@ -78,10 +81,10 @@ public class HttpIntegrationEventPublisher implements IntegrationEventPublisher 
                 try {
                     for (String callbackUrl : callbackUrls) {
                         Mediator.commands().async(HttpIntegrationEventCallbackTriggerCommand.Request.builder()
-                                        .event(event)
+                                        .eventId(event.getId())
+                                        .payload(event.getPayload())
                                         .url(callbackUrl)
                                         .uriParams(uriParams)
-                                        .publishCallback(publishCallback)
                                         .build());
                     }
                     publishCallback.onSuccess(event);
@@ -111,22 +114,26 @@ public class HttpIntegrationEventPublisher implements IntegrationEventPublisher 
                 }
                 ResponseEntity<HttpIntegrationEventSubscriberAdapter.OperationResponse> result = null;
                 try {
-                    result = restTemplate.postForEntity(param.url, param.event.getPayload(), HttpIntegrationEventSubscriberAdapter.OperationResponse.class, param.uriParams);
-
+                    Object payload = param.getPayload();
+                    String payloadJsonStr = payload == null ? null : JSON.toJSONString(payload);
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.add("Content-Type", "application/json; charset=utf-8");
+                    HttpEntity<byte[]> payloadJsonStrEntity = new HttpEntity<>(payloadJsonStr.getBytes(StandardCharsets.UTF_8.name()), headers);
+                    result = restTemplate.postForEntity(param.url, payloadJsonStrEntity, HttpIntegrationEventSubscriberAdapter.OperationResponse.class, param.uriParams);
                 } catch (Throwable throwable) {
-                    log.error(String.format("集成事件触发失败, %s (Client)", param.event.getId()), throwable);
-                    throw throwable;
+                    log.error(String.format("集成事件触发失败, %s (Client)", param.getEventId()), throwable);
+                    throw new RuntimeException(throwable);
                 }
                 if (result.getStatusCode().is2xxSuccessful()) {
                     if (result.getBody().isSuccess()) {
-                        log.info(String.format("集成事件触发成功, %s", param.event.getId()));
+                        log.info(String.format("集成事件触发成功, %s", param.getEventId()));
                         return Response.builder().success(true).build();
                     } else {
-                        log.error(String.format("集成事件触发失败, %s (Consume) %s", param.event.getId(), result.getBody().getMessage()));
+                        log.error(String.format("集成事件触发失败, %s (Consume) %s", param.getEventId(), result.getBody().getMessage()));
                         throw new RuntimeException(result.getBody().getMessage());
                     }
                 } else {
-                    log.error(String.format("集成事件触发失败, %s (Server) 集成事件HTTP消费失败:%d", param.event.getId(), result.getStatusCode().value()));
+                    log.error(String.format("集成事件触发失败, %s (Server) 集成事件HTTP消费失败:%d", param.getEventId(), result.getStatusCode().value()));
                     throw new RuntimeException(String.format("集成事件HTTP消费失败:%d", result.getStatusCode().value()));
                 }
             }
@@ -137,10 +144,10 @@ public class HttpIntegrationEventPublisher implements IntegrationEventPublisher 
         @NoArgsConstructor
         @AllArgsConstructor
         public static class Request implements RequestParam<Response> {
-            private EventRecord event;
+            private String eventId;
+            private Object payload;
             private String url;
             private Map<String, Object> uriParams;
-            private PublishCallback publishCallback;
         }
 
         @Data

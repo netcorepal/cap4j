@@ -3,10 +3,12 @@ package org.netcorepal.cap4j.ddd.impl;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptor;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptorManager;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.OrderUtils;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -20,9 +22,10 @@ import java.util.stream.Collectors;
  * @date 2024/9/12
  */
 @RequiredArgsConstructor
-public class DefaultEventInterceptorManager implements EventMessageInterceptorManager, DomainEventInterceptorManager, IntegrationEventInterceptorManager {
+public class DefaultEventInterceptorManager implements EventMessageInterceptorManager, DomainEventInterceptorManager, IntegrationEventInterceptorManager, IntegrationEventPublisher.PublishCallback {
     private final List<EventMessageInterceptor> eventMessageInterceptors;
     private final List<EventInterceptor> eventInterceptors;
+    private final EventRecordRepository eventRecordRepository;
 
     private Set<EventMessageInterceptor> orderedEventMessageInterceptors;
     private Set<EventInterceptor> orderedEventInterceptors4DomainEvent;
@@ -86,5 +89,32 @@ public class DefaultEventInterceptorManager implements EventMessageInterceptorMa
                     .collect(Collectors.toCollection(LinkedHashSet::new));
         }
         return orderedEventInterceptors4IntegrationEvent;
+    }
+
+    @Override
+    public void onSuccess(EventRecord event) {
+        LocalDateTime now = LocalDateTime.now();
+        // 修改事件消费状态
+        event.confirmedDelivery(now);
+
+        getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.prePersist(event));
+        eventRecordRepository.save(event);
+        getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.postPersist(event));
+
+        getOrderedEventMessageInterceptors().forEach(interceptor -> interceptor.postPublish(event.getMessage()));
+        getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.postRelease(event));
+    }
+
+    @Override
+    public void onException(EventRecord event, Throwable throwable) {
+        LocalDateTime now = LocalDateTime.now();
+        // 修改事件异常状态
+        event.occuredException(now, throwable);
+
+        getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.prePersist(event));
+        eventRecordRepository.save(event);
+        getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.postPersist(event));
+
+        getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.onException(throwable, event));
     }
 }

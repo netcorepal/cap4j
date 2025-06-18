@@ -35,50 +35,7 @@ import static org.netcorepal.cap4j.ddd.share.Constants.CONFIG_KEY_4_SVC_NAME;
  */
 @Configuration
 @RequiredArgsConstructor
-@EnableJpaRepositories(basePackages = {
-        "org.netcorepal.cap4j.ddd.application.persistence"
-})
-@EntityScan(basePackages = {
-        "org.netcorepal.cap4j.ddd.application.persistence"
-})
 public class MediatorAutoConfiguration {
-    public static final String CONFIG_KEY_4_REQUEST_COMPENSE_LOCKER_KEY = "request_compense[" + CONFIG_KEY_4_SVC_NAME + "]";
-    public static final String CONFIG_KEY_4_REQUEST_ARCHIVE_LOCKER_KEY = "request_archive[" + CONFIG_KEY_4_SVC_NAME + "]";
-
-    @Bean
-    @ConditionalOnMissingBean(RequestRecordRepository.class)
-    public JpaRequestRecordRepository jpaRequestRecordRepository(
-            RequestJpaRepository requestJpaRepository,
-            ArchivedRequestJpaRepository archivedRequestJpaRepository
-    ) {
-        JpaRequestRecordRepository requestRecordRepository = new JpaRequestRecordRepository(requestJpaRepository, archivedRequestJpaRepository);
-        return requestRecordRepository;
-    }
-
-    @Bean
-    public DefaultRequestSupervisor defaultRequestSupervisor(
-            List<RequestHandler<?, ?>> requestHandlers,
-            List<RequestInterceptor<?, ?>> requestInterceptors,
-            Validator validator,
-            RequestProperties requestProperties,
-            RequestRecordRepository requestRecordRepository,
-            @Value(CONFIG_KEY_4_SVC_NAME)
-            String svcName
-    ) {
-        DefaultRequestSupervisor defaultRequestSupervisor = new DefaultRequestSupervisor(
-                requestHandlers,
-                requestInterceptors,
-                validator,
-                requestRecordRepository,
-                svcName,
-                requestProperties.getRequestScheduleThreadPoolSize(),
-                requestProperties.getRequestScheduleThreadFactoryClassName()
-        );
-        defaultRequestSupervisor.init();
-        RequestSupervisorSupport.configure((RequestSupervisor) defaultRequestSupervisor);
-        RequestSupervisorSupport.configure((RequestManager) defaultRequestSupervisor);
-        return defaultRequestSupervisor;
-    }
 
     @Bean
     @ConditionalOnMissingBean(Mediator.class)
@@ -87,73 +44,6 @@ public class MediatorAutoConfiguration {
         MediatorSupport.configure(defaultMediator);
         MediatorSupport.configure(applicationContext);
         return defaultMediator;
-    }
-
-
-    @Bean
-    public JpaRequestScheduleService jpaRequestScheduleService(
-            RequestManager requestManager,
-            Locker locker,
-            @Value(CONFIG_KEY_4_REQUEST_COMPENSE_LOCKER_KEY)
-            String compensationLockerKey,
-            @Value(CONFIG_KEY_4_REQUEST_ARCHIVE_LOCKER_KEY)
-            String archiveLockerKey,
-            RequestScheduleProperties requestScheduleProperties,
-            JdbcTemplate jdbcTemplate
-    ) {
-        JpaRequestScheduleService jpaRequestScheduleService = new JpaRequestScheduleService(
-                requestManager,
-                locker,
-                compensationLockerKey,
-                archiveLockerKey,
-                requestScheduleProperties.isAddPartitionEnable(),
-                jdbcTemplate
-        );
-        jpaRequestScheduleService.init();
-        return jpaRequestScheduleService;
-    }
-
-    /**
-     * Request定时补偿任务
-     */
-    @RequiredArgsConstructor
-    @Service
-    @EnableScheduling
-    private static class __RequestScheduleLoader {
-
-        private static final String CONFIG_KEY_4_COMPENSE_CRON = "${cap4j.ddd.application.request.schedule.compenseCron:${cap4j.ddd.application.request.schedule.compense-cron:0 * * * * ?}}";
-        private static final String CONFIG_KEY_4_ARCHIVE_CRON = "${cap4j.ddd.application.request.schedule.archiveCron:${cap4j.ddd.application.request.schedule.archive-cron:0 0 2 * * ?}}";
-        private static final String CONFIG_KEY_4_ADD_PARTITION_CRON = "${cap4j.ddd.application.request.schedule.addPartitionCron:${cap4j.ddd.application.request.schedule.add-partition-cron:0 0 0 * * ?}}";
-
-
-        private final RequestScheduleProperties requestScheduleProperties;
-        private final JpaRequestScheduleService scheduleService;
-
-        @Scheduled(cron = CONFIG_KEY_4_COMPENSE_CRON)
-        public void compensation() {
-            if (scheduleService == null) return;
-            scheduleService.compense(
-                    requestScheduleProperties.getCompenseBatchSize(),
-                    requestScheduleProperties.getCompenseMaxConcurrency(),
-                    Duration.ofSeconds(requestScheduleProperties.getCompenseIntervalSeconds()),
-                    Duration.ofSeconds(requestScheduleProperties.getCompenseMaxLockSeconds())
-            );
-        }
-
-        @Scheduled(cron = CONFIG_KEY_4_ARCHIVE_CRON)
-        public void archive() {
-            if (scheduleService == null) return;
-            scheduleService.archive(
-                    requestScheduleProperties.getArchiveExpireDays(),
-                    requestScheduleProperties.getArchiveBatchSize(),
-                    Duration.ofSeconds(requestScheduleProperties.getArchiveMaxLockSeconds())
-            );
-        }
-
-        @Scheduled(cron = CONFIG_KEY_4_ADD_PARTITION_CRON)
-        public void addTablePartition() {
-            scheduleService.addPartition();
-        }
     }
 
 }

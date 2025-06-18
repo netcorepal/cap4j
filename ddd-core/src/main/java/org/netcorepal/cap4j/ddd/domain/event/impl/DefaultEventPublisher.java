@@ -12,7 +12,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +33,7 @@ public class DefaultEventPublisher implements EventPublisher {
     private final EventMessageInterceptorManager eventMessageInterceptorManager;
     private final DomainEventInterceptorManager domainEventInterceptorManager;
     private final IntegrationEventInterceptorManager integrationEventInterceptorManager;
+    private final IntegrationEventPublisher.PublishCallback integrationEventPublisherCallback;
     private final int threadPoolSize;
 
     private ScheduledExecutorService executor = null;
@@ -170,51 +170,13 @@ public class DefaultEventPublisher implements EventPublisher {
 
             integrationEventPublisheres.forEach(integrationEventPublisher -> integrationEventPublisher.publish(
                     event,
-                    new IntegrationEventSendPublishCallback(
-                            eventMessageInterceptorManager.getOrderedEventMessageInterceptors(),
-                            integrationEventInterceptorManager.getOrderedEventInterceptors4IntegrationEvent(),
-                            eventRecordRepository)
-                    )
-            );
+                    integrationEventPublisherCallback
+            ));
 
         } catch (Exception ex) {
             integrationEventInterceptorManager.getOrderedEventInterceptors4IntegrationEvent().forEach(interceptor -> interceptor.onException(ex, event));
             log.error(String.format("集成事件发布失败：%s", event.getId()), ex);
             throw new DomainException(String.format("集成事件发布失败: %s", event.getId()), ex);
-        }
-    }
-
-    @RequiredArgsConstructor
-    public static class IntegrationEventSendPublishCallback implements IntegrationEventPublisher.PublishCallback {
-        private final Set<EventMessageInterceptor> orderedEventMessageInterceptors;
-        private final Set<EventInterceptor> orderedIntegrationEventInterceptor;
-        private final EventRecordRepository eventRecordRepository;
-
-        @Override
-        public void onSuccess(EventRecord event) {
-            LocalDateTime now = LocalDateTime.now();
-            // 修改事件消费状态
-            event.confirmedDelivery(now);
-
-            orderedIntegrationEventInterceptor.forEach(interceptor -> interceptor.prePersist(event));
-            eventRecordRepository.save(event);
-            orderedIntegrationEventInterceptor.forEach(interceptor -> interceptor.postPersist(event));
-
-            orderedEventMessageInterceptors.forEach(interceptor -> interceptor.postPublish(event.getMessage()));
-            orderedIntegrationEventInterceptor.forEach(interceptor -> interceptor.postRelease(event));
-        }
-
-        @Override
-        public void onException(EventRecord event, Throwable throwable) {
-            LocalDateTime now = LocalDateTime.now();
-            // 修改事件异常状态
-            event.occuredException(now, throwable);
-
-            orderedIntegrationEventInterceptor.forEach(interceptor -> interceptor.prePersist(event));
-            eventRecordRepository.save(event);
-            orderedIntegrationEventInterceptor.forEach(interceptor -> interceptor.postPersist(event));
-
-            orderedIntegrationEventInterceptor.forEach(interceptor -> interceptor.onException(throwable, event));
         }
     }
 }

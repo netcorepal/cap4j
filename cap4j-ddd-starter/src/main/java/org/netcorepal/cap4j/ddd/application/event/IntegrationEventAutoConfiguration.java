@@ -41,7 +41,7 @@ import java.util.*;
 import static org.netcorepal.cap4j.ddd.share.Constants.*;
 
 /**
- * 基于RocketMq的领域事件（集成事件）实现自动配置类
+ * 集成事件自动配置类
  *
  * @author binking338
  * @date 2023/9/10
@@ -181,7 +181,7 @@ public class IntegrationEventAutoConfiguration {
                 @Value("${server.servlet.context-path:}")
                 String serverServletContentPath
         ) {
-            log.info("IntegrationEvent subscribe URL: http://localhost:" + serverPort + serverServletContentPath + "/cap4j/integration-event/http/subscribe");
+            log.info("IntegrationEvent subscribe URL: http://localhost:" + serverPort + serverServletContentPath + SUBSCRIBE_PATH);
             return (req, res) -> {
                 Scanner scanner = new Scanner(req.getInputStream(), StandardCharsets.UTF_8.name());
                 StringBuilder stringBuilder = new StringBuilder();
@@ -216,7 +216,7 @@ public class IntegrationEventAutoConfiguration {
                 @Value("${server.servlet.context-path:}")
                 String serverServletContentPath
         ) {
-            log.info("IntegrationEvent unsubscribe URL: http://localhost:" + serverPort + serverServletContentPath + "/cap4j/integration-event/http/unsubscribe");
+            log.info("IntegrationEvent unsubscribe URL: http://localhost:" + serverPort + serverServletContentPath + UNSUBSCRIBE_PATH);
             return (req, res) -> {
                 Scanner scanner = new Scanner(req.getInputStream(), StandardCharsets.UTF_8.name());
                 StringBuilder stringBuilder = new StringBuilder();
@@ -250,7 +250,7 @@ public class IntegrationEventAutoConfiguration {
                 @Value("${server.servlet.context-path:}")
                 String serverServletContentPath
         ) {
-            log.info("IntegrationEvent consume URL: http://localhost:" + serverPort + serverServletContentPath + "/cap4j/integration-event/http/consume");
+            log.info("IntegrationEvent consume URL: http://localhost:" + serverPort + serverServletContentPath + CONSUME_PATH);
             return (req, res) -> {
                 Scanner scanner = new Scanner(req.getInputStream(), StandardCharsets.UTF_8.name());
                 StringBuilder stringBuilder = new StringBuilder();
@@ -259,8 +259,9 @@ public class IntegrationEventAutoConfiguration {
                 }
                 String eventId = req.getParameter(CONSUME_EVENT_ID_PARAM);
                 String event = req.getParameter(CONSUME_EVENT_PARAM);
-                log.info("IntegrationEvent id: {} body: {}", eventId, event);
+                log.info("IntegrationEvent id={} event={}", eventId, event);
                 Map<String, Object> headers = new HashMap<>();
+                headers.put(CONSUME_EVENT_ID_PARAM, eventId);
                 try {
                     Enumeration<String> headerNames = req.getHeaderNames();
                     while (headerNames.hasMoreElements()) {
@@ -280,8 +281,8 @@ public class IntegrationEventAutoConfiguration {
                         }
                         headers.put(headerName, headerValue);
                     }
-                } catch (Throwable e) {
-                    log.error("", e);
+                } catch (Exception e) {
+                    log.warn("读取请求头异常", e);
                     /* don't care */
                 }
                 boolean success = httpIntegrationEventSubscriberAdapter.consume(
