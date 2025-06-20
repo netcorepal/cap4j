@@ -239,6 +239,27 @@ public class DDDConsoleAutoConfiguration {
         };
     }
 
+    @Bean(name = "/cap4j/console/locker/unlock")
+    public HttpRequestHandler lockerUnlock(
+            LockerConsoleService lockerConsoleService,
+            @Value("${server.port:80}")
+            String serverPort,
+            @Value("${server.servlet.context-path:}")
+            String serverServletContentPath
+    ) {
+        log.info("DDD Console URL: http://localhost:" + serverPort + serverServletContentPath + "/cap4j/console/locker/unlock?name={name}&pwd={pwd}");
+        return (req, res) -> {
+            String name = req.getParameter("name");
+            String pwd = req.getParameter("pwd");
+            boolean result = lockerConsoleService.unlock(name, pwd);
+            res.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            res.setContentType("application/json; charset=utf-8");
+            res.getWriter().println(JSON.toJSONString(result));
+            res.getWriter().flush();
+            res.getWriter().close();
+        };
+    }
+
     @Bean(name = "/cap4j/console/snowflake/search")
     public HttpRequestHandler snowflakeSearch(
             SnowflakeConsoleService snowflakeConsoleService,
