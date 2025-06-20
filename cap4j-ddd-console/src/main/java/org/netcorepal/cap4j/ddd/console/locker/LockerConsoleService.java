@@ -49,6 +49,10 @@ public class LockerConsoleService {
          * 最近解锁时间
          */
         private String unlockAt;
+        /**
+         * 最近锁定密码
+         */
+        private String pwd;
     }
 
 
@@ -66,9 +70,10 @@ public class LockerConsoleService {
 
     private static final String SQL_SELECT = "SELECT " +
             "name, " +
-            "unlock_at>now() as lock, " +
+            "unlock_at>now() as `lock`, " +
             "lock_at as lockAt, " +
-            "unlock_at as unlockAt " +
+            "unlock_at as unlockAt, " +
+            "pwd as pwd " +
             "FROM __locker " +
             "WHERE %s " +
             "ORDER BY id " +
@@ -105,5 +110,12 @@ public class LockerConsoleService {
                     params, new BeanPropertyRowMapper(LockerInfo.class));
         }
         return PageData.create(param, count, list);
+    }
+
+    public boolean unlock(String name, String pwd) {
+        return jdbcTemplate.update(
+                "UPDATE __locker SET unlock_at=now() WHERE name=? AND pwd=? AND unlock_at>now()",
+                name, pwd
+        ) > 0;
     }
 }
