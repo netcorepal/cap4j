@@ -155,8 +155,8 @@ public class GenDesignMojo extends GenArchMojo {
                     }
                     break;
                 case "saga":
-                    if(designMap.containsKey("saga")) {
-                        for(String literalDesign : designMap.get("saga")) {
+                    if (designMap.containsKey("saga")) {
+                        for (String literalDesign : designMap.get("saga")) {
                             if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
                                 renderAppLayerSaga(literalDesign, parentPath, templateNode);
                             }
@@ -187,24 +187,23 @@ public class GenDesignMojo extends GenArchMojo {
                     if (designMap.containsKey("integration_event")) {
                         for (String literalDesign : designMap.get("integration_event")) {
                             if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
-                                renderAppLayerIntegrationEvent("integration_event", literalDesign, parentPath, templateNode);
+                                renderAppLayerIntegrationEvent(true, "integration_event", literalDesign, parentPath, templateNode);
                             }
                         }
                     }
+                    if (designMap.containsKey("integration_event_handler")) {
+                        for (String literalDesign : designMap.get("integration_event_handler")) {
+                            if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
+                                renderAppLayerIntegrationEvent(false, "integration_event", literalDesign, parentPath, templateNode);
+                            }
+                        }
+                    }
+                    break;
                 case "integration_event_handler":
                     if (designMap.containsKey("integration_event_handler")) {
                         for (String literalDesign : designMap.get("integration_event_handler")) {
                             if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
-                                renderAppLayerIntegrationEvent("integration_event_handler", literalDesign, parentPath, templateNode);
-                            }
-                        }
-                    }
-                    if (designMap.containsKey("integration_event")) {
-                        for (String literalDesign : designMap.get("integration_event")) {
-                            if (StringUtils.isBlank(templateNode.getPattern()) || Pattern.compile(templateNode.getPattern()).asPredicate().test(literalDesign)) {
-                                if (literalDesign.split(PATTERN_DESIGN_PARAMS_SPLITTER).length >= 3) {
-                                    renderAppLayerIntegrationEvent("integration_event_handler", literalDesign, parentPath, templateNode);
-                                }
+                                renderAppLayerIntegrationEvent(false, "integration_event_handler", literalDesign, parentPath, templateNode);
                             }
                         }
                     }
@@ -301,7 +300,7 @@ public class GenDesignMojo extends GenArchMojo {
         getLog().info("解析Saga设计：" + literalSagaDeclaration);
         String path = internalRenderGenericDesign(literalSagaDeclaration, parentPath, templateNode, context -> {
             String Name = context.get("Name");
-            if (!Name.endsWith("Saga")){
+            if (!Name.endsWith("Saga")) {
                 Name += "Saga";
             }
             putContext(templateNode.getTag(), "Name", Name, context);
@@ -363,13 +362,18 @@ public class GenDesignMojo extends GenArchMojo {
     }
 
     /**
-     * @param literalType                        设计类型
+     * @param internal                           是否内部集成
+     * @param designType                         生成设计类型
      * @param literalIntegrationEventDeclaration 文本化集成事件声明 IntegrationEventName[:mq-topic[:mq-consumer]]
      * @param templateNode                       模板配置
      */
-    public void renderAppLayerIntegrationEvent(String literalType, String literalIntegrationEventDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
+    public void renderAppLayerIntegrationEvent(boolean internal, String designType, String literalIntegrationEventDeclaration, String parentPath, TemplateNode templateNode) throws IOException {
         getLog().info("解析集成事件设计：" + literalIntegrationEventDeclaration);
+        if (Objects.equals(designType, "integration_event")) {
+            parentPath += File.separator + (internal ? "" : "external");
+        }
         String path = internalRenderGenericDesign(literalIntegrationEventDeclaration, parentPath, templateNode, context -> {
+            putContext(templateNode.getTag(), "subPackage", internal ? "" : ".external", context);
             String Name = context.get("Name");
             if (!Name.endsWith("Evt") && !Name.endsWith("Event")) {
                 Name += "IntegrationEvent";
@@ -385,7 +389,7 @@ public class GenDesignMojo extends GenArchMojo {
             } else {
                 putContext(templateNode.getTag(), "MQ_TOPIC", ("\"" + context.get("Val0") + "\""), context);
             }
-            if (Objects.equals(literalType, "integration_event")) {
+            if (internal) {
                 putContext(templateNode.getTag(), "MQ_CONSUMER", "IntegrationEvent.NONE_SUBSCRIBER", context);
                 putContext(templateNode.getTag(), "Comment", context.containsKey("Val2") ? context.get("Val2") : "todo: 集成事件描述", context);
             } else {

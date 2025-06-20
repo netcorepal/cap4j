@@ -53,7 +53,7 @@ public class ArchInfoAutoConfiguration {
             ArchInfo archInfo = archInfoManager.getArchInfo();
             res.setCharacterEncoding(StandardCharsets.UTF_8.name());
             res.setContentType("application/json; charset=utf-8");
-            res.getWriter().println(JSON.toJSONString(archInfo, SerializerFeature.SortField));
+            res.getWriter().println(JSON.toJSONString(archInfo));
             res.getWriter().flush();
             res.getWriter().close();
         };

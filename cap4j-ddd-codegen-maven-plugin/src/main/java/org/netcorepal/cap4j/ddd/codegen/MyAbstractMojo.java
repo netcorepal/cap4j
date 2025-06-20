@@ -1240,12 +1240,10 @@ public abstract class MyAbstractMojo extends AbstractMojo {
                 (StringUtils.equalsIgnoreCase("EAGER", fetchType)
                         ? ""
                         : "                    <fetchType>" + fetchType + "</fetchType>\n") +
-                (StringUtils.equalsIgnoreCase("value", enumValueField)
+                (StringUtils.equalsIgnoreCase("value", enumValueField) && StringUtils.equalsIgnoreCase("name", enumNameField)
                         ? ""
-                        : "                    <enumValueField>" + enumValueField + "</enumValueField>\n") +
-                (StringUtils.equalsIgnoreCase("name", enumNameField)
-                        ? ""
-                        : "                    <enumNameField>" + enumNameField + "</enumNameField>\n") +
+                        : ("                    <enumValueField>" + enumValueField + "</enumValueField>\n" +
+                        "                    <enumNameField>" + enumNameField + "</enumNameField>\n")) +
                 (enumUnmatchedThrowException
                         ? ""
                         : "                    <enumUnmatchedThrowException>" + enumUnmatchedThrowException + "</enumUnmatchedThrowException>\n") +

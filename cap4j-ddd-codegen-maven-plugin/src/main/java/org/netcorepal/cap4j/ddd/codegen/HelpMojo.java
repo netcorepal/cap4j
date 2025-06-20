@@ -169,7 +169,7 @@ public class HelpMojo extends AbstractMojo {
         getLog().info("@DE={domain_event_name1}[:{description}][|{domain_event_name2}[:{description}]];");
         getLog().info("@Event={domain_event_name1}[:{description}][|{domain_event_name2}[:{description}]];");
         getLog().info("@Evt={domain_event_name1}[:{description}][|{domain_event_name2}[:{description}]];");
-        getLog().info("功能：标注该表对应聚合内的领域事件列表,多个领域事件使用','分割");
+        getLog().info("功能：标注该表对应聚合内的领域事件列表,多个领域事件使用'|'分割");
         getLog().info("--------------------------------------------------");
         getLog().info("@Factory;");
         getLog().info("@Fac;");
