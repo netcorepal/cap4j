@@ -184,7 +184,7 @@ public class ArchInfoManager {
                         .classRef(cls.getName())
                         .name(cls.getSimpleName())
                         .description(getDescription(cls, ""))
-                        .subscribersRef(eventSubscriberMap.get(cls).stream().map(sub -> "/architecture/application/events/subscribers/" + sub.getName()).collect(Collectors.toList()))
+                        .subscribersRef(!eventSubscriberMap.containsKey(cls) ? Collections.emptyList() : eventSubscriberMap.get(cls).stream().map(sub -> "/architecture/application/events/subscribers/" + sub.getName()).collect(Collectors.toList()))
                         .build()
                 ).collect(Collectors.toList()));
 
