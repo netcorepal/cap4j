@@ -1,4 +1,4 @@
-package ${basePackage}.application.distributed.events;
+package ${basePackage}.application.distributed.events${subPackage};
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
