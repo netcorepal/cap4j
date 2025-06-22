@@ -136,11 +136,19 @@ public class Event {
                 || EventState.EXHAUSTED.equals(this.eventState);
     }
 
+    public boolean isDelivering(){
+        return EventState.DELIVERING.equals(this.eventState);
+    }
+
     public boolean isDelivered() {
         return EventState.DELIVERED.equals(this.eventState);
     }
 
     public boolean holdState4Delivery(LocalDateTime now) {
+        // 初始状态或者确认中或者异常
+        if (!isValid()) {
+            return false;
+        }
         // 超过重试次数
         if (this.triedTimes >= this.tryTimes) {
             this.eventState = EventState.EXHAUSTED;
@@ -149,10 +157,6 @@ public class Event {
         // 事件过期
         if (now.isAfter(this.expireAt)) {
             this.eventState = EventState.EXPIRED;
-            return false;
-        }
-        // 初始状态或者确认中或者异常
-        if (!isValid()) {
             return false;
         }
         // 未到下次重试时间

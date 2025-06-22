@@ -18,10 +18,17 @@ public interface EventPublisher {
     void publish(EventRecord event);
 
     /**
-     * 重试事件
+     * 重新发送事件
      *
      * @param event
-     * @param minNextTryTime
+     * @param minNextTryTime 最小下次尝试时间
      */
-    void retry(EventRecord event, LocalDateTime minNextTryTime);
+    void resume(EventRecord event, LocalDateTime minNextTryTime);
+
+    /**
+     * 重试事件
+     *
+     * @param uuid
+     */
+    void retry(String uuid);
 }

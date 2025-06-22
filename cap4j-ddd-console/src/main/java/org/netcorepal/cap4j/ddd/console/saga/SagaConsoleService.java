@@ -3,6 +3,7 @@ package org.netcorepal.cap4j.ddd.console.saga;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.application.saga.SagaManager;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -24,6 +25,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SagaConsoleService {
     private final JdbcTemplate jdbcTemplate;
+    private final SagaManager sagaManager;
 
     private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
@@ -179,5 +181,9 @@ public class SagaConsoleService {
             default:
                 return "未知";
         }
+    }
+
+    public void retry(String uuid){
+        sagaManager.retry(uuid);
     }
 }

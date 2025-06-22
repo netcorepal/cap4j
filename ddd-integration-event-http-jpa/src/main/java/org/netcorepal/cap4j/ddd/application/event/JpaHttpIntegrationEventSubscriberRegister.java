@@ -59,11 +59,27 @@ public class JpaHttpIntegrationEventSubscriberRegister implements HttpIntegratio
     }
 
     @Override
-    public List<String> getCallbackUrls(String event) {
-        List<EventHttpSubscriber> list = eventHttpSubscriberJpaRepository.findAll((root, cq, cb) -> {
-            cq.where(cb.equal(root.get(EventHttpSubscriber.F_EVENT), event));
-            return null;
-        });
-        return list.stream().map(EventHttpSubscriber::getCallbackUrl).collect(Collectors.toList());
+    public List<String> events() {
+        return eventHttpSubscriberJpaRepository.findAll()
+                .stream()
+                .map(EventHttpSubscriber::getEvent)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SubscriberInfo> subscribers(String event) {
+        return eventHttpSubscriberJpaRepository.findAll((root, cq, cb) -> {
+                    cq.where(cb.equal(root.get(EventHttpSubscriber.F_EVENT), event));
+                    return null;
+                })
+                .stream()
+                .map(eventHttpSubscriber -> {
+                    SubscriberInfo subscriberInfo = new SubscriberInfo();
+                    subscriberInfo.setEvent(eventHttpSubscriber.getEvent());
+                    subscriberInfo.setSubscriber(eventHttpSubscriber.getSubscriber());
+                    subscriberInfo.setCallbackUrl(eventHttpSubscriber.getCallbackUrl());
+                    return subscriberInfo;
+                }).collect(Collectors.toList());
     }
 }

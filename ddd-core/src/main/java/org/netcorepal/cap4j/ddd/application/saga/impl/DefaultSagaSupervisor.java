@@ -15,6 +15,7 @@ import org.netcorepal.cap4j.ddd.application.query.ListQuery;
 import org.netcorepal.cap4j.ddd.application.query.PageQuery;
 import org.netcorepal.cap4j.ddd.application.query.Query;
 import org.netcorepal.cap4j.ddd.application.saga.*;
+import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
 import java.time.Duration;
@@ -154,11 +155,26 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
     }
 
     @Override
-    public void resume(SagaRecord saga) {
-        if (!saga.beginSaga(LocalDateTime.now())) {
-            sagaRecordRepository.save(saga);
-            return;
+    public void resume(SagaRecord saga, LocalDateTime minNextTryTime) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime sagaTime = saga.getNextTryTime().isAfter(now)
+                ? saga.getNextTryTime()
+                : now;
+
+        saga.beginSaga(sagaTime);
+
+        // 解决请求重试间隔配置过小造成连续重试
+        int maxTry = 65535;
+        while (saga.getNextTryTime().isBefore(minNextTryTime)
+                && saga.isValid()
+        ) {
+            saga.beginSaga(saga.getNextTryTime());
+            if (maxTry-- <= 0) {
+                throw new DomainException("疑似死循环");
+            }
         }
+        sagaRecordRepository.save(saga);
+
         SagaParam<?> param = saga.getParam();
         if (validator != null) {
             Set<ConstraintViolation<SagaParam<?>>> constraintViolations = validator.validate(param);
@@ -166,8 +182,8 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
                 throw new ConstraintViolationException(constraintViolations);
             }
         }
+
         if (saga.isExecuting()) {
-            LocalDateTime now = LocalDateTime.now();
             Duration duration = now.isBefore(saga.getScheduleTime())
                     ? Duration.between(LocalDateTime.now(), saga.getScheduleTime())
                     : Duration.ZERO;
@@ -175,6 +191,19 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
                             internalSend((SagaParam) param, saga)
                     , duration.toMillis(), TimeUnit.MILLISECONDS);
         }
+    }
+
+    @Override
+    public void retry(String uuid) {
+        SagaRecord saga = sagaRecordRepository.getById(uuid);
+        SagaParam<?> param = saga.getParam();
+        if (validator != null) {
+            Set<ConstraintViolation<SagaParam<?>>> constraintViolations = validator.validate(param);
+            if (!constraintViolations.isEmpty()) {
+                throw new ConstraintViolationException(constraintViolations);
+            }
+        }
+        internalSend((SagaParam) param, saga);
     }
 
     @Override

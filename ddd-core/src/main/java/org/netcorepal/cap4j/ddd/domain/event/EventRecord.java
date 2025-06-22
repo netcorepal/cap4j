@@ -81,6 +81,13 @@ public interface EventRecord {
      * @return
      */
     boolean isInvalid();
+
+    /**
+     * 是否正在发送
+     * @return
+     */
+    boolean isDelivering();
+
     /**
      * 是否已发送
      * @return

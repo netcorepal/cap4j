@@ -1,5 +1,7 @@
 package org.netcorepal.cap4j.ddd.application.event;
 
+import lombok.Data;
+
 import java.util.List;
 
 /**
@@ -29,10 +31,27 @@ public interface HttpIntegrationEventSubscriberRegister {
     boolean unsubscribe(String event, String subscriber);
 
     /**
-     * 获取回调地址
+     * 获取事件列表
+     *
+     * @return {@link List}<{@link String}>
+     */
+    List<String> events();
+
+    /**
+     * 获取订阅者列表
      *
      * @param event 事件
      * @return {@link List}<{@link String}>
      */
-    List<String> getCallbackUrls(String event);
+    List<SubscriberInfo> subscribers(String event);
+
+    /**
+     * 订阅者信息
+     */
+    @Data
+    public static class SubscriberInfo {
+        private String event;
+        private String subscriber;
+        private String callbackUrl;
+    }
 }

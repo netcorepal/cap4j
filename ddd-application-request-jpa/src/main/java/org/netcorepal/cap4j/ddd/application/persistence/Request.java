@@ -169,6 +169,10 @@ public class Request {
     }
 
     public boolean beginRequest(LocalDateTime now) {
+        // 初始状态或者确认中或者异常
+        if (!isValid()) {
+            return false;
+        }
         // 超过重试次数
         if (this.triedTimes >= this.tryTimes) {
             this.requestState = RequestState.EXHAUSTED;
@@ -177,10 +181,6 @@ public class Request {
         // 事件过期
         if (now.isAfter(this.expireAt)) {
             this.requestState = RequestState.EXPIRED;
-            return false;
-        }
-        // 初始状态或者确认中或者异常
-        if (!isValid()) {
             return false;
         }
         // 未到下次重试时间

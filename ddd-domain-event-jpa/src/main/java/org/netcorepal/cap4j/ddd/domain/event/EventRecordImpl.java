@@ -117,6 +117,11 @@ public class EventRecordImpl implements EventRecord {
     }
 
     @Override
+    public boolean isDelivering() {
+        return event.isDelivering();
+    }
+
+    @Override
     public boolean isDelivered() {
         return event.isDelivered();
     }

@@ -54,15 +54,15 @@ public class HttpIntegrationEventPublisher implements IntegrationEventPublisher 
         }
         destination = TextUtils.resolvePlaceholderWithCache(destination, environment);
         destination = destination.split("@")[0];
-        List<String> callbackUrls = subscriberRegister.getCallbackUrls(destination);
+        List<HttpIntegrationEventSubscriberRegister.SubscriberInfo> subscribers = subscriberRegister.subscribers(destination);
 
-        if (callbackUrls != null && !callbackUrls.isEmpty()) {
+        if (subscribers != null && !subscribers.isEmpty()) {
             String eventType = destination;
             executorService.execute(() -> {
                 try {
-                    for (String callbackUrl : callbackUrls) {
+                    for (HttpIntegrationEventSubscriberRegister.SubscriberInfo subscriber : subscribers) {
                         Mediator.commands().async(IntegrationEventHttpCallbackTriggerCommand.Request.builder()
-                                .url(callbackUrl)
+                                .url(subscriber.getCallbackUrl())
                                 .uuid(event.getId())
                                 .event(eventType)
                                 .payload(event.getPayload())

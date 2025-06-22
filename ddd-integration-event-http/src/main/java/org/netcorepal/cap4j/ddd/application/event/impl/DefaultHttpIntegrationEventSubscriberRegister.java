@@ -33,9 +33,23 @@ public class DefaultHttpIntegrationEventSubscriberRegister implements HttpIntegr
     }
 
     @Override
-    public List<String> getCallbackUrls(String event) {
-        return subscriberMap.containsKey(event)
-                ? new ArrayList<>(subscriberMap.get(event).values())
-                : Collections.emptyList();
+    public List<String> events() {
+        return new ArrayList<>(subscriberMap.keySet());
+    }
+
+    @Override
+    public List<SubscriberInfo> subscribers(String event) {
+        if (subscriberMap.containsKey(event)) {
+            List<SubscriberInfo> subscriberInfos = new ArrayList<>();
+            for (Map.Entry<String, String> entry : subscriberMap.get(event).entrySet()) {
+                SubscriberInfo subscriberInfo = new SubscriberInfo();
+                subscriberInfo.setEvent(event);
+                subscriberInfo.setSubscriber(entry.getKey());
+                subscriberInfo.setCallbackUrl(entry.getValue());
+                subscriberInfos.add(subscriberInfo);
+            }
+            return subscriberInfos;
+        }
+        return Collections.emptyList();
     }
 }
