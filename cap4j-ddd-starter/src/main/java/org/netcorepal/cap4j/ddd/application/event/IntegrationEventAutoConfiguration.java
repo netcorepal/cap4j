@@ -3,6 +3,7 @@ package org.netcorepal.cap4j.ddd.application.event;
 import com.alibaba.fastjson.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.netcorepal.cap4j.ddd.application.event.commands.IntegrationEventHttpCallbackTriggerCommand;
 import org.netcorepal.cap4j.ddd.application.event.commands.IntegrationEventHttpSubscribeCommand;
@@ -216,16 +217,26 @@ public class IntegrationEventAutoConfiguration {
                     stringBuilder.append(scanner.nextLine());
                 }
                 String callbackUrl = JSON.parseObject(stringBuilder.toString(), String.class);
-                boolean success = httpIntegrationEventSubscriberRegister.subscribe(
-                        event,
-                        subscriber,
-                        callbackUrl
-                );
-                HttpIntegrationEventSubscriberAdapter.OperationResponse operationResponse = HttpIntegrationEventSubscriberAdapter.OperationResponse
-                        .builder()
-                        .success(success)
-                        .message(success ? "ok" : "fail")
-                        .build();
+                boolean success = false;
+                HttpIntegrationEventSubscriberAdapter.OperationResponse operationResponse = null;
+                if(StringUtils.isNotBlank(event) && StringUtils.isNotBlank(subscriber) && StringUtils.isNotBlank(callbackUrl)) {
+                    success = httpIntegrationEventSubscriberRegister.subscribe(
+                            event,
+                            subscriber,
+                            callbackUrl
+                    );
+                    operationResponse = HttpIntegrationEventSubscriberAdapter.OperationResponse
+                            .builder()
+                            .success(success)
+                            .message(success ? "ok" : "fail")
+                            .build();
+                } else {
+                    operationResponse = HttpIntegrationEventSubscriberAdapter.OperationResponse
+                            .builder()
+                            .success(false)
+                            .message("必要参数缺失")
+                            .build();
+                }
                 res.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 res.setContentType("application/json; charset=utf-8");
                 res.getWriter().write(JSON.toJSONString(operationResponse));
