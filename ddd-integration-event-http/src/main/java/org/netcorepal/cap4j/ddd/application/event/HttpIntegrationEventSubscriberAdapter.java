@@ -123,8 +123,9 @@ public class HttpIntegrationEventSubscriberAdapter {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class OperationResponse {
+    public static class OperationResponse<T> {
         private boolean success;
         private String message;
+        private T data;
     }
 }

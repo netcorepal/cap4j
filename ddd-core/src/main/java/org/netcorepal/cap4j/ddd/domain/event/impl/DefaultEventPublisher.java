@@ -104,14 +104,15 @@ public class DefaultEventPublisher implements EventPublisher {
     }
 
     @Override
-    public void retry(EventRecord eventRecord, LocalDateTime minNextTryTime) {
+    public void resume(EventRecord eventRecord, LocalDateTime minNextTryTime) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime deliverTime = eventRecord.getNextTryTime().isAfter(now)
                 ? eventRecord.getNextTryTime()
                 : now;
 
-        boolean delivering = eventRecord.beginDelivery(deliverTime);
+       eventRecord.beginDelivery(deliverTime);
 
+        // 解决事件重试间隔配置过小造成连续重试
         int maxTry = 65535;
         while (eventRecord.getNextTryTime().isBefore(minNextTryTime)
                 && eventRecord.isValid()
@@ -123,10 +124,17 @@ public class DefaultEventPublisher implements EventPublisher {
         }
 
         eventRecordRepository.save(eventRecord);
-        if (delivering) {
+        if (eventRecord.isDelivering()) {
             eventRecord.markPersist(true);
             publish(eventRecord);
         }
+    }
+
+    @Override
+    public void retry(String uuid) {
+        EventRecord eventRecord = eventRecordRepository.getById(uuid);
+        eventRecord.markPersist(true);
+        publish(eventRecord);
     }
 
     /**

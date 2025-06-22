@@ -24,10 +24,17 @@ public interface SagaManager {
      * 重新执行Saga流程
      *
      * @param saga
+     * @param minNextTryTime
      * @return
      */
-    void resume(SagaRecord saga);
+    void resume(SagaRecord saga, LocalDateTime minNextTryTime);
 
+    /**
+     * 重试Saga流程
+     *
+     * @param uuid
+     */
+    void retry(String uuid);
 
     /**
      * 获取指定时间前需重试的请求

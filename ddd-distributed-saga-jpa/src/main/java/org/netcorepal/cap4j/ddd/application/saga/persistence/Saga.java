@@ -204,6 +204,10 @@ public class Saga {
     }
 
     public boolean beginSaga(LocalDateTime now) {
+        // 初始状态或者确认中或者异常
+        if (!isValid()) {
+            return false;
+        }
         // 超过重试次数
         if (this.triedTimes >= this.tryTimes) {
             this.sagaState = SagaState.EXHAUSTED;
@@ -212,10 +216,6 @@ public class Saga {
         // 事件过期
         if (now.isAfter(this.expireAt)) {
             this.sagaState = SagaState.EXPIRED;
-            return false;
-        }
-        // 初始状态或者确认中或者异常
-        if (!isValid()) {
             return false;
         }
         // 未到下次重试时间

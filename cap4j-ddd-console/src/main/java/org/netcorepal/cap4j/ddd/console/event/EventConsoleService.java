@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.console.event;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.domain.event.EventPublisher;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -24,6 +25,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EventConsoleService {
     private final JdbcTemplate jdbcTemplate;
+    private final EventPublisher eventPublisher;
 
     private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
@@ -150,5 +152,9 @@ public class EventConsoleService {
             default:
                 return "未知";
         }
+    }
+
+    public void retry(String uuid){
+        eventPublisher.retry(uuid);
     }
 }

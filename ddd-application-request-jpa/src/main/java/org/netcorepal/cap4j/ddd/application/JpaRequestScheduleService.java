@@ -58,7 +58,7 @@ public class JpaRequestScheduleService {
                     }
                     for (RequestRecord requestRecord : requestRecords) {
                         log.info("Request执行补偿: {}", requestRecord);
-                        requestManager.resume(requestRecord);
+                        requestManager.resume(requestRecord, now.plus(interval));
                     }
                 } catch (Exception ex) {
                     log.error("Request执行补偿:异常失败", ex);

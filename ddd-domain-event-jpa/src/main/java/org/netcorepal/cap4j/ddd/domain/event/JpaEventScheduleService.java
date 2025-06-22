@@ -59,7 +59,7 @@ public class JpaEventScheduleService {
                     }
                     for (EventRecord eventRecord : eventRecords) {
                         log.info("事件发送补偿: {}", eventRecord);
-                        eventPublisher.retry(eventRecord, now.plus(interval));
+                        eventPublisher.resume(eventRecord, now.plus(interval));
                     }
                 } catch (Exception ex) {
                     log.error("事件发送补偿:异常失败", ex);

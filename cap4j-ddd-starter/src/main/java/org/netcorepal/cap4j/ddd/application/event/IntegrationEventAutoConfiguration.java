@@ -94,6 +94,8 @@ public class IntegrationEventAutoConfiguration {
         public static final String CONSUME_PATH = "/cap4j/integration-event/http/consume";
         public static final String SUBSCRIBE_PATH = "/cap4j/integration-event/http/subscribe";
         public static final String UNSUBSCRIBE_PATH = "/cap4j/integration-event/http/unsubscribe";
+        public static final String EVENTS_PATH = "/cap4j/integration-event/http/events";
+        public static final String SUBSCRIBERS_PATH = "/cap4j/integration-event/http/subscribers";
 
         @Configuration
         @ConditionalOnClass(name = "org.netcorepal.cap4j.ddd.application.event.JpaHttpIntegrationEventSubscriberRegister")
@@ -263,6 +265,77 @@ public class IntegrationEventAutoConfiguration {
         }
 
         @ConditionalOnWebApplication
+        @Bean(name = EVENTS_PATH)
+        public HttpRequestHandler httpIntegrationEventEventsHandler(
+                HttpIntegrationEventSubscriberRegister httpIntegrationEventSubscriberRegister,
+                @Value("${server.port:80}")
+                String serverPort,
+                @Value("${server.servlet.context-path:}")
+                String serverServletContentPath
+        ) {
+            log.info("IntegrationEvent events URL: http://localhost:" + serverPort + serverServletContentPath + EVENTS_PATH);
+            return (req, res) -> {
+                HttpIntegrationEventSubscriberAdapter.OperationResponse operationResponse = null;
+                try {
+                    List<String> events = httpIntegrationEventSubscriberRegister.events();
+                    operationResponse = HttpIntegrationEventSubscriberAdapter.OperationResponse
+                            .builder()
+                            .success(true)
+                            .message("ok")
+                            .data(events)
+                            .build();
+                } catch (Throwable throwable) {
+                    operationResponse = HttpIntegrationEventSubscriberAdapter.OperationResponse
+                            .builder()
+                            .success(false)
+                            .message(throwable.getMessage())
+                            .build();
+                }
+                res.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                res.setContentType("application/json; charset=utf-8");
+                res.getWriter().write(JSON.toJSONString(operationResponse));
+                res.getWriter().flush();
+                res.getWriter().close();
+            };
+        }
+
+        @ConditionalOnWebApplication
+        @Bean(name = SUBSCRIBERS_PATH)
+        public HttpRequestHandler httpIntegrationEventSubscribersHandler(
+                HttpIntegrationEventSubscriberRegister httpIntegrationEventSubscriberRegister,
+                @Value("${server.port:80}")
+                String serverPort,
+                @Value("${server.servlet.context-path:}")
+                String serverServletContentPath
+        ) {
+            log.info("IntegrationEvent subscribers URL: http://localhost:" + serverPort + serverServletContentPath + SUBSCRIBERS_PATH + "?" + EVENT_PARAM + "={event}");
+            return (req, res) -> {
+                String event = req.getParameter(EVENT_PARAM);
+                HttpIntegrationEventSubscriberAdapter.OperationResponse operationResponse = null;
+                try {
+                    List<HttpIntegrationEventSubscriberRegister.SubscriberInfo> subscribers = httpIntegrationEventSubscriberRegister.subscribers(event);
+                    operationResponse = HttpIntegrationEventSubscriberAdapter.OperationResponse
+                            .builder()
+                            .success(true)
+                            .message("ok")
+                            .data(subscribers)
+                            .build();
+                } catch (Throwable throwable) {
+                    operationResponse = HttpIntegrationEventSubscriberAdapter.OperationResponse
+                            .builder()
+                            .success(false)
+                            .message(throwable.getMessage())
+                            .build();
+                }
+                res.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                res.setContentType("application/json; charset=utf-8");
+                res.getWriter().write(JSON.toJSONString(operationResponse));
+                res.getWriter().flush();
+                res.getWriter().close();
+            };
+        }
+
+        @ConditionalOnWebApplication
         @Bean(name = CONSUME_PATH)
         public HttpRequestHandler httpIntegrationEventConsumeHandler(
                 HttpIntegrationEventSubscriberAdapter httpIntegrationEventSubscriberAdapter,
@@ -271,7 +344,7 @@ public class IntegrationEventAutoConfiguration {
                 @Value("${server.servlet.context-path:}")
                 String serverServletContentPath
         ) {
-            log.info("IntegrationEvent consume URL: http://localhost:" + serverPort + serverServletContentPath + CONSUME_PATH+ "?" + EVENT_PARAM + "={event}&" + EVENT_ID_PARAM + "={uuid}");
+            log.info("IntegrationEvent consume URL: http://localhost:" + serverPort + serverServletContentPath + CONSUME_PATH + "?" + EVENT_PARAM + "={event}&" + EVENT_ID_PARAM + "={uuid}");
             return (req, res) -> {
                 Scanner scanner = new Scanner(req.getInputStream(), StandardCharsets.UTF_8.name());
                 StringBuilder stringBuilder = new StringBuilder();

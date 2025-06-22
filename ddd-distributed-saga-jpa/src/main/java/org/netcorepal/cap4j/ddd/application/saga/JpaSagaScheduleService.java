@@ -58,7 +58,7 @@ public class JpaSagaScheduleService {
                     }
                     for (SagaRecord sagaRecord : sagaRecords) {
                         log.info("Saga执行补偿: {}", sagaRecord);
-                        sagaManager.resume(sagaRecord);
+                        sagaManager.resume(sagaRecord, now.plus(interval));
                     }
                 } catch (Exception ex) {
                     log.error("Saga执行补偿:异常失败", ex);

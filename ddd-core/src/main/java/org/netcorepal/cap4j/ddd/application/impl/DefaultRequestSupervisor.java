@@ -9,6 +9,7 @@ import org.netcorepal.cap4j.ddd.application.query.PageQuery;
 import org.netcorepal.cap4j.ddd.application.query.Query;
 import org.netcorepal.cap4j.ddd.application.saga.SagaParam;
 import org.netcorepal.cap4j.ddd.application.saga.SagaSupervisor;
+import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
 import javax.validation.ConstraintViolation;
@@ -147,11 +148,27 @@ public class DefaultRequestSupervisor implements RequestSupervisor, RequestManag
     }
 
     @Override
-    public void resume(RequestRecord request) {
-        if (!request.beginRequest(LocalDateTime.now())) {
-            requestRecordRepository.save(request);
-            return;
+    public void resume(RequestRecord request, LocalDateTime minNextTryTime) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime requestTime = request.getNextTryTime().isAfter(now)
+                ? request.getNextTryTime()
+                : now;
+
+        request.beginRequest(requestTime);
+
+        // 解决请求重试间隔配置过小造成连续重试
+        int maxTry = 65535;
+        while (request.getNextTryTime().isBefore(minNextTryTime)
+                && request.isValid()
+        ) {
+            request.beginRequest(request.getNextTryTime());
+            if (maxTry-- <= 0) {
+                throw new DomainException("疑似死循环");
+            }
         }
+
+        requestRecordRepository.save(request);
+
         RequestParam<?> param = request.getParam();
         if (validator != null) {
             Set<ConstraintViolation<RequestParam<?>>> constraintViolations = validator.validate(param);
@@ -159,8 +176,8 @@ public class DefaultRequestSupervisor implements RequestSupervisor, RequestManag
                 throw new ConstraintViolationException(constraintViolations);
             }
         }
+
         if (request.isExecuting()) {
-            LocalDateTime now = LocalDateTime.now();
             Duration duration = now.isBefore(request.getScheduleTime())
                     ? Duration.between(LocalDateTime.now(), request.getScheduleTime())
                     : Duration.ZERO;
@@ -168,6 +185,19 @@ public class DefaultRequestSupervisor implements RequestSupervisor, RequestManag
                 internalSend(param, request);
             }, duration.toMillis(), TimeUnit.MILLISECONDS);
         }
+    }
+
+    @Override
+    public void retry(String uuid) {
+        RequestRecord request = requestRecordRepository.getById(uuid);
+        RequestParam<?> param = request.getParam();
+        if (validator != null) {
+            Set<ConstraintViolation<RequestParam<?>>> constraintViolations = validator.validate(param);
+            if (!constraintViolations.isEmpty()) {
+                throw new ConstraintViolationException(constraintViolations);
+            }
+        }
+        internalSend(param, request);
     }
 
     @Override

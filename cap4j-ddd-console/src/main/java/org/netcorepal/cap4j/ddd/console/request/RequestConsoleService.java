@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.console.request;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.application.RequestManager;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -24,6 +25,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RequestConsoleService {
     private final JdbcTemplate jdbcTemplate;
+    private final RequestManager requestManager;
 
     private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
@@ -153,5 +155,9 @@ public class RequestConsoleService {
             default:
                 return "未知";
         }
+    }
+
+    public void retry(String uuid){
+        requestManager.retry(uuid);
     }
 }
