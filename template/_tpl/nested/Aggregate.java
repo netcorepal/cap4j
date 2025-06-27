@@ -12,7 +12,7 @@ import ${basePackage}.domain.aggregates${package}.factory.${Entity}Factory;
  */
 public class ${aggregateNameTemplate} extends Aggregate.Default<${Entity}> {
     public Agg${Entity}() {
-        super(null);
+        this(null);
     }
 
     public ${aggregateNameTemplate}(${Entity}Factory.Payload payload){

@@ -1868,7 +1868,7 @@ public class GenEntityMojo extends GenArchMojo {
                 "public class " + aggregateNameTemplate + " extends Aggregate.Default<${Entity}> {\n" +
                 "\n" +
                 "    public " + aggregateNameTemplate + "(){\n" +
-                "        super(null);\n" +
+                "        this(null);\n" +
                 "    }\n" +
                 "\n" +
                 "    public " + aggregateNameTemplate + "(${Entity}Payload payload){\n" +

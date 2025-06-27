@@ -1,8 +1,8 @@
 package org.netcorepal.cap4j.ddd.domain.repo.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
-import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Id;
 import org.netcorepal.cap4j.ddd.domain.repo.*;
@@ -27,6 +27,7 @@ import java.util.stream.StreamSupport;
 @RequiredArgsConstructor
 public class DefaultAggregateSupervisor implements AggregateSupervisor {
     final RepositorySupervisor repositorySupervisor;
+    final UnitOfWork unitOfWork;
 
     private static <AGGREGATE extends Aggregate<?>> AGGREGATE newInstance(Class<AGGREGATE> clazz, Object entity) {
         try {
@@ -37,11 +38,20 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
             throw new RuntimeException(ex);
         }
     }
+    private static <AGGREGATE extends Aggregate<?>, PAYLOAD> AGGREGATE newInstanceByPayload(Class<AGGREGATE> clazz, Class<PAYLOAD> payloadClass, PAYLOAD payload){
+        try {
+            Aggregate aggregate = clazz.getConstructor(payloadClass).newInstance(payload);
+            return (AGGREGATE) aggregate;
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
 
     @Override
     public <AGGREGATE extends Aggregate<ENTITY>, ENTITY_PAYLOAD extends AggregatePayload<ENTITY>, ENTITY> AGGREGATE create(Class<AGGREGATE> clazz, ENTITY_PAYLOAD payload) {
-        ENTITY entity = AggregateFactorySupervisor.getInstance().create(payload);
-        return newInstance(clazz, entity);
+        AGGREGATE aggregate = newInstanceByPayload(clazz, (Class<ENTITY_PAYLOAD>)payload.getClass(), payload);
+        unitOfWork.persist(aggregate);
+        return aggregate;
     }
 
     @Override
