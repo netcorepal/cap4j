@@ -15,6 +15,8 @@ import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * 默认领域事件管理器
@@ -202,7 +204,11 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
         if (entityEventPayloads == null || !entityEventPayloads.containsKey(entity)) {
             return EMPTY_EVENT_PAYLOADS;
         }
-        Set<Object> eventPayloads = entityEventPayloads.remove(entity);
+        Set<Object> eventPayloads = entityEventPayloads
+                .remove(entity)
+                .stream()
+                .map(eventPayload -> eventPayload instanceof Supplier ? ((Supplier)eventPayload).get() : eventPayload)
+                .collect(Collectors.toSet());
         return eventPayloads != null ? eventPayloads : EMPTY_EVENT_PAYLOADS;
     }
 
@@ -228,5 +234,10 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
         } else {
             return LocalDateTime.now();
         }
+    }
+
+    @Override
+    public <DOMAIN_EVENT, ENTITY> void attach(Supplier<DOMAIN_EVENT> domainEventPayloadSupplier, ENTITY entity, LocalDateTime schedule) {
+        attach((Object) domainEventPayloadSupplier, entity, schedule);
     }
 }

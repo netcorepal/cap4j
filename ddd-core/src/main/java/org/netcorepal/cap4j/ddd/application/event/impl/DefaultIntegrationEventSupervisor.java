@@ -1,7 +1,10 @@
 package org.netcorepal.cap4j.ddd.application.event.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.netcorepal.cap4j.ddd.application.event.*;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventAttachedTransactionCommittedEvent;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventInterceptorManager;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventManager;
+import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
 import org.netcorepal.cap4j.ddd.application.event.annotation.IntegrationEvent;
 import org.netcorepal.cap4j.ddd.domain.event.EventPublisher;
 import org.netcorepal.cap4j.ddd.domain.event.EventRecord;
@@ -13,6 +16,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * 默认事件管理器
@@ -63,6 +68,11 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
     }
 
     @Override
+    public <EVENT> void attach(Supplier<EVENT> eventPayloadSupplier, LocalDateTime schedule) {
+        attach((Object) eventPayloadSupplier, schedule);
+    }
+
+    @Override
     public <EVENT> void detach(EVENT eventPayload) {
         Set<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
         if (eventPayloads == null) {
@@ -92,7 +102,7 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
     }
 
     @Override
-    public <EVENT> void publish(EVENT eventPayload, LocalDateTime schedule){
+    public <EVENT> void publish(EVENT eventPayload, LocalDateTime schedule) {
         List<EventRecord> persistedEvents = new ArrayList<>(1);
         EventRecord event = eventRecordRepository.create();
         event.init(eventPayload, this.svcName, schedule, Duration.ofMinutes(DEFAULT_EVENT_EXPIRE_MINUTES), DEFAULT_EVENT_RETRY_TIMES);
@@ -129,8 +139,15 @@ public class DefaultIntegrationEventSupervisor implements IntegrationEventSuperv
      */
     protected Set<Object> popEvents() {
         Set<Object> eventPayloads = TL_EVENT_PAYLOADS.get();
+        if(eventPayloads == null){
+            return EMPTY_EVENT_PAYLOADS;
+        }
+        eventPayloads = eventPayloads
+                .stream()
+                .map(eventPayload -> eventPayload instanceof Supplier ? ((Supplier) eventPayload).get() : eventPayload)
+                .collect(Collectors.toSet());
         TL_EVENT_PAYLOADS.remove();
-        return eventPayloads != null ? eventPayloads : EMPTY_EVENT_PAYLOADS;
+        return eventPayloads;
     }
 
     /**

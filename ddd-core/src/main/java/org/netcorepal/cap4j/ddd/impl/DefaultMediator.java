@@ -2,7 +2,6 @@ package org.netcorepal.cap4j.ddd.impl;
 
 import org.netcorepal.cap4j.ddd.Mediator;
 import org.netcorepal.cap4j.ddd.application.RequestParam;
-import org.netcorepal.cap4j.ddd.application.RequestRecord;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
@@ -24,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * 默认中介者
@@ -131,6 +131,11 @@ public class DefaultMediator implements Mediator {
     @Override
     public <INTEGRATION_EVENT> void attach(INTEGRATION_EVENT integrationEventPayload, LocalDateTime schedule) {
         IntegrationEventSupervisor.getInstance().attach(integrationEventPayload, schedule);
+    }
+
+    @Override
+    public <EVENT> void attach(Supplier<EVENT> eventPayloadSupplier, LocalDateTime schedule) {
+        IntegrationEventSupervisor.getInstance().attach(eventPayloadSupplier, schedule);
     }
 
     @Override
