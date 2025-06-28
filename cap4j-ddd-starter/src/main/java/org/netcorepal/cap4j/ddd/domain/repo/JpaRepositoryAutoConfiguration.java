@@ -52,10 +52,12 @@ public class JpaRepositoryAutoConfiguration {
 
     @Bean
     public DefaultAggregateSupervisor defaultAggregateSupervisor(
-            DefaultRepositorySupervisor repositorySupervisor
+            DefaultRepositorySupervisor repositorySupervisor,
+            JpaUnitOfWork jpaUnitOfWork
     ) {
         DefaultAggregateSupervisor aggregateSupervisor = new DefaultAggregateSupervisor(
-                repositorySupervisor
+                repositorySupervisor,
+                jpaUnitOfWork
         );
         AggregateSupervisorSupport.configure(aggregateSupervisor);
         return aggregateSupervisor;

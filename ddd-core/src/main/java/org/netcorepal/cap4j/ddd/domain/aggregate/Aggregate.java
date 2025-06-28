@@ -29,11 +29,13 @@ public interface Aggregate<ENTITY> {
         protected ENTITY root;
 
         public Default(Object payload) {
-            if(payload != null && !(payload instanceof AggregatePayload)){
-                throw new IllegalArgumentException("payload must be AggregatePayload");
+            if(payload != null){
+                if(!(payload instanceof AggregatePayload)) {
+                    throw new IllegalArgumentException("payload must be AggregatePayload");
+                }
+                ENTITY root = Mediator.factories().create((AggregatePayload<ENTITY>) payload);
+                _wrap(root);
             }
-            ENTITY root = Mediator.factories().create((AggregatePayload<ENTITY>) payload);
-            _wrap(root);
         }
 
         /**
@@ -63,7 +65,7 @@ public interface Aggregate<ENTITY> {
          * @param event
          */
         protected void registerDomainEvent(Object event) {
-            events().attach(event, this);
+            events().attach(event, this.root);
         }
 
         /**
@@ -72,7 +74,7 @@ public interface Aggregate<ENTITY> {
          * @param event
          */
         protected void cancelDomainEvent(Object event) {
-            events().detach(event, this);
+            events().detach(event, this.root);
         }
 
     }
