@@ -2,6 +2,8 @@ package org.netcorepal.cap4j.ddd.domain.aggregate;
 
 import org.netcorepal.cap4j.ddd.Mediator;
 
+import java.util.function.Supplier;
+
 import static org.netcorepal.cap4j.ddd.domain.event.DomainEventSupervisorSupport.events;
 
 /**
@@ -66,6 +68,15 @@ public interface Aggregate<ENTITY> {
          */
         protected void registerDomainEvent(Object event) {
             events().attach(event, this.root);
+        }
+
+        /**
+         * 注册领域事件到持久化上下文
+         *
+         * @param eventSupplier
+         */
+        protected void registerDomainEvent(Supplier<?> eventSupplier){
+            events().attach(eventSupplier, this.root);
         }
 
         /**
