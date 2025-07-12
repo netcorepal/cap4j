@@ -41,13 +41,13 @@ public class DefaultRequestSupervisor implements RequestSupervisor, RequestManag
 
     /**
      * 默认Request过期时间（分钟）
-     * 一天 60*24 = 1440
+     * 一天 60*20 = 120
      */
-    private static final int DEFAULT_REQUEST_EXPIRE_MINUTES = 1440;
+    private static final int DEFAULT_REQUEST_EXPIRE_MINUTES = 120;
     /**
      * 默认Request重试次数
      */
-    private static final int DEFAULT_REQUEST_RETRY_TIMES = 200;
+    private static final int DEFAULT_REQUEST_RETRY_TIMES = 20;
     /**
      * 本地调度时间阈值
      */

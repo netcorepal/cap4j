@@ -38,7 +38,7 @@ public class DefaultDomainEventSupervisor implements DomainEventSupervisor, Doma
     /**
      * 默认事件过期时间（分钟）
      */
-    private static final int DEFAULT_EVENT_EXPIRE_MINUTES = 30;
+    private static final int DEFAULT_EVENT_EXPIRE_MINUTES = 60;
     /**
      * 默认事件重试次数
      */
