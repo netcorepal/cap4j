@@ -44,13 +44,13 @@ public class DefaultSagaSupervisor implements SagaSupervisor, SagaProcessSupervi
 
     /**
      * 默认Saga过期时间（分钟）
-     * 一天 60*24 = 1440
+     * 一天 60*2 = 120
      */
-    private static final int DEFAULT_SAGA_EXPIRE_MINUTES = 1440;
+    private static final int DEFAULT_SAGA_EXPIRE_MINUTES = 120;
     /**
      * 默认Saga重试次数
      */
-    private static final int DEFAULT_SAGA_RETRY_TIMES = 200;
+    private static final int DEFAULT_SAGA_RETRY_TIMES = 20;
     /**
      * 本地调度时间阈值
      */
