@@ -1370,6 +1370,7 @@ public class GenEntityMojo extends GenArchMojo {
             throw new RuntimeException("实体缺失【主键】：" + tableName);
         }
         String identityType = (ids.size() != 1 ? "Long" : getColumnJavaType(ids.get(0)));
+        String comment = getComment(table).replaceAll(PATTERN_LINE_BREAK, " ");
 
         Map<String, String> context = getEscapeContext();
         putContext(tag, "Name", entityType, context);
@@ -1379,8 +1380,8 @@ public class GenEntityMojo extends GenArchMojo {
         putContext(tag, "package", refPackage(aggregate), context);
         putContext(tag, "path", aggregate.replace(".", File.separator), context);
         putContext(tag, "Aggregate", toUpperCamelCase(aggregate), context);
-        putContext(tag, "Comment", "", context);
-        putContext(tag, "CommentEscaped", "", context);
+        putContext(tag, "Comment", comment, context);
+        putContext(tag, "CommentEscaped", comment.replaceAll(PATTERN_LINE_BREAK, "  "), context);
         putContext(tag, "entityPackage", SourceFileUtils.refPackage(entityFullPackage, basePackage), context);
         putContext(tag, "EntityVar", entityVar, context);
         putContext(tag, "IdentityType", identityType, context);
@@ -1865,6 +1866,7 @@ public class GenEntityMojo extends GenArchMojo {
                 " * @author cap4j-ddd-codegen\n" +
                 " * @date ${date}\n" +
                 " */\n" +
+                "@org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate(aggregate = \"${Aggregate}\", name = \""+aggregateNameTemplate+"\", root = true, type = org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate.TYPE_AGGREGATE, description = \"${CommentEscaped}\")\n" +
                 "public class " + aggregateNameTemplate + " extends Aggregate.Default<${Entity}> {\n" +
                 "\n" +
                 "    public " + aggregateNameTemplate + "(){\n" +

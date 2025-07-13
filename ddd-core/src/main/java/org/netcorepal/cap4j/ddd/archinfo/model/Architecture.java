@@ -22,6 +22,7 @@ public class Architecture {
     public static class Application {
         MapCatalog requests;
         MapCatalog events;
+        MapCatalog subscribers;
     }
 
     @Data

@@ -6,21 +6,20 @@ import org.netcorepal.cap4j.ddd.archinfo.model.ClassRef;
 import org.netcorepal.cap4j.ddd.archinfo.model.Element;
 
 /**
- * 值对象
+ * 聚合
  *
  * @author binking338
- * @date 2024/11/21
+ * @date 2025/7/12
  */
 @Data
 @Builder
-public class ValueObjectElement implements Element, ClassRef {
+public class AggregateElement implements Element, ClassRef {
     String classRef;
     String name;
     String description;
-    Boolean root;
 
     @Override
     public String getType() {
-        return TYPE_VALUE_OBJECT;
+        return TYPE_AGGREGATE;
     }
 }
