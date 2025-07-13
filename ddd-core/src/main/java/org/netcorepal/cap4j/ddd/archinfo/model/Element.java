@@ -9,6 +9,7 @@ package org.netcorepal.cap4j.ddd.archinfo.model;
 public interface Element {
     static final String TYPE_REF = "ref";
     static final String TYPE_NONE = "none";
+    static final String TYPE_AGGREGATE = "aggregate";
     static final String TYPE_CATALOG = "catalog";
     static final String TYPE_REPOSITORY = "repository";
     static final String TYPE_FACTORY = "factory";

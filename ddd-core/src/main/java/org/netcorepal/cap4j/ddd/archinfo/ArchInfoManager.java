@@ -81,6 +81,7 @@ public class ArchInfoManager {
         return Architecture.Application.builder()
                 .requests(loadRequests())
                 .events(loadEvents())
+                .subscribers(loadSubscribers())
                 .build();
     }
 
@@ -170,7 +171,6 @@ public class ArchInfoManager {
 
     protected MapCatalog loadEvents() {
         Map<Class<?>, List<SubscriberElement>> eventSubscriberMap = loadEventSubscriberMap();
-        ListCatalog subscriberCatalog = new ListCatalog("subscribers", "订阅者", eventSubscriberMap.values().stream().flatMap(list -> list.stream()).collect(Collectors.toList()));
         ListCatalog domainEventCatalog = new ListCatalog("domain", "领域事件", domainEventClasses.stream()
                 .map(cls -> ElementRef.builder()
                         .ref(resolveEventRef(cls))
@@ -184,13 +184,32 @@ public class ArchInfoManager {
                         .classRef(cls.getName())
                         .name(cls.getSimpleName())
                         .description(getDescription(cls, ""))
-                        .subscribersRef(!eventSubscriberMap.containsKey(cls) ? Collections.emptyList() : eventSubscriberMap.get(cls).stream().map(sub -> "/architecture/application/events/subscribers/" + sub.getName()).collect(Collectors.toList()))
+                        .subscribersRef(!eventSubscriberMap.containsKey(cls) ? Collections.emptyList() : eventSubscriberMap.get(cls).stream().map(sub -> "/architecture/application/subscribers/integration/" + sub.getName()).collect(Collectors.toList()))
                         .build()
                 ).collect(Collectors.toList()));
 
         return new MapCatalog("events", "事件",
-                Arrays.asList(domainEventCatalog, integrationEventCatalog, subscriberCatalog)
+                Arrays.asList(domainEventCatalog, integrationEventCatalog)
         );
+    }
+
+    protected MapCatalog loadSubscribers() {
+        Map<Class<?>, List<SubscriberElement>> eventSubscriberMap = loadEventSubscriberMap();
+        ListCatalog domainEventSubscriberCatalog = new ListCatalog("domain", "领域事件订阅", domainEventClasses.stream()
+                .flatMap(cls ->
+                        eventSubscriberMap.getOrDefault(cls, Collections.emptyList()).stream()
+                )
+                .collect(Collectors.toList())
+        );
+        ListCatalog integrationEventSubscriberCatalog = new ListCatalog("integration", "集成事件订阅", integrationEventClasses.stream()
+                .flatMap(cls ->
+                        eventSubscriberMap.getOrDefault(cls, Collections.emptyList()).stream()
+                )
+                .collect(Collectors.toList())
+        );
+
+        return new MapCatalog("subscribers", "订阅者",
+                Arrays.asList(domainEventSubscriberCatalog, integrationEventSubscriberCatalog));
     }
 
     protected Architecture.Domain loadDomain() {
@@ -205,7 +224,17 @@ public class ArchInfoManager {
         return new MapCatalog("aggregates", "聚合", repositoryClasses
                 .stream().map(cls -> {
                     Aggregate aggregate = getAggregate(cls);
-                    Element rootCatalog =
+                    Element aggregateNode = aggregateClasses.stream()
+                            .filter(aggregateCls -> getAggregate(aggregateCls).aggregate().equals(aggregate.aggregate()))
+                            .map(aggregateCls -> (Element) AggregateElement.builder()
+                                    .classRef(aggregateCls.getName())
+                                    .name(getAggregate(aggregateCls).name())
+                                    .description(getDescription(aggregateCls, getAggregate(aggregateCls).description()))
+                                    .build())
+                            .findFirst()
+                            .orElse(new NoneElement());
+
+                    Element rootNode =
                             entityClasses.stream()
                                     .filter(entityCls -> getAggregate(entityCls).aggregate().equals(aggregate.aggregate())
                                             && getAggregate(entityCls).root())
@@ -216,6 +245,18 @@ public class ArchInfoManager {
                                             .root(true)
                                             .build())
                                     .findFirst().orElse(new NoneElement());
+                    if (rootNode instanceof NoneElement) {
+                        rootNode = valueObjectClasses.stream()
+                                .filter(valueObjectCls -> getAggregate(valueObjectCls).aggregate().equals(aggregate.aggregate())
+                                        && getAggregate(valueObjectCls).root())
+                                .map(valueObjectCls -> (Element) ValueObjectElement.builder()
+                                        .classRef(valueObjectCls.getName())
+                                        .name(getAggregate(valueObjectCls).name())
+                                        .description(getDescription(valueObjectCls, getAggregate(valueObjectCls).description()))
+                                        .root(true)
+                                        .build())
+                                .findFirst().orElse(new NoneElement());
+                    }
                     Element repositoryCatalog =
                             repositoryClasses.stream()
                                     .filter(repositoryCls -> getAggregate(repositoryCls).aggregate().equals(aggregate.aggregate()))
@@ -253,11 +294,13 @@ public class ArchInfoManager {
                                     .collect(Collectors.toList()));
                     ListCatalog valueObjectCatalog = new ListCatalog("valueObjects", "值对象",
                             valueObjectClasses.stream()
-                                    .filter(valueObjectCls -> getAggregate(valueObjectCls).aggregate().equals(aggregate.aggregate()))
+                                    .filter(valueObjectCls -> getAggregate(valueObjectCls).aggregate().equals(aggregate.aggregate())
+                                            && !getAggregate(valueObjectCls).root())
                                     .map(valueObjectCls -> ValueObjectElement.builder()
                                             .classRef(valueObjectCls.getName())
                                             .name(getAggregate(valueObjectCls).name())
                                             .description(getDescription(valueObjectCls, getAggregate(valueObjectCls).description()))
+                                            .root(false)
                                             .build())
                                     .collect(Collectors.toList()));
                     ListCatalog enumCatalog = new ListCatalog("enums", "枚举",
@@ -285,11 +328,12 @@ public class ArchInfoManager {
                                             .classRef(domainEventCls.getName())
                                             .name(getAggregate(domainEventCls).name())
                                             .description(getDescription(domainEventCls, getAggregate(domainEventCls).description()))
-                                            .subscribersRef(eventSubscriberMap.get(domainEventCls).stream().map(sub -> "/architecture/application/events/subscribers/" + sub.getName()).collect(Collectors.toList()))
+                                            .subscribersRef(eventSubscriberMap.get(domainEventCls).stream().map(sub -> "/architecture/application/subscribers/domain/" + sub.getName()).collect(Collectors.toList()))
                                             .build())
                                     .collect(Collectors.toList()));
                     Map<String, Element> elements = new HashMap<>();
-                    elements.put("root", rootCatalog);
+                    elements.put("aggregate", aggregateNode);
+                    elements.put("root", rootNode);
                     elements.put("repository", repositoryCatalog);
                     elements.put("factory", factoryCatalog);
                     elements.put("entities", entityCatalog);
@@ -367,6 +411,7 @@ public class ArchInfoManager {
         return null;
     }
 
+    List<Class> aggregateClasses = new ArrayList<>();
     List<Class> repositoryClasses = new ArrayList<>();
     List<Class> factoryClasses = new ArrayList<>();
     List<Class> factoryPayloadClasses = new ArrayList<>();
@@ -400,6 +445,9 @@ public class ArchInfoManager {
             if (cls.isAnnotationPresent(Aggregate.class)) {
                 Aggregate aggregate = cls.getAnnotation(Aggregate.class);
                 switch (aggregate.type()) {
+                    case Aggregate.TYPE_AGGREGATE:
+                        aggregateClasses.add(cls);
+                        break;
                     case Aggregate.TYPE_REPOSITORY:
                         repositoryClasses.add(cls);
                         break;

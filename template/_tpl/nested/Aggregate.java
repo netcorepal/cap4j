@@ -10,6 +10,7 @@ import ${basePackage}.domain.aggregates${package}.factory.${Entity}Factory;
  * @author cap4j-ddd-codegen
  * @date ${date}
  */
+@org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate(aggregate = "${Aggregate}", name = "${aggregateNameTemplate}", root = true, type = org.netcorepal.cap4j.ddd.domain.aggregate.annotation.Aggregate.TYPE_AGGREGATE, description = "${CommentEscaped}")
 public class ${aggregateNameTemplate} extends Aggregate.Default<${Entity}> {
     public Agg${Entity}() {
         this(null);

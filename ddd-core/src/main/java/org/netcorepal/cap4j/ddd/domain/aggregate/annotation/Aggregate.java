@@ -16,6 +16,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Aggregate {
+    public static final String TYPE_AGGREGATE = "aggregate";
     public static final String TYPE_ENTITY = "entity";
     public static final String TYPE_VALUE_OBJECT = "value-object";
     public static final String TYPE_ENUM = "enum";
