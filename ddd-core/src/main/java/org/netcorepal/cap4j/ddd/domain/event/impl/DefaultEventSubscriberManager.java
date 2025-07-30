@@ -1,6 +1,7 @@
 package org.netcorepal.cap4j.ddd.domain.event.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.netcorepal.cap4j.ddd.application.RequestParam;
 import org.netcorepal.cap4j.ddd.application.RequestSupervisor;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
@@ -10,6 +11,7 @@ import org.netcorepal.cap4j.ddd.application.event.annotation.AutoRequest;
 import org.netcorepal.cap4j.ddd.application.event.annotation.AutoRequests;
 import org.netcorepal.cap4j.ddd.domain.event.EventSubscriber;
 import org.netcorepal.cap4j.ddd.domain.event.EventSubscriberManager;
+import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 import org.netcorepal.cap4j.ddd.share.misc.ScanUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -156,7 +158,11 @@ public class DefaultEventSubscriberManager implements EventSubscriberManager {
             return;
         }
         for (EventSubscriber<?> subscriber : subscribersForEvent) {
-            ((EventSubscriber<Object>) subscriber).onEvent(eventPayload);
+            try {
+                ((EventSubscriber<Object>) subscriber).onEvent(eventPayload);
+            } catch (Exception e) {
+                throw new DomainException("事件处理失败: " + eventPayload.getClass().getName(), e);
+            }
         }
     }
 }
