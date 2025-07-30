@@ -20,10 +20,7 @@ import org.springframework.core.annotation.OrderUtils;
 import org.springframework.core.convert.converter.Converter;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 基于RocketMq的领域事件订阅管理器
@@ -157,12 +154,17 @@ public class DefaultEventSubscriberManager implements EventSubscriberManager {
         if (subscribersForEvent == null || subscribersForEvent.isEmpty()) {
             return;
         }
+        List<Exception> exceptions = new ArrayList<>();
         for (EventSubscriber<?> subscriber : subscribersForEvent) {
             try {
                 ((EventSubscriber<Object>) subscriber).onEvent(eventPayload);
             } catch (Exception e) {
-                throw new DomainException("事件处理失败: " + eventPayload.getClass().getName(), e);
+                exceptions.add(e);
             }
+        }
+        if (!exceptions.isEmpty()) {
+            throw new DomainException("事件处理失败: " + eventPayload.getClass().getName() +
+                    ", 失败订阅器数量: " + exceptions.size(), exceptions.get(0));
         }
     }
 }
