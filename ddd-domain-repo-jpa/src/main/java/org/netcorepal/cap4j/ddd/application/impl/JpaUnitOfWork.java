@@ -12,6 +12,7 @@ import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
 import org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistListenerManager;
 import org.netcorepal.cap4j.ddd.domain.repo.PersistType;
+import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.data.jpa.repository.support.JpaEntityInformationSupport;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.transaction.annotation.Propagation;
@@ -121,7 +122,8 @@ public class JpaUnitOfWork implements UnitOfWork {
             return entity;
         }
         Aggregate<?> aggregate = (Aggregate<?>) entity;
-        Object unwrappedEntity = aggregate._unwrap();
+        Object unwrappedEntity = Optional.ofNullable(aggregate._unwrap())
+                .orElseThrow(() -> new DomainException("解包数据为空"));
         wrapperMapThreadLocal.get().put(unwrappedEntity, aggregate);
         return unwrappedEntity;
     }
