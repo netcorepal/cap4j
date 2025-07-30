@@ -1,10 +1,12 @@
 package org.netcorepal.cap4j.ddd.domain.aggregate.impl;
 
+import com.sun.tools.javac.util.Assert;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
+import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
 import java.util.HashMap;
@@ -50,7 +52,7 @@ public class DefaultAggregateFactorySupervisor implements AggregateFactorySuperv
         init();
         AggregateFactory<?, ?> factory = factoryMap.get(entityPayload.getClass());
         if (null == factory) {
-            return null;
+            throw new DomainException("No aggregate factory found for payload class: " + entityPayload.getClass().getName());
         }
         ENTITY instance = ((AggregateFactory<ENTITY_PAYLOAD, ENTITY>) factory).create(entityPayload);
         unitOfWork.persist(instance);
