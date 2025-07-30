@@ -46,7 +46,7 @@ public interface Aggregate<ENTITY> {
          * @return
          */
         @Override
-        public ENTITY _unwrap() {
+        public final ENTITY _unwrap() {
             return this.root;
         }
 
@@ -56,7 +56,7 @@ public interface Aggregate<ENTITY> {
          * @param root
          */
         @Override
-        public void _wrap(ENTITY root) {
+        public final void _wrap(ENTITY root) {
             this.root = root;
         }
 
