@@ -2,6 +2,8 @@ package org.netcorepal.cap4j.ddd.domain.repo.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
+import org.netcorepal.cap4j.ddd.domain.aggregate.JpaAggregatePredicate;
+import org.netcorepal.cap4j.ddd.domain.aggregate.JpaAggregatePredicateSupport;
 import org.netcorepal.cap4j.ddd.domain.repo.*;
 import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;

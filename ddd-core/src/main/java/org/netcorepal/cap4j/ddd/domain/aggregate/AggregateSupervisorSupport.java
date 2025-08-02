@@ -1,4 +1,4 @@
-package org.netcorepal.cap4j.ddd.domain.repo;
+package org.netcorepal.cap4j.ddd.domain.aggregate;
 
 /**
  * 聚合管理器帮助类

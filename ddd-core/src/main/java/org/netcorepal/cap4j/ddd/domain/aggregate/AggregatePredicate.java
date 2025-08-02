@@ -1,6 +1,6 @@
-package org.netcorepal.cap4j.ddd.domain.repo;
+package org.netcorepal.cap4j.ddd.domain.aggregate;
 
-import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
+import org.netcorepal.cap4j.ddd.domain.repo.Predicate;
 
 /**
  * 聚合检索断言

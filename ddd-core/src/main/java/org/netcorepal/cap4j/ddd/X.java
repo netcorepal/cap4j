@@ -5,7 +5,7 @@ import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.application.event.IntegrationEventSupervisor;
 import org.netcorepal.cap4j.ddd.application.saga.SagaSupervisor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactorySupervisor;
-import org.netcorepal.cap4j.ddd.domain.repo.AggregateSupervisor;
+import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateSupervisor;
 import org.netcorepal.cap4j.ddd.domain.repo.RepositorySupervisor;
 import org.netcorepal.cap4j.ddd.domain.service.DomainServiceSupervisor;
 import org.springframework.context.ApplicationContext;
