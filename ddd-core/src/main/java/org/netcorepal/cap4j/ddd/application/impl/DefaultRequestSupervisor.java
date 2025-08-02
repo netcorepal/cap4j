@@ -142,7 +142,7 @@ public class DefaultRequestSupervisor implements RequestSupervisor, RequestManag
     public <R> R result(String requestId) {
         RequestRecord requestRecord = requestRecordRepository.getById(requestId);
         if (requestRecord == null) {
-            return RequestSupervisor.getInstance().result(requestId);
+            throw new DomainException(String.format("RequestRecord not found, uuid=%s", requestId));
         }
         return requestRecord == null ? null : requestRecord.getResult();
     }
@@ -190,6 +190,9 @@ public class DefaultRequestSupervisor implements RequestSupervisor, RequestManag
     @Override
     public void retry(String uuid) {
         RequestRecord request = requestRecordRepository.getById(uuid);
+        if (request == null) {
+            throw new DomainException(String.format("RequestRecord not found, uuid=%s", uuid));
+        }
         RequestParam<?> param = request.getParam();
         if (validator != null) {
             Set<ConstraintViolation<RequestParam<?>>> constraintViolations = validator.validate(param);

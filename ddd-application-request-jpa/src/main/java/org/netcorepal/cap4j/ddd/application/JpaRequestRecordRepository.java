@@ -43,7 +43,7 @@ public class JpaRequestRecordRepository implements RequestRecordRepository {
     @Override
     public RequestRecord getById(String id) {
         Request request = requestJpaRepository.findOne((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(Request.F_REQUEST_UUID), id))
-                .orElseThrow(() -> new DomainException("RequestRecord not found"));
+                .orElseThrow(() -> new DomainException(String.format("RequestRecord not found, uuid=%s", id)));
         RequestRecordImpl requestRecordImpl = new RequestRecordImpl();
         requestRecordImpl.resume(request);
         return requestRecordImpl;
