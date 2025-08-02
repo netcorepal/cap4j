@@ -1,8 +1,5 @@
-package org.netcorepal.cap4j.ddd.domain.repo;
+package org.netcorepal.cap4j.ddd.domain.aggregate;
 
-import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
-import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
-import org.netcorepal.cap4j.ddd.domain.aggregate.Id;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;

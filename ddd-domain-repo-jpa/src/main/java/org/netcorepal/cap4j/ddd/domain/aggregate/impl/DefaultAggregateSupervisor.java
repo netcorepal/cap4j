@@ -1,16 +1,16 @@
-package org.netcorepal.cap4j.ddd.domain.repo.impl;
+package org.netcorepal.cap4j.ddd.domain.aggregate.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.netcorepal.cap4j.ddd.Mediator;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
-import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
-import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePayload;
-import org.netcorepal.cap4j.ddd.domain.aggregate.Id;
+import org.netcorepal.cap4j.ddd.domain.aggregate.*;
 import org.netcorepal.cap4j.ddd.domain.repo.*;
 import org.netcorepal.cap4j.ddd.share.OrderInfo;
 import org.netcorepal.cap4j.ddd.share.PageData;
 import org.netcorepal.cap4j.ddd.share.PageParam;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 
+import javax.swing.text.html.parser.Entity;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -38,12 +38,21 @@ public class DefaultAggregateSupervisor implements AggregateSupervisor {
             throw new RuntimeException(ex);
         }
     }
-    private static <AGGREGATE extends Aggregate<?>, PAYLOAD> AGGREGATE newInstanceByPayload(Class<AGGREGATE> clazz, Class<PAYLOAD> payloadClass, PAYLOAD payload){
+    private static <ENTITY, AGGREGATE extends Aggregate<ENTITY>, PAYLOAD extends AggregatePayload<ENTITY>> AGGREGATE newInstanceByPayload(Class<AGGREGATE> clazz, Class<PAYLOAD> payloadClass, PAYLOAD payload){
+        Aggregate aggregate = null;
         try {
-            Aggregate aggregate = clazz.getConstructor(payloadClass).newInstance(payload);
+            aggregate = clazz.getConstructor(payloadClass).newInstance(payload);
             return (AGGREGATE) aggregate;
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (Exception ex1) {
+            /** do nothing */
+        }
+        try {
+            aggregate = clazz.getConstructor().newInstance();
+            ENTITY entity = Mediator.factories().create(payload);
+            aggregate._wrap(entity);
+            return (AGGREGATE) aggregate;
+        } catch (Exception ex2){
+            throw new RuntimeException(ex2);
         }
     }
 

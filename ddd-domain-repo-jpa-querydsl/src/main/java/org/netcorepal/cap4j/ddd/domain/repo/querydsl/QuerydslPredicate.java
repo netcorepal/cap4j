@@ -6,8 +6,8 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
-import org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate;
-import org.netcorepal.cap4j.ddd.domain.repo.JpaAggregatePredicate;
+import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePredicate;
+import org.netcorepal.cap4j.ddd.domain.aggregate.JpaAggregatePredicate;
 
 import java.util.ArrayList;
 import java.util.List;

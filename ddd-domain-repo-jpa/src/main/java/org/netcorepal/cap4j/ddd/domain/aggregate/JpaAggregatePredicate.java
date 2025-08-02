@@ -1,8 +1,8 @@
-package org.netcorepal.cap4j.ddd.domain.repo;
+package org.netcorepal.cap4j.ddd.domain.aggregate;
 
 import lombok.RequiredArgsConstructor;
-import org.netcorepal.cap4j.ddd.domain.aggregate.Aggregate;
-import org.netcorepal.cap4j.ddd.domain.aggregate.ValueObject;
+import org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate;
+import org.netcorepal.cap4j.ddd.domain.repo.Predicate;
 import org.netcorepal.cap4j.ddd.share.misc.ClassUtils;
 import org.springframework.data.jpa.domain.Specification;
 

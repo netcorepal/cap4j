@@ -1,6 +1,5 @@
 package org.netcorepal.cap4j.ddd.domain.aggregate.impl;
 
-import com.sun.tools.javac.util.Assert;
 import lombok.RequiredArgsConstructor;
 import org.netcorepal.cap4j.ddd.application.UnitOfWork;
 import org.netcorepal.cap4j.ddd.domain.aggregate.AggregateFactory;

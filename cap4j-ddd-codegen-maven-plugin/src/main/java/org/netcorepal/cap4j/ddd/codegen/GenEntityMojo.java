@@ -2241,8 +2241,8 @@ public class GenEntityMojo extends GenArchMojo {
                 "import ${basePackage}${entityPackage}.${Entity};\n" +
                 (!isAggregateRoot || !repositorySupportQuerydsl ? "" : "import ${basePackage}${entityPackage}." + aggregateNameTemplate + ";\n") +
                 (!repositorySupportQuerydsl ? "" : "import ${basePackage}${entityPackage}.Q${Entity};\n") +
+                (!repositorySupportQuerydsl ? "" : "import org.netcorepal.cap4j.ddd.domain.aggregate.AggregatePredicate;\n") +
                 "import org.netcorepal.cap4j.ddd.domain.repo.JpaPredicate;\n" +
-                (!repositorySupportQuerydsl ? "" : "import org.netcorepal.cap4j.ddd.domain.repo.AggregatePredicate;\n") +
                 (!repositorySupportQuerydsl ? "" : "import org.netcorepal.cap4j.ddd.domain.repo.querydsl.QuerydslPredicate;\n") +
                 "import org.springframework.data.jpa.domain.Specification;\n" +
                 "\n" +
