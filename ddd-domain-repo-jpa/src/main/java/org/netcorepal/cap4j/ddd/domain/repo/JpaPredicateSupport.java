@@ -1,5 +1,6 @@
 package org.netcorepal.cap4j.ddd.domain.repo;
 
+import org.netcorepal.cap4j.ddd.share.DomainException;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Iterator;
@@ -22,7 +23,7 @@ public class JpaPredicateSupport {
      */
     public static <ENTITY, ID> ID resumeId(Predicate<ENTITY> predicate) {
         if (!(predicate instanceof JpaPredicate)) {
-            return null;
+            throw new DomainException("无法复原JpaPredicate的ID信息");
         }
         Iterable<Object> ids = ((JpaPredicate<ENTITY>) predicate).ids;
         if (ids == null) {
@@ -44,7 +45,7 @@ public class JpaPredicateSupport {
      */
     public static <ENTITY, ID> Iterable<ID> resumeIds(Predicate<ENTITY> predicate) {
         if (!(predicate instanceof JpaPredicate)) {
-            return null;
+            throw new DomainException("无法复原JpaPredicate的ID集合信息");
         }
         return (Iterable<ID>) ((JpaPredicate<ENTITY>) predicate).ids;
     }
@@ -58,7 +59,7 @@ public class JpaPredicateSupport {
      */
     public static <ENTITY> Specification<ENTITY> resumeSpecification(Predicate<ENTITY> predicate) {
         if (!(predicate instanceof JpaPredicate)) {
-            return null;
+            throw new DomainException("无法复原JpaPredicate的Specification信息");
         }
         return ((JpaPredicate<ENTITY>) predicate).spec;
     }
@@ -72,7 +73,7 @@ public class JpaPredicateSupport {
      */
     public static <ENTITY> Class<ENTITY> reflectEntityClass(Predicate<ENTITY> predicate) {
         if (!(predicate instanceof JpaPredicate)) {
-            return null;
+            throw new DomainException("无法复原JpaPredicate的实体类型");
         }
         return ((JpaPredicate<ENTITY>) predicate).entityClass;
     }
