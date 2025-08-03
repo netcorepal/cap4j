@@ -6,8 +6,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 基于Jdbc实现的锁
@@ -26,25 +24,11 @@ public class JdbcLocker implements Locker {
     private final String fieldUnlockAt;
 
     private final Boolean showSql;
-    private ConcurrentHashMap<String, LocalDateTime> lockerExpireMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, String> lockerPwdMap = new ConcurrentHashMap<>();
-
 
     @Override
     public boolean acquire(String key, String pwd, Duration expireDuration) {
         LocalDateTime now = LocalDateTime.now();
         synchronized (this) {
-            if (lockerExpireMap.containsKey(key)) {
-                // 过期
-                if (lockerExpireMap.get(key).isBefore(now)) {
-                    lockerExpireMap.remove(key);
-                    lockerPwdMap.remove(key);
-                } else {
-                    if (!Objects.equals(lockerPwdMap.get(key), pwd)) {
-                        return false;
-                    }
-                }
-            }
             String sql = String.format("select count(*) from %s where %s = ? ", table, fieldName);
             if (showSql) {
                 log.debug(sql);
@@ -59,8 +43,6 @@ public class JdbcLocker implements Locker {
                         log.debug(String.format("binding parameters: [%s, %s, %s, %s]", key, pwd, now, now.plusSeconds(expireDuration.getSeconds())));
                     }
                     jdbcTemplate.update(sql, key, pwd, now, now.plusSeconds(expireDuration.getSeconds()));
-                    lockerExpireMap.put(key, now.plusSeconds(expireDuration.getSeconds()));
-                    lockerPwdMap.put(key, pwd);
                     return true;
                 } catch (Exception e) {
                     return false;
@@ -84,14 +66,6 @@ public class JdbcLocker implements Locker {
     @Override
     public boolean release(String key, String pwd) {
         LocalDateTime now = LocalDateTime.now();
-        if (lockerExpireMap.containsKey(key)) {
-            if (Objects.equals(lockerPwdMap.get(key), pwd)) {
-                lockerExpireMap.remove(key);
-                lockerPwdMap.remove(key);
-            } else {
-                return false;
-            }
-        }
         String sql = String.format("select count(*) from %s where %s = ? and %s = ?", table, fieldName, fieldPwd);
         if (showSql) {
             log.debug(sql);
