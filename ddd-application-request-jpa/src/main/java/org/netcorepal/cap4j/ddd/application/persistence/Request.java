@@ -77,8 +77,10 @@ public class Request {
         this.tryTimes = retryTimes;
         this.triedTimes = 0;
         this.lastTryTime = scheduleAt;
-        this.nextTryTime = calculateNextTryTime(scheduleAt);
+
         this.loadRequestParam(requestParam);
+
+        this.nextTryTime = calculateNextTryTime(scheduleAt);
         this.result = "";
         this.resultType = "";
     }

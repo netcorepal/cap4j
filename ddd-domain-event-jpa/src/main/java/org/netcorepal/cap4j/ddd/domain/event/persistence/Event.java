@@ -71,8 +71,10 @@ public class Event {
         this.tryTimes = retryTimes;
         this.triedTimes = 1;
         this.lastTryTime = scheduleAt;
-        this.nextTryTime = calculateNextTryTime(scheduleAt);
+
         this.loadPayload(payload);
+
+        this.nextTryTime = calculateNextTryTime(scheduleAt);
     }
 
     @Transient
