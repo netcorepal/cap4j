@@ -88,7 +88,7 @@ public class JpaRequestScheduleService {
         int failCount = 0;
         while (true) {
             try {
-                int archivedCount = requestManager.archiveByExpireAt(now.plusDays(expireDays), batchSize);
+                int archivedCount = requestManager.archiveByExpireAt(now.minusDays(expireDays), batchSize);
                 if (archivedCount == 0) {
                     break;
                 }

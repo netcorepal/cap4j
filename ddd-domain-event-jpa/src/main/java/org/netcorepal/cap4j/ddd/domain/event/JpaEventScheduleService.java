@@ -88,7 +88,7 @@ public class JpaEventScheduleService {
         int failCount = 0;
         while (true) {
             try {
-                int archivedCount = eventRecordRepository.archiveByExpireAt(svcName, now.plusDays(expireDays), batchSize);
+                int archivedCount = eventRecordRepository.archiveByExpireAt(svcName, now.minusDays(expireDays), batchSize);
                 if (archivedCount == 0) {
                     break;
                 }
