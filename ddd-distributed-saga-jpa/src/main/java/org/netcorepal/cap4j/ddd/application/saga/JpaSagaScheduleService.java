@@ -88,7 +88,7 @@ public class JpaSagaScheduleService {
         int failCount = 0;
         while (true) {
             try {
-                int archivedCount = sagaManager.archiveByExpireAt(now.plusDays(expireDays), batchSize);
+                int archivedCount = sagaManager.archiveByExpireAt(now.minusDays(expireDays), batchSize);
                 if (archivedCount == 0) {
                     break;
                 }
