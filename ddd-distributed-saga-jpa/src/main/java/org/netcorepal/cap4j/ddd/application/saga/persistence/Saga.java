@@ -79,8 +79,10 @@ public class Saga {
         this.tryTimes = retryTimes;
         this.triedTimes = 0;
         this.lastTryTime = scheduleAt;
-        this.nextTryTime = calculateNextTryTime(scheduleAt);
+
         this.loadSagaParam(sagaParam);
+
+        this.nextTryTime = calculateNextTryTime(scheduleAt);
         this.result = "";
         this.resultType = "";
         this.sagaProcesses = new ArrayList<>();
