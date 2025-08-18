@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.netcorepal.cap4j.ddd.application.RequestParam;
 import org.netcorepal.cap4j.ddd.application.saga.persistence.Saga;
 import org.netcorepal.cap4j.ddd.application.saga.persistence.SagaProcess;
+import org.netcorepal.cap4j.ddd.share.DomainException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -56,7 +57,11 @@ public class SagaRecordImpl implements SagaRecord {
 
     @Override
     public <R> R getResult() {
-        return (R) this.saga.getSagaResult();
+        R result = (R) saga.getSagaResult();
+        if (result == null && null != saga.getException() && !"".equals(saga.getException())) {
+            throw new DomainException(saga.getException());
+        }
+        return result;
     }
 
     @Override
