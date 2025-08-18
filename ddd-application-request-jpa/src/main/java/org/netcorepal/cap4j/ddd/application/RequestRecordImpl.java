@@ -2,6 +2,7 @@ package org.netcorepal.cap4j.ddd.application;
 
 import lombok.extern.slf4j.Slf4j;
 import org.netcorepal.cap4j.ddd.application.persistence.Request;
+import org.netcorepal.cap4j.ddd.share.DomainException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -54,7 +55,11 @@ public class RequestRecordImpl implements RequestRecord {
 
     @Override
     public <R> R getResult() {
-        return (R) request.getRequestResult();
+        R result = (R) request.getRequestResult();
+        if (result == null && null != request.getException() && !"".equals(request.getException())) {
+            throw new DomainException(request.getException());
+        }
+        return result;
     }
 
     @Override
