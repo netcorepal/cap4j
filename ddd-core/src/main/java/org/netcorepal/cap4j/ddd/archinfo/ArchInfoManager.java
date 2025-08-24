@@ -367,12 +367,12 @@ public class ArchInfoManager {
     }
 
     protected Type resolveRequestClass(Class<?> requestHandlerCls) {
-        Method method = ClassUtils.findMethod(requestHandlerCls, "exec", m -> m.getParameterCount() == 1);
+        Method method = ClassUtils.findMethod(requestHandlerCls, "exec", m -> m.getParameterCount() == 1 && !m.isBridge() && !m.isSynthetic());
         return method.getGenericParameterTypes()[0];
     }
 
     protected Type resolveResponseClass(Class<?> requestHandlerCls) {
-        Method method = ClassUtils.findMethod(requestHandlerCls, "exec", m -> m.getParameterCount() == 1);
+        Method method = ClassUtils.findMethod(requestHandlerCls, "exec", m -> m.getParameterCount() == 1 && !m.isBridge() && !m.isSynthetic());
         return method.getGenericReturnType();
     }
 
