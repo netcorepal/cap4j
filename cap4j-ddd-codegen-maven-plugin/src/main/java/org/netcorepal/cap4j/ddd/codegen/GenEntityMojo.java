@@ -562,6 +562,9 @@ public class GenEntityMojo extends GenArchMojo {
             if (columnName.equalsIgnoreCase(getParent(table) + "_id")) {
                 return false;
             }
+            if (getParent(table).equalsIgnoreCase(getReference(column))){
+                return false;
+            }
         }
 
         if (relations.containsKey(tableName)) {
