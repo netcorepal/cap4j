@@ -43,8 +43,8 @@ public interface UnitOfWorkInterceptor {
     void afterTransaction(Set<Object> persistAggregates, Set<Object> removeAggregates);
 
     /**
-     * 实体持久化之后
-     * @param entities 实体
+     * 实体持久化之后（仅聚合根实体）
+     * @param entities 聚合根实体集
      */
     void postEntitiesPersisted(Set<Object> entities);
 }
