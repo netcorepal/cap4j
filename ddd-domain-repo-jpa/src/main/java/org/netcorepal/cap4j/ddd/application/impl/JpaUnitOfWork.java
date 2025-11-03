@@ -282,9 +282,9 @@ public class JpaUnitOfWork implements UnitOfWork {
             if (deleteEntities != null && !deleteEntities.isEmpty()) {
                 entities.addAll(deleteEntities);
             }
-            for (Object entity : persistenceContextEntities()) {
-                pushProcessingEntities(entity, processedEntities);
-            }
+//            for (Object entity : persistenceContextEntities()) {
+//                pushProcessingEntities(entity, processedEntities);
+//            }
             entities.addAll(processedEntities);
             for (UnitOfWorkInterceptor interceptor :
                     uowInterceptors) {

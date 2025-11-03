@@ -92,7 +92,11 @@ public class DefaultRepositorySupervisor implements RepositorySupervisor {
     @Override
     public <ENTITY> List<ENTITY> find(Predicate<ENTITY> predicate, Collection<OrderInfo> orders, boolean persist) {
         Class<ENTITY> entityClass = reflectEntityClass(predicate);
-        return repo(entityClass, predicate).find(predicate, orders, persist);
+        List<ENTITY> list = repo(entityClass, predicate).find(predicate, orders, persist);
+        if (persist && list != null) {
+            list.forEach(unitOfWork::persist);
+        }
+        return list;
     }
 
     @Override
